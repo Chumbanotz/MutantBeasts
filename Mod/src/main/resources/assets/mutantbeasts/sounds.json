@@ -1,0 +1,136 @@
+{
+	"entity.creeper_minion.hatch": {
+		"sounds": [
+			"mutantbeasts:entity/egg_hatch"
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.creeper_minion.hatch"
+	},
+	"entity.mutant_creeper.ambient": {
+		"sounds": [
+			"mutantbeasts:entity/mutant_creeper/ambient1",
+			"mutantbeasts:entity/mutant_creeper/ambient2",
+			"mutantbeasts:entity/mutant_creeper/ambient3",
+			"mutantbeasts:entity/mutant_creeper/ambient4"
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.mutant_creeper.ambient"
+	},
+	"entity.mutant_creeper.charge": {
+		"sounds": [
+			"mutantbeasts:entity/mutant_creeper/charge"
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.mutant_creeper.charge"
+	},
+	"entity.mutant_creeper.death": {
+		"sounds": [
+			"mutantbeasts:entity/mutant_creeper/death"
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.mutant_creeper.death"
+	},
+	"entity.mutant_creeper.hurt": {
+		"sounds": [
+			"mutantbeasts:entity/mutant_creeper/hurt1",
+			"mutantbeasts:entity/mutant_creeper/hurt2"
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.mutant_creeper.hurt"
+	},
+	"entity.mutant_skeleton.ambient": {
+		"sounds": [
+			"mutantbeasts:entity/mutant_skeleton/ambient1",
+			"mutantbeasts:entity/mutant_skeleton/ambient2",
+			"mutantbeasts:entity/mutant_skeleton/ambient3"
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.mutant_skeleton.ambient"
+	},
+	"entity.mutant_skeleton.death": {
+		"sounds": [
+			"mutantbeasts:entity/mutant_skeleton/death"
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.mutant_skeleton.death"
+	},
+	"entity.mutant_skeleton.hurt": {
+		"sounds": [
+			"mutantbeasts:entity/mutant_skeleton/hurt1",
+			"mutantbeasts:entity/mutant_skeleton/hurt2",
+			"mutantbeasts:entity/mutant_skeleton/hurt3",
+			"mutantbeasts:entity/mutant_skeleton/hurt4"
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.mutant_skeleton.hurt"
+	},
+	"entity.mutant_skeleton.step": {
+		"sounds": [
+			"mutantbeasts:entity/mutant_skeleton/step1",
+			"mutantbeasts:entity/mutant_skeleton/step2",
+			"mutantbeasts:entity/mutant_skeleton/step3",
+			"mutantbeasts:entity/mutant_skeleton/step4"
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.mutant_skeleton.step"
+	},
+	"entity.mutant_snow_golem.death": {
+		"sounds": [
+			{
+				"name": "entity.snow_golem.death",
+				"type": "event",
+				"pitch": 0.75
+			}
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.mutant_snow_golem.death"
+	},
+	"entity.mutant_snow_golem.hurt": {
+		"sounds": [
+			{
+				"name": "entity.snow_golem.hurt",
+				"type": "event",
+				"pitch": 0.75
+			}
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.mutant_snow_golem.hurt"
+	},
+	"entity.mutant_zombie.ambient": {
+		"sounds": [
+			"mutantbeasts:entity/mutant_zombie/ambient1",
+			"mutantbeasts:entity/mutant_zombie/ambient2",
+			"mutantbeasts:entity/mutant_zombie/ambient3"
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.mutant_zombie.ambient"
+	},
+	"entity.mutant_zombie.attack": {
+		"sounds": [
+			"mutantbeasts:entity/mutant_zombie/attack"
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.mutant_zombie.attack"
+	},
+	"entity.mutant_zombie.grunt": {
+		"sounds": [
+			"mutantbeasts:entity/mutant_zombie/grunt"
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.mutant_zombie.grunt"
+	},
+	"entity.mutant_zombie.hurt": {
+		"sounds": [
+			"mutantbeasts:entity/mutant_zombie/hurt1",
+			"mutantbeasts:entity/mutant_zombie/hurt2"
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.mutant_zombie.hurt"
+	},
+	"entity.mutant_zombie.roar": {
+		"sounds": [
+			{
+				"name": "mutantbeasts:entity/mutant_zombie/roar1",
+				"attenuation_distance": 16
+			},
+			{
+				"name": "mutantbeasts:entity/mutant_zombie/roar2",
+				"attenuation_distance": 16
+			},
+			{
+				"name": "mutantbeasts:entity/mutant_zombie/roarslow1",
+				"attenuation_distance": 16
+			},
+			{
+				"name": "mutantbeasts:entity/mutant_zombie/roarslow2",
+				"attenuation_distance": 16
+			}
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.mutant_zombie.roar"
+	}
+}

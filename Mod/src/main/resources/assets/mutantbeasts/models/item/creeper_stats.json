@@ -1,0 +1,6 @@
+{
+	"parent": "item/handheld",
+	"textures": {
+		"layer0": "mutantbeasts:item/creeper_stats"
+	}
+}

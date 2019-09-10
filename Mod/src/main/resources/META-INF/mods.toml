@@ -1,0 +1,27 @@
+modLoader="javafml"
+loaderVersion="[28,)"
+issueTrackerURL="https://www.curseforge.com/minecraft/mc-mods/mutant-beasts/issues"
+
+[[mods]]
+modId="mutantbeasts"
+version="0.4.0"
+displayName="Mutant Beasts"
+#updateJSONURL="http://myurl.me/"
+displayURL="https://www.curseforge.com/minecraft/mc-mods/mutant-beasts"
+logoFile="logo.png"
+credits="shcott21/thehippomaster21"
+authors="Chumbanotz"
+description='''Mutant Beasts brings back the popular Mutant Creatures mod to modern Minecraft.'''
+
+[[dependencies.mutantbeasts]]
+    modId="forge"
+    mandatory=true
+    versionRange="[28,)"
+    ordering="NONE"
+    side="BOTH"
+[[dependencies.mutantbeasts]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="[1.14.4]"
+    ordering="NONE"
+    side="BOTH"
