@@ -697,6 +697,8 @@ public class MutantZombieEntity extends ZombieEntity implements IAnimatedEntity 
 					resurrectList.add(new ZombieResurrect(world, x, y, z));
 				}
 			}
+
+			navigator.setSpeed(0.0D);
 		}
 
 		@Override
