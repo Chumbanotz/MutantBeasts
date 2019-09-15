@@ -12,7 +12,6 @@ import net.minecraft.block.GrassPathBlock;
 import net.minecraft.block.LeavesBlock;
 import net.minecraft.block.RedstoneOreBlock;
 import net.minecraft.block.SnowyDirtBlock;
-import net.minecraft.block.TurtleEggBlock;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Direction;
@@ -138,7 +137,7 @@ public class ZombieChunk extends BlockPos {
 			}
 		}
 
-		if (block instanceof RedstoneOreBlock || block instanceof TurtleEggBlock && net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(world, entity)) {
+		if (block instanceof RedstoneOreBlock) {
 			block.onEntityWalk(world, this, entity);
 		}
 

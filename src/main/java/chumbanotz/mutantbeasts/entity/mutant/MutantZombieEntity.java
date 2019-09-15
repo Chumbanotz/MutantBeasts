@@ -382,7 +382,7 @@ public class MutantZombieEntity extends ZombieEntity implements IAnimatedEntity 
 					double x = entity.posX - posX;
 					double z = entity.posZ - posZ;
 					double d = Math.sqrt(x * x + z * z);
-					entity.setMotion(x / d * 0.4D, 0.0D, z / d * 0.4D);
+					entity.setMotion(x / d * 0.4D, 0.15D, z / d * 0.4D);
 					if (entity instanceof LivingEntity) {
 						if (this.rand.nextInt(5) == 0 && !EntityUtil.canBlockDamageSource((LivingEntity)entity, DamageSource.causeMobDamage(this))) {
 							((LivingEntity)entity).addPotionEffect(new EffectInstance(Effects.HUNGER, 160, 1));

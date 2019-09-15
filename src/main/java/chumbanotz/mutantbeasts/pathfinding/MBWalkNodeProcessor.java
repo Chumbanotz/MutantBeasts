@@ -31,9 +31,8 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockReader;
-
-public class MBWalkNodeProcessor extends WalkNodeProcessor // MC-96319
-{
+//MC-96319
+public class MBWalkNodeProcessor extends WalkNodeProcessor {
 	@Override
 	protected PathNodeType func_215744_a(IBlockReader blockaccessIn, boolean canOpenDoorsIn, boolean canEnterDoorsIn, BlockPos pos, PathNodeType nodeType) {
 		if (nodeType == PathNodeType.DOOR_WOOD_CLOSED && canOpenDoorsIn && canEnterDoorsIn) {

@@ -1,7 +1,5 @@
 package chumbanotz.mutantbeasts.client.renderer.entity;
 
-import org.lwjgl.opengl.GL11;
-
 import com.mojang.blaze3d.platform.GlStateManager;
 
 import chumbanotz.mutantbeasts.client.renderer.entity.model.MutantEndermanModel;
