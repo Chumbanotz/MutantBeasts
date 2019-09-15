@@ -11,15 +11,14 @@ import net.minecraft.util.EntityPredicates;
 import net.minecraft.util.Hand;
 
 public class MBMeleeAttackGoal extends Goal {
-	private CreatureEntity attacker;
+	private final CreatureEntity attacker;
 	private int attackTick;
 	private int maxAttackTick = 20;
-	private float moveSpeed;
-	boolean longMemory;
+	private final float moveSpeed;
+	private final boolean longMemory;
 	private Path path;
 	private Class<?> classTarget;
 	private int delayCounter;
-	private double reach;
 
 	public MBMeleeAttackGoal(CreatureEntity creatureEntity, Class<?> classTarget, double moveSpeed, boolean longMemory) {
 		this(creatureEntity, moveSpeed, longMemory);
@@ -90,9 +89,9 @@ public class MBMeleeAttackGoal extends Goal {
 		}
 
 		this.attackTick = Math.max(this.attackTick - 1, 0);
-		this.reach = (double)(this.attacker.getWidth() * 2.0F * this.attacker.getWidth() * 2.0F);
+		double reach = (double)(this.attacker.getWidth() * 2.0F * this.attacker.getWidth() * 2.0F);
 
-		if (this.attacker.getDistanceSq(livingentity.posX, livingentity.getBoundingBox().minY, livingentity.posZ) <= this.reach && this.attackTick <= 0) {
+		if (this.attacker.getDistanceSq(livingentity.posX, livingentity.getBoundingBox().minY, livingentity.posZ) <= reach && this.attackTick <= 0) {
 			this.resetAttackTick();
 			this.attacker.swingArm(Hand.MAIN_HAND);
 			this.attacker.attackEntityAsMob(livingentity);
@@ -109,11 +108,6 @@ public class MBMeleeAttackGoal extends Goal {
 
 	public MBMeleeAttackGoal setMaxAttackTick(int max) {
 		this.maxAttackTick = max;
-		return this;
-	}
-
-	public MBMeleeAttackGoal setReach(float f) {
-		this.reach = f;
 		return this;
 	}
 }

@@ -13,7 +13,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 
 @OnlyIn(Dist.CLIENT)
 public class MutantArrowRenderer extends EntityRenderer<MutantArrowEntity> {
-	private MutantArrowModel arrowModel = new MutantArrowModel();
+	private final MutantArrowModel arrowModel = new MutantArrowModel();
 
 	public MutantArrowRenderer(EntityRendererManager renderManager) {
 		super(renderManager);

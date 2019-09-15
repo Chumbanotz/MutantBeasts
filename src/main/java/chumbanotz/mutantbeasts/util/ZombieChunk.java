@@ -14,25 +14,25 @@ import net.minecraft.block.RedstoneOreBlock;
 import net.minecraft.block.SnowyDirtBlock;
 import net.minecraft.block.TurtleEggBlock;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
-public class ZombieChunk {
-	public final int posX;
-	public final int posY;
-	public final int posZ;
+public class ZombieChunk extends BlockPos {
 	public boolean first;
 	public boolean spawnParticles;
 
 	public ZombieChunk(int x, int y, int z) {
-		this.posX = x;
-		this.posY = y;
-		this.posZ = z;
+		super(x, y, z);
 		this.first = false;
 		this.spawnParticles = true;
+	}
+
+	public ZombieChunk(BlockPos pos) {
+		super(pos);
 	}
 
 	public ZombieChunk setFirst(boolean flag) {
@@ -112,39 +112,39 @@ public class ZombieChunk {
 	}
 
 	public void handleBlocks(World world, Entity entity) {
-		BlockPos pos = new BlockPos(this.posX, this.posY, this.posZ);
-		BlockState blockstate = world.getBlockState(pos);
-		Block block = world.getBlockState(pos).getBlock();
+		boolean isPlayer = entity instanceof PlayerEntity;
+		BlockState blockstate = world.getBlockState(this);
+		Block block = world.getBlockState(this).getBlock();
 
-		if (net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(world, entity)) {
+		if (isPlayer && ((PlayerEntity)entity).isAllowEdit() || net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(world, entity)) {
 			if (block instanceof SnowyDirtBlock || block instanceof GrassPathBlock || block instanceof FarmlandBlock) {
-				world.setBlockState(pos, Blocks.DIRT.getDefaultState(), 2);
+				world.setBlockState(this, Blocks.DIRT.getDefaultState(), 2);
 			}
 
 			if (block instanceof BreakableBlock || block instanceof LeavesBlock) {
-				world.destroyBlock(pos, false);
+				world.destroyBlock(this, false);
 			}
 
-			if (world.getBlockState(pos.up()).getBlockHardness(world, pos.up()) <= 1.0F) {
-				world.destroyBlock(pos.up(), true);
+			if (world.getBlockState(this.up()).getBlockHardness(world, this.up()) <= 1.0F) {
+				world.destroyBlock(this.up(), true);
 			}
 		}
 
 		if (block instanceof BellBlock) {
 			for (Direction direction : Direction.Plane.HORIZONTAL) {
-				if (((BellBlock)block).ring(world, blockstate, world.getTileEntity(pos), new BlockRayTraceResult(new Vec3d(0.5D, 0.5D, 0.5D), direction, pos, false), null, false)) {
+				if (((BellBlock)block).ring(world, blockstate, world.getTileEntity(this), new BlockRayTraceResult(new Vec3d(0.5D, 0.5D, 0.5D), direction, this, false), isPlayer ? (PlayerEntity)entity : null, false)) {
 					break;
 				}
 			}
 		}
 
 		if (block instanceof RedstoneOreBlock || block instanceof TurtleEggBlock && net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(world, entity)) {
-			block.onEntityWalk(world, pos, entity);
+			block.onEntityWalk(world, this, entity);
 		}
 
 		if (this.spawnParticles) {
-			int id = Block.getStateId(world.getBlockState(pos));
-			world.playEvent(2001, pos.up(), id);
+			int id = Block.getStateId(world.getBlockState(this));
+			world.playEvent(2001, this.up(), id);
 		}
 	}
 }

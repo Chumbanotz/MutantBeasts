@@ -36,6 +36,7 @@ import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.particles.ParticleTypes;
 import net.minecraft.pathfinding.PathNavigator;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.Tag;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.EntityPredicates;
@@ -79,16 +80,17 @@ public class MutantCreeperEntity extends CreeperEntity {
 		this.goalSelector.addGoal(4, new LookRandomlyGoal(this));
 		this.targetSelector.addGoal(1, new MBHurtByTargetGoal(this, CreeperEntity.class));
 		this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, PlayerEntity.class, true).setUnseenMemoryTicks(300));
-		this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, AnimalEntity.class, 60, true, true, EntityUtil::isMobFeline));
+		this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, AnimalEntity.class, 40, true, true, EntityUtil::isMobFeline));
 	}
 
 	@Override
 	protected void registerAttributes() {
 		super.registerAttributes();
 		this.getAttribute(SharedMonsterAttributes.MAX_HEALTH).setBaseValue(120.0D);
-		this.getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).setBaseValue(4.0D);
-		this.getAttribute(SharedMonsterAttributes.ATTACK_KNOCKBACK).setBaseValue(2.0D);
+		this.getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).setBaseValue(6.0D);
+		this.getAttribute(SharedMonsterAttributes.ATTACK_KNOCKBACK).setBaseValue(1.5D);
 		this.getAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(0.26D);
+		this.getAttribute(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(32.0D);
 		this.getAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(1.0D);
 		this.getAttribute(SWIM_SPEED).setBaseValue(4.5D);
 	}
@@ -167,14 +169,14 @@ public class MutantCreeperEntity extends CreeperEntity {
 		}
 
 		if (source.isExplosion()) {
-			float f = amount / 2.0F;
+			float healAmount = amount / 2.0F;
 
 			if (!(source.getTrueSource() instanceof MutantCreeperEntity) && this.isAlive() && this.getHealth() < this.getMaxHealth()) {
-				this.heal(f);
+				this.heal(healAmount);
 				double d0 = this.rand.nextGaussian() * 0.02D;
 				double d1 = this.rand.nextGaussian() * 0.02D;
 				double d2 = this.rand.nextGaussian() * 0.02D;
-				((ServerWorld)this.world).spawnParticle(ParticleTypes.HEART, this.posX + (double)(this.rand.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(), this.posY + 0.5D + (double)(this.rand.nextFloat() * this.getHeight()), this.posZ + (double)(this.rand.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(), (int)(f / 2.0F), d0, d1, d2, 0.0D);
+				((ServerWorld)this.world).spawnParticle(ParticleTypes.HEART, this.posX + (double)(this.rand.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(), this.posY + 0.5D + (double)(this.rand.nextFloat() * this.getHeight()), this.posZ + (double)(this.rand.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(), (int)(healAmount / 2.0F), d0, d1, d2, 0.0D);
 			}
 
 			return true;
@@ -183,13 +185,20 @@ public class MutantCreeperEntity extends CreeperEntity {
 				source.getImmediateSource().attackEntityFrom(DamageSource.causeThornsDamage(this), 2.0F);
 			}
 
-			if (!this.world.isRemote && amount > 0.0F && source.getImmediateSource() != null && this.hurtResistantTime > 10) {
+			if (!this.world.isRemote && amount > 0.0F && source.getImmediateSource() != null && super.attackEntityFrom(source, amount)) {
 				--this.chargeHits;
 				MutantBeasts.LOGGER.debug("Charge hits left = " + chargeHits);
 			}
 		}
 
 		return super.attackEntityFrom(source, amount);
+	}
+
+	@Override
+	public void knockBack(Entity entityIn, float strength, double xRatio, double zRatio) {
+		if (!this.isCharging()) {
+			super.knockBack(entityIn, strength, xRatio, zRatio);
+		}
 	}
 
 	@Override
@@ -368,7 +377,7 @@ public class MutantCreeperEntity extends CreeperEntity {
 
 	@Override
 	public float getExplosionResistance(Explosion explosionIn, IBlockReader worldIn, BlockPos pos, BlockState blockStateIn, IFluidState p_180428_5_, float p_180428_6_) {
-		return this.getPowered() && blockStateIn.canEntityDestroy(worldIn, pos, this) ? Math.min(0.8F, p_180428_6_) : p_180428_6_;
+		return this.getPowered() && !BlockTags.WITHER_IMMUNE.contains(blockStateIn.getBlock()) ? Math.min(0.8F, p_180428_6_) : p_180428_6_;
 	}
 
 	@Override
@@ -434,7 +443,7 @@ public class MutantCreeperEntity extends CreeperEntity {
 	class SpawnMinionsGoal extends Goal {
 		@Override
 		public boolean shouldExecute() {
-			float chance = !hasPath() ? 1.5F : 0.6F;
+			float chance = !hasPath() || getLastDamageSource() != null && getLastDamageSource().isProjectile() ? 2.5F : 0.6F;
 			return getAttackTarget() != null && getDistanceSq(getAttackTarget()) <= 1024.0D && !isCharging() ? rand.nextFloat() * 100.0F < chance : false;
 		}
 

@@ -15,7 +15,6 @@ public interface IAnimatedEntity {
 
 	default void sendPacket(int animId) {
 		this.setAnimationID(animId);
-		Entity entity = (Entity)this;
-		PacketHandler.INSTANCE.sendToServer(new AnimationPacket(animId, entity.getEntityId()));
+		PacketHandler.INSTANCE.sendToServer(new AnimationPacket(animId, ((Entity)this).getEntityId()));
 	}
 }

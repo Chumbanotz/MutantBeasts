@@ -281,7 +281,7 @@ public class CreeperMinionEntity extends CreeperEntity {
 			}
 
 			if (this.timeSinceIgnited >= this.fuseTime) {
-				this.timeSinceIgnited = this.fuseTime;
+				this.timeSinceIgnited = 0;
 
 				if (!this.world.isRemote) {
 					Explosion.Mode explosion$mode = net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this.world, this) && this.canDestroyBlocks() ? Explosion.Mode.DESTROY : Explosion.Mode.NONE;
@@ -337,6 +337,7 @@ public class CreeperMinionEntity extends CreeperEntity {
 		} else if (!this.world.isRemote && this.getOwner() == null) {
 			this.setOwnerUniqueId(player.getUniqueID());
 			this.setCanExplodeContinuously(true);
+			this.setDestroyBlocks(false);
 			player.sendMessage(new StringTextComponent("For testing only: Creeper Minion has been tamed by " + player.getName().getString()));
 			return true;
 		}
@@ -360,13 +361,18 @@ public class CreeperMinionEntity extends CreeperEntity {
 	}
 
 	@Override
+	public boolean isImmuneToExplosions() {
+		return this.isTamed();
+	}
+
+	@Override
 	public boolean canBeLeashedTo(PlayerEntity player) {
 		return !this.getLeashed() && this.isTamed();
 	}
 
 	@Override
 	public boolean canAttack(LivingEntity target) {
-		return this.getOwner() == target ? false : super.canAttack(target);
+		return this.getOwner() == target ? false : target instanceof CreeperMinionEntity && ((CreeperMinionEntity)target).getOwner() == this.getOwner() ? false : super.canAttack(target);
 	}
 
 	@Override

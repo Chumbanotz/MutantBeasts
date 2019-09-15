@@ -1,6 +1,6 @@
 package chumbanotz.mutantbeasts.client.renderer.entity.model;
 
-import org.lwjgl.opengl.GL11;
+import com.mojang.blaze3d.platform.GlStateManager;
 
 import chumbanotz.mutantbeasts.entity.mutant.MutantEndermanEntity;
 import net.minecraft.client.renderer.entity.model.RendererModel;
@@ -127,8 +127,8 @@ public class EndermanArm {
 
 	@OnlyIn(Dist.CLIENT)
 	public static class EnderArmRenderer extends RendererModel {
-		public float animTick = 0.0F;
-		public MutantEndermanEntity enderman = null;
+		public float animTick;
+		public MutantEndermanEntity enderman;
 
 		public EnderArmRenderer(Model model) {
 			super(model);
@@ -138,17 +138,18 @@ public class EndermanArm {
 			super(model, x, y);
 		}
 
+		@Override
 		public void render(float scale) {
 			if (this.enderman != null) {
 				float a = (float)this.enderman.preTargetTick + (float)(this.enderman.hasTargetTick - this.enderman.preTargetTick) * this.animTick;
-				GL11.glPushMatrix();
-				GL11.glScalef(a / 10.0F, a / 10.0F, a / 10.0F);
+				GlStateManager.pushMatrix();
+				GlStateManager.scalef(a / 10.0F, a / 10.0F, a / 10.0F);
 			}
 
 			super.render(scale);
 
 			if (this.enderman != null) {
-				GL11.glPopMatrix();
+				GlStateManager.popMatrix();
 			}
 		}
 	}

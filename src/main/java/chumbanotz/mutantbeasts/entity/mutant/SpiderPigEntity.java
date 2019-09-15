@@ -242,7 +242,7 @@ public class SpiderPigEntity extends TameableEntity {
 		if (!(target instanceof CreeperEntity)) {
 			if (target instanceof PlayerEntity && owner instanceof PlayerEntity && !((PlayerEntity)owner).canAttackPlayer((PlayerEntity)target)) {
 				return false;
-			} else if (target instanceof IronGolemEntity && ((IronGolemEntity)target).isPlayerCreated() || target instanceof SnowGolemEntity) {
+			} else if (target instanceof IronGolemEntity && ((IronGolemEntity)target).isPlayerCreated() || target instanceof SnowGolemEntity || target instanceof MutantSnowGolemEntity) {
 				return false;
 			} else if (target instanceof TameableEntity && ((TameableEntity)target).getOwner() == owner) {
 				return false;

@@ -32,7 +32,6 @@ import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.passive.TurtleEntity;
 import net.minecraft.entity.passive.WolfEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.pathfinding.PathNodeType;
 import net.minecraft.potion.EffectInstance;
@@ -47,7 +46,7 @@ import net.minecraft.world.World;
 
 public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAnimatedEntity {
 	private static final UUID MELEE_DAMAGE_MODIFIER = UUID.fromString("9edabc04-ce89-11e9-a32f-2a2ae2dbcce4");
-	private static final AttributeModifier RIB_CONSTRICT_DAMAGE = new AttributeModifier(UUID.fromString("a50db906-ce88-11e9-a32f-2a2ae2dbcce4"), "Rib constrict damage", 7.0D, AttributeModifier.Operation.ADDITION).setSaved(false);
+	private static final AttributeModifier RIB_CONSTRICT_DAMAGE = new AttributeModifier(UUID.fromString("a50db906-ce88-11e9-a32f-2a2ae2dbcce4"), "Rib constrict damage", 6.0D, AttributeModifier.Operation.ADDITION).setSaved(false);
 	private int currentAttackID;
 	private int animTick;
 
@@ -62,8 +61,8 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 	@Override
 	protected void registerGoals() {
 		this.goalSelector.addGoal(0, new MutantSkeletonEntity.MeleeGoal());
-		this.goalSelector.addGoal(0, new MutantSkeletonEntity.ShootGoal());
-		this.goalSelector.addGoal(0, new MutantSkeletonEntity.MultiShotGoal());
+		//this.goalSelector.addGoal(0, new MutantSkeletonEntity.ShootGoal());
+		//this.goalSelector.addGoal(0, new MutantSkeletonEntity.MultiShotGoal());
 		this.goalSelector.addGoal(0, new MutantSkeletonEntity.ConstrictRibsAttackGoal());
 		this.goalSelector.addGoal(1, new MBMeleeAttackGoal(this, PlayerEntity.class, 1.1D, true).setMaxAttackTick(10));
 		this.goalSelector.addGoal(2, new MBMeleeAttackGoal(this, 1.1D, false).setMaxAttackTick(10));
@@ -71,7 +70,7 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 		this.goalSelector.addGoal(5, new LookAtGoal(this, PlayerEntity.class, 8.0F));
 		this.goalSelector.addGoal(5, new LookRandomlyGoal(this));
 		this.targetSelector.addGoal(1, new MBHurtByTargetGoal(this, MutantSkeletonEntity.class));
-		this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, PlayerEntity.class, true));
+		this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, PlayerEntity.class, true).setUnseenMemoryTicks(300));
 		this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, IronGolemEntity.class, true));
 		this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, WolfEntity.class, true));
 		this.targetSelector.addGoal(4, new NearestAttackableTargetGoal<>(this, TurtleEntity.class, 60, true, true, TurtleEntity.TARGET_DRY_BABY));
@@ -82,6 +81,7 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 	protected void registerAttributes() {
 		super.registerAttributes();
 		this.getAttribute(SharedMonsterAttributes.MAX_HEALTH).setBaseValue(150.0D);
+		this.getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).setBaseValue(3.0D);
 		this.getAttribute(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(96.0D);
 		this.getAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(0.27D);
 		this.getAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(1.0D);
@@ -343,9 +343,10 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 
 					if (Math.abs(rotationYawHead - rot) < 60.0F && !(entity instanceof MutantSkeletonEntity)) {
 						float power = 1.8F + (float)rand.nextInt(5) * 0.15F;
-						entity.stopRiding();
+						entity.removePassengers();
 						entity.attackEntityFrom(DamageSource.causeMobDamage(MutantSkeletonEntity.this), (float)getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getValue());
 						entity.setMotion(-x / dist * (double)power, Math.max(0.2800000011920929D, entity.getMotion().y), -z / dist * (double)power);
+						EntityUtil.sendVelocityPacket(entity);
 					}
 				}
 
@@ -388,16 +389,15 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 		@Override
 		public void tick() {
 			if (animTick == 6 && this.attackTarget != null) {
-				this.attackTarget.stopRiding();
+				if (this.attackTarget.getRidingEntity() != null) {
+					this.attackTarget.getRidingEntity().removePassengers();
+				}
 				this.attackTarget.attackEntityFrom(DamageSource.causeMobDamage(MutantSkeletonEntity.this), (float)getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getValue());
 				double d0 = (double)((1.0F + rand.nextFloat() * 0.4F) * (float)(rand.nextBoolean() ? 1 : -1));
 				this.attackTarget.setMotion(d0, (double)(0.4F + rand.nextFloat() * 0.8F), d0);
 				playSound(SoundEvents.ENTITY_GENERIC_EXPLODE, 0.5F, 0.8F + rand.nextFloat() * 0.4F);
-
-				if (this.attackTarget instanceof ServerPlayerEntity) {
-					this.attackTarget.velocityChanged = true;
-					EntityUtil.disableShield((ServerPlayerEntity)this.attackTarget, 100);
-				}
+				EntityUtil.disableShield(this.attackTarget, DamageSource.causeMobDamage(MutantSkeletonEntity.this), 100);
+				EntityUtil.sendVelocityPacket(this.attackTarget);
 			}
 		}
 

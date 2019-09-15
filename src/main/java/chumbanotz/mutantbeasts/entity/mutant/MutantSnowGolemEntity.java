@@ -307,7 +307,7 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 
 		@Override
 		public boolean shouldExecute() {
-			return isInWaterOrBubbleColumn() && net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(world, MutantSnowGolemEntity.this);
+			return isInWaterOrBubbleColumn();
 		}
 
 		@Override
@@ -326,7 +326,7 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 		@Override
 		public void tick() {
 			--this.jumpTick;
-			if (!this.waterReplaced && !isInWaterOrBubbleColumn() && this.jumpTick < 17) {
+			if (!this.waterReplaced && !isInWaterOrBubbleColumn() && this.jumpTick < 17 && net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(world, MutantSnowGolemEntity.this)) {
 				int i = this.prevPos.getY();
 				i = getWaterSurfaceHeight(world, this.prevPos);
 				if ((double)i > posY) {

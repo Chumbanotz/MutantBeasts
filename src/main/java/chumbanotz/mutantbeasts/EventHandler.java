@@ -11,7 +11,6 @@ import chumbanotz.mutantbeasts.entity.mutant.MutantCreeperEntity;
 import chumbanotz.mutantbeasts.entity.mutant.MutantSnowGolemEntity;
 import chumbanotz.mutantbeasts.entity.mutant.MutantZombieEntity;
 import chumbanotz.mutantbeasts.item.HulkHammerItem;
-import chumbanotz.mutantbeasts.item.MBItems;
 import chumbanotz.mutantbeasts.util.EntityUtil;
 import chumbanotz.mutantbeasts.util.ZombieChunk;
 import net.minecraft.client.Minecraft;
@@ -74,14 +73,15 @@ public class EventHandler {
 	@SubscribeEvent
 	public static void onLivingAttackEvent(LivingAttackEvent event) {
 		LivingEntity livingEntity = event.getEntityLiving();
-		if (livingEntity instanceof PlayerEntity && livingEntity.isActiveItemStackBlocking() && event.getSource().getTrueSource() instanceof MutantCreeperEntity && event.getSource().isExplosion()) {
-			MutantCreeperEntity mutantCreeperEntity = ((MutantCreeperEntity)event.getSource().getTrueSource());
+		DamageSource source = event.getSource();
+		if (livingEntity instanceof PlayerEntity && EntityUtil.canBlockDamageSource(livingEntity, source) && source.getTrueSource() instanceof MutantCreeperEntity && source.isExplosion()) {
+			MutantCreeperEntity mutantCreeperEntity = ((MutantCreeperEntity)source.getTrueSource());
 			if (mutantCreeperEntity.deathTime > 0) {
 				livingEntity.getActiveItemStack().damageItem(Integer.MAX_VALUE, livingEntity, e -> e.sendBreakAnimation(livingEntity.getActiveHand()));
 				livingEntity.attackEntityFrom(event.getSource(), event.getAmount() * 0.5F);
 			} else {
-				EntityUtil.disableShield((PlayerEntity)livingEntity, mutantCreeperEntity.getPowered() ? 200 : 100);
-				livingEntity.attackEntityFrom(event.getSource(), event.getAmount() * 0.5F);
+				EntityUtil.disableShield(livingEntity, source, mutantCreeperEntity.getPowered() ? 200 : 100);
+				livingEntity.attackEntityFrom(source, event.getAmount() * 0.5F);
 			}
 		}
 	}
@@ -97,7 +97,7 @@ public class EventHandler {
 	@SubscribeEvent
 	public static void onLivingUpdateEvent(LivingEvent.LivingUpdateEvent event) {
 		LivingEntity livingEntity = event.getEntityLiving();
-		if (livingEntity instanceof PlayerEntity && (livingEntity.getHeldItemMainhand().getItem() == MBItems.HULK_HAMMER || livingEntity.getHeldItemOffhand().getItem() == MBItems.HULK_HAMMER)) {
+		if (livingEntity instanceof PlayerEntity && HulkHammerItem.chunkList.keySet().contains(livingEntity.getUniqueID())) {
 			Iterable<ServerWorld> worlds = Minecraft.getInstance().getIntegratedServer().getWorlds();
 			Iterator<UUID> i$ = HulkHammerItem.chunkList.keySet().iterator();
 
@@ -112,7 +112,7 @@ public class EventHandler {
 							return;
 						}
 
-						name = (UUID)i$.next();
+						name = i$.next();
 						chunkList = HulkHammerItem.chunkList.get(name);
 						player = null;
 						worldObj = null;
@@ -131,9 +131,9 @@ public class EventHandler {
 					chunkList.remove(0);
 				}
 
-				ZombieChunk chunk = (ZombieChunk)chunkList.remove(0);
+				ZombieChunk chunk = chunkList.remove(0);
 				chunk.handleBlocks(player.world, player);
-				AxisAlignedBB box = new AxisAlignedBB((double)chunk.posX, (double)(chunk.posY + 1), (double)chunk.posZ, (double)(chunk.posX + 1), (double)(chunk.posY + 2), (double)(chunk.posZ + 1));
+				AxisAlignedBB box = new AxisAlignedBB((double)chunk.getX(), (double)(chunk.getY() + 1), (double)chunk.getZ(), (double)(chunk.getX() + 1), (double)(chunk.getY() + 2), (double)(chunk.getZ() + 1));
 
 				for (Entity entity : EntityUtil.getCollidingEntities(player, worldObj, box)) {
 					if (entity instanceof LivingEntity) {

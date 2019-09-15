@@ -43,14 +43,14 @@ public class CreeperMinionModel extends EntityModel<CreeperMinionEntity> {
 	}
 
 	@Override
-	public void render(CreeperMinionEntity entity, float f, float f1, float f2, float f3, float f4, float f5) {
-		this.sitting = this.isSitting || entity.isSitting();
-		this.field_78135_a.render(f5);
-		this.field_78134_c.render(f5);
-		this.field_78131_d.render(f5);
-		this.field_78132_e.render(f5);
-		this.field_78129_f.render(f5);
-		this.field_78130_g.render(f5);
+	public void render(CreeperMinionEntity entityIn, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch, float scale) {
+		this.sitting = this.isSitting || entityIn.isSitting();
+		this.field_78135_a.render(scale);
+		this.field_78134_c.render(scale);
+		this.field_78131_d.render(scale);
+		this.field_78132_e.render(scale);
+		this.field_78129_f.render(scale);
+		this.field_78130_g.render(scale);
 	}
 
 	@Override

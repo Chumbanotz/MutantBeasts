@@ -85,36 +85,36 @@ public class MBWalkNodeProcessor extends WalkNodeProcessor // MC-96319
 
 	@Override
 	public PathNodeType getPathNodeType(IBlockReader blockaccessIn, int x, int y, int z) {
-		PathNodeType pathnodeabove = this.getPathNodeTypeRaw(blockaccessIn, x, y, z);
-		if (pathnodeabove == PathNodeType.OPEN && y >= 1) {
-			BlockState blockstate = blockaccessIn.getBlockState(new BlockPos(x, y - 1, z));
-			Block block = blockstate.getBlock();
-			PathNodeType pathnodebelow = this.getPathNodeTypeRaw(blockaccessIn, x, y - 1, z);
-			pathnodeabove = pathnodebelow != PathNodeType.WALKABLE && pathnodebelow != PathNodeType.OPEN && pathnodebelow != PathNodeType.WATER && pathnodebelow != PathNodeType.LAVA ? PathNodeType.WALKABLE : PathNodeType.OPEN;
+		PathNodeType pathNodeAbove = this.getPathNodeTypeRaw(blockaccessIn, x, y, z);
+		if (pathNodeAbove == PathNodeType.OPEN && y >= 1) {
+			BlockState blockStateBelow = blockaccessIn.getBlockState(new BlockPos(x, y - 1, z));
+			Block blockBelow = blockStateBelow.getBlock();
+			PathNodeType pathNodeBelow = this.getPathNodeTypeRaw(blockaccessIn, x, y - 1, z);
+			pathNodeAbove = pathNodeBelow != PathNodeType.WALKABLE && pathNodeBelow != PathNodeType.OPEN && pathNodeBelow != PathNodeType.WATER && pathNodeBelow != PathNodeType.LAVA ? PathNodeType.WALKABLE : PathNodeType.OPEN;
 
-			if (pathnodebelow == PathNodeType.DAMAGE_FIRE) {
-				pathnodeabove = PathNodeType.DAMAGE_FIRE;
+			if (pathNodeBelow == PathNodeType.DAMAGE_FIRE) {
+				pathNodeAbove = PathNodeType.DAMAGE_FIRE;
 			}
 
-			if (pathnodebelow == PathNodeType.DAMAGE_CACTUS) {
-				pathnodeabove = PathNodeType.DAMAGE_CACTUS;
+			if (pathNodeBelow == PathNodeType.DAMAGE_CACTUS) {
+				pathNodeAbove = PathNodeType.DAMAGE_CACTUS;
 			}
 
-			if (pathnodebelow == PathNodeType.DAMAGE_OTHER) {
-				pathnodeabove = PathNodeType.DAMAGE_OTHER;
+			if (pathNodeBelow == PathNodeType.DAMAGE_OTHER) {
+				pathNodeAbove = PathNodeType.DAMAGE_OTHER;
 			}
 
-			if (pathnodebelow == PathNodeType.DANGER_OTHER) {
-				pathnodeabove = PathNodeType.DANGER_OTHER;
+			if (pathNodeBelow == PathNodeType.DANGER_OTHER) {
+				pathNodeAbove = PathNodeType.DANGER_OTHER;
 			}
 
-			if (block instanceof TrapDoorBlock && blockstate.get(TrapDoorBlock.OPEN)) {
-				pathnodeabove = PathNodeType.BLOCKED;
+			if (blockBelow instanceof TrapDoorBlock && blockStateBelow.get(TrapDoorBlock.OPEN) || blockBelow instanceof FenceGateBlock && blockStateBelow.get(FenceGateBlock.OPEN)) {
+				pathNodeAbove = PathNodeType.BLOCKED;
 			}
 		}
 
-		pathnodeabove = this.checkNeighborBlocks(blockaccessIn, x, y, z, pathnodeabove);
-		return pathnodeabove;
+		pathNodeAbove = this.checkNeighborBlocks(blockaccessIn, x, y, z, pathNodeAbove);
+		return pathNodeAbove;
 	}
 
 	@Override

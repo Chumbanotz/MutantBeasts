@@ -5,14 +5,13 @@ import org.apache.logging.log4j.Logger;
 
 import chumbanotz.mutantbeasts.capability.ISummonable;
 import chumbanotz.mutantbeasts.capability.SummonableCapability;
-import chumbanotz.mutantbeasts.client.renderer.entity.EntityRenderers;
+import chumbanotz.mutantbeasts.client.renderer.entity.MBEntityRenderers;
 import chumbanotz.mutantbeasts.item.MBItems;
 import chumbanotz.mutantbeasts.packet.PacketHandler;
 import net.minecraft.entity.Entity;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.capabilities.CapabilityManager;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
@@ -31,7 +30,6 @@ public class MutantBeasts {
 	};
 
 	public MutantBeasts() {
-		MinecraftForge.EVENT_BUS.register(this);
 		FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onCommonSetup);
 		FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onClientSetup);
 	}
@@ -42,7 +40,7 @@ public class MutantBeasts {
 	}
 
 	private void onClientSetup(FMLClientSetupEvent event) {
-		EntityRenderers.register();
+		MBEntityRenderers.register();
 	}
 
 	public static ResourceLocation createResource(String name) {

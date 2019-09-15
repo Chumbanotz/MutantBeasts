@@ -21,7 +21,7 @@ public class MutantCreeperModel extends EntityModel<MutantCreeperEntity> {
 	public RendererModel blleg;
 	public RendererModel brforeleg;
 	public RendererModel blforeleg;
-	public static final float PI = (float)Math.PI;
+	public static final float PI = 3.1415927F;
 
 	public MutantCreeperModel() {
 		this(0.0F);

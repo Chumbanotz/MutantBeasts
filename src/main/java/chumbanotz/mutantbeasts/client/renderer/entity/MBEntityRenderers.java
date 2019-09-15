@@ -14,16 +14,16 @@ import net.minecraft.entity.Entity;
 import net.minecraftforge.fml.client.registry.IRenderFactory;
 import net.minecraftforge.fml.client.registry.RenderingRegistry;
 
-public class EntityRenderers {
+public class MBEntityRenderers {
 	public static void register() {
 		render(CreeperMinionEntity.class, CreeperMinionRenderer::new);
 		render(EndermanCloneEntity.class, EndermanCloneRenderer::new);
-		render(MutantSnowGolemBlockEntity.class, MutantSnowGolemBlockRenderer::new);
+		render(MutantArrowEntity.class, MutantArrowRenderer::new);
 		render(MutantCreeperEntity.class, MutantCreeperRenderer::new);
 		render(MutantSkeletonEntity.class, MutantSkeletonRenderer::new);
-		render(MutantArrowEntity.class, MutantArrowRenderer::new);
 		render(MutantSkeletonPartEntity.class, MutantSkeletonPartRenderer::new);
 		render(MutantSnowGolemEntity.class, MutantSnowGolemRenderer::new);
+		render(MutantSnowGolemBlockEntity.class, MutantSnowGolemBlockRenderer::new);
 		render(MutantZombieEntity.class, MutantZombieRenderer::new);
 		render(SpiderPigEntity.class, SpiderPigRenderer::new);
 	}

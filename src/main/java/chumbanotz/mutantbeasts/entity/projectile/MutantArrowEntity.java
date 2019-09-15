@@ -12,6 +12,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.AbstractArrowEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.nbt.ListNBT;
 import net.minecraft.network.IPacket;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
@@ -285,6 +286,9 @@ public class MutantArrowEntity extends AbstractArrowEntity {
 
 	@Override
 	public void writeAdditional(CompoundNBT compound) {
+		compound.put("Target", this.newDoubleNBTList(this.getTargetX(), this.getTargetY(), this.getTargetZ()));
+		compound.putFloat("Speed", this.getSpeed());
+		compound.putInt("Clones", this.getClones());
 		if (this.shootingEntity != null) {
 			compound.putUniqueId("OwnerUUID", this.shootingEntity);
 		}
@@ -292,6 +296,15 @@ public class MutantArrowEntity extends AbstractArrowEntity {
 
 	@Override
 	public void readAdditional(CompoundNBT compound) {
+		this.setSpeed(compound.getFloat("Speed"));
+		this.setClones(compound.getInt("Clones"));
+		if (compound.contains("Target", 9) && compound.getList("Target", 6).size() == 3) {
+			ListNBT listnbt1 = compound.getList("Target", 6);
+			this.setTargetX(listnbt1.getDouble(0));
+			this.setTargetY(listnbt1.getDouble(1));
+			this.setTargetZ(listnbt1.getDouble(2));
+		}
+
 		if (compound.hasUniqueId("OwnerUUID")) {
 			this.shootingEntity = compound.getUniqueId("OwnerUUID");
 		}

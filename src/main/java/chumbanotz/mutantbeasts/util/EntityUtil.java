@@ -19,9 +19,11 @@ import net.minecraft.entity.monster.MonsterEntity;
 import net.minecraft.entity.passive.CatEntity;
 import net.minecraft.entity.passive.OcelotEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.entity.projectile.AbstractArrowEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
+import net.minecraft.network.play.server.SEntityVelocityPacket;
 import net.minecraft.particles.IParticleData;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.util.DamageSource;
@@ -81,11 +83,18 @@ public final class EntityUtil {
 		}
 	}
 
-	public static void disableShield(PlayerEntity playerEntity, int ticks) {
-		if (playerEntity.isActiveItemStackBlocking()) {
-			playerEntity.getCooldownTracker().setCooldown(playerEntity.getActiveItemStack().getItem(), ticks);
-			playerEntity.resetActiveHand();
-			playerEntity.world.setEntityState(playerEntity, (byte)30);
+	public static void disableShield(LivingEntity livingEntity, DamageSource damageSource, int ticks) {
+		if (livingEntity instanceof PlayerEntity && canBlockDamageSource(livingEntity, damageSource)) {
+			((PlayerEntity)livingEntity).getCooldownTracker().setCooldown(livingEntity.getActiveItemStack().getItem(), ticks);
+			livingEntity.resetActiveHand();
+			livingEntity.world.setEntityState(livingEntity, (byte)30);
+		}
+	}
+
+	public static void sendVelocityPacket(Entity entity) {
+		if (entity instanceof ServerPlayerEntity && entity.velocityChanged) {
+			((ServerPlayerEntity)entity).connection.sendPacket(new SEntityVelocityPacket(entity));
+			entity.velocityChanged = false;
 		}
 	}
 

@@ -2,8 +2,8 @@ package chumbanotz.mutantbeasts.entity.mutant;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
+import chumbanotz.mutantbeasts.client.animationapi.IAnimatedEntity;
 import chumbanotz.mutantbeasts.util.EntityUtil;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
@@ -15,8 +15,15 @@ import net.minecraft.entity.Pose;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.ai.attributes.IAttributeInstance;
+import net.minecraft.entity.ai.goal.HurtByTargetGoal;
+import net.minecraft.entity.ai.goal.LookAtGoal;
+import net.minecraft.entity.ai.goal.LookRandomlyGoal;
+import net.minecraft.entity.ai.goal.MeleeAttackGoal;
+import net.minecraft.entity.ai.goal.SwimGoal;
+import net.minecraft.entity.ai.goal.WaterAvoidingRandomWalkingGoal;
 import net.minecraft.entity.boss.dragon.EnderDragonEntity;
-import net.minecraft.entity.monster.EndermanEntity;
+import net.minecraft.entity.monster.MonsterEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.particles.ParticleTypes;
 import net.minecraft.potion.Effects;
@@ -30,7 +37,7 @@ import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
-public class MutantEndermanEntity extends EndermanEntity {
+public class MutantEndermanEntity extends MonsterEntity implements IAnimatedEntity {
 	public int currentAttackID;
 	public int animTick;
 	public int hasTargetTick = this.preTargetTick = 0;
@@ -55,7 +62,7 @@ public class MutantEndermanEntity extends EndermanEntity {
 	private int dirty = -1;
 	private long preTargetA;
 	private long preTargetB;
-	//private static ArrayList<Integer> carriableBlocks = new ArrayList<>();
+	// private static ArrayList<Integer> carriableBlocks = new ArrayList<>();
 
 	public MutantEndermanEntity(EntityType<? extends MutantEndermanEntity> type, World worldIn) {
 		super(type, worldIn);
@@ -66,6 +73,12 @@ public class MutantEndermanEntity extends EndermanEntity {
 
 	@Override
 	protected void registerGoals() {
+		this.goalSelector.addGoal(0, new SwimGoal(this));
+		this.goalSelector.addGoal(2, new MeleeAttackGoal(this, 1.0D, false));
+		this.goalSelector.addGoal(7, new WaterAvoidingRandomWalkingGoal(this, 1.0D, 0.0F));
+		this.goalSelector.addGoal(8, new LookAtGoal(this, PlayerEntity.class, 8.0F));
+		this.goalSelector.addGoal(8, new LookRandomlyGoal(this));
+		this.targetSelector.addGoal(2, new HurtByTargetGoal(this));
 	}
 
 	@Override
@@ -106,9 +119,29 @@ public class MutantEndermanEntity extends EndermanEntity {
 	}
 
 	@Override
+	public int getAnimationID() {
+		return this.currentAttackID;
+	}
+
+	@Override
+	public void setAnimationID(int id) {
+		this.currentAttackID = id;
+	}
+
+	@Override
+	public int getAnimationTick() {
+		return this.animTick;
+	}
+
+	@Override
+	public void setAnimationTick(int tick) {
+		this.animTick = tick;
+	}
+
+	@Override
 	public void setAttackTarget(LivingEntity entitylivingbaseIn) {
-		this.getAttribute(SharedMonsterAttributes.FOLLOW_RANGE).removeModifier(UUID.fromString("020E0DFB-87AE-4653-9556-831010E291A0"));
 		super.setAttackTarget(entitylivingbaseIn);
+		this.setAggroed(entitylivingbaseIn != null);
 	}
 
 	protected void updateTargetTick() {
@@ -185,15 +218,6 @@ public class MutantEndermanEntity extends EndermanEntity {
 				}
 			}
 		}
-	}
-
-	@Override
-	public void playEndermanSound() {
-	}
-
-	@Override
-	public boolean isScreaming() {
-		return false;
 	}
 
 	@Override
@@ -325,7 +349,7 @@ public class MutantEndermanEntity extends EndermanEntity {
 		if (list.isEmpty()) {
 			return -1;
 		} else {
-			return (Integer)list.get(this.rand.nextInt(list.size()));
+			return list.get(this.rand.nextInt(list.size()));
 		}
 	}
 
@@ -346,9 +370,9 @@ public class MutantEndermanEntity extends EndermanEntity {
 		if (outer.isEmpty() && inner.isEmpty()) {
 			return -1;
 		} else if (!outer.isEmpty()) {
-			return (Integer)outer.get(this.rand.nextInt(outer.size()));
+			return outer.get(this.rand.nextInt(outer.size()));
 		} else {
-			return (Integer)inner.get(this.rand.nextInt(inner.size()));
+			return inner.get(this.rand.nextInt(inner.size()));
 		}
 	}
 
