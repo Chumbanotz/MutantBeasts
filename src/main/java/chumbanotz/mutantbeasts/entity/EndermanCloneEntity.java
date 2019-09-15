@@ -9,7 +9,6 @@ import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.monster.EndermanEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.DamageSource;
-import net.minecraft.util.IndirectEntityDamageSource;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.world.World;
 
@@ -51,37 +50,9 @@ public class EndermanCloneEntity extends EndermanEntity {
 	}
 
 	@Override
-	public boolean attackEntityFrom(DamageSource source, float amount) {
-		if (this.isInvulnerableTo(source)) {
-			return false;
-		} else if (!(source instanceof IndirectEntityDamageSource) && source != DamageSource.FIREWORKS) {
-			if (amount <= 0.0F && this.rand.nextInt(10) != 0) {
-				this.teleportRandomly();
-			}
-
-			if (!this.world.isRemote) {
-				if (amount > 0.0F) {
-					if (source.getTrueSource() instanceof PlayerEntity) {
-						this.recentlyHit = 100;
-						this.attackingPlayer = (PlayerEntity)source.getTrueSource();
-					}
-
-					this.remove();
-					this.onDeath(source);
-					this.deathTime = 19;
-				}
-			}
-
-			return true;
-		} else {
-			for (int i = 0; i < 64; ++i) {
-				if (this.teleportRandomly()) {
-					return true;
-				}
-			}
-
-			return false;
-		}
+	public void onDeath(DamageSource cause) {
+		super.onDeath(cause);
+		this.deathTime = 19;
 	}
 
 	@Override

@@ -91,6 +91,7 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 		this.leg2.addChild(this.foreleg2);
 	}
 
+	@Override
 	public void render(MutantEndermanEntity entity, float f, float f1, float f2, float f3, float f4, float f5) {
 		this.setAngles();
 		this.animate(entity, f, f1, f2, f3, f4, f5);
@@ -372,7 +373,6 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 			arm.foreFinger[1].rotateAngleZ += -f * 0.5F * (float)right;
 			arm.foreFinger[2].rotateAngleZ += -f * 0.5F * (float)right;
 		}
-
 	}
 
 	private void animateThrowBlock(int fullTick, int armID) {
@@ -477,7 +477,6 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 				this.lowerLeftArm.arm.rotateAngleX += -f * 1.5F;
 			}
 		}
-
 	}
 
 	private void animateScream(int fullTick) {
@@ -663,7 +662,6 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 			this.leg1.rotateAngleZ += f * 0.1F;
 			this.leg2.rotateAngleZ += -f * 0.1F;
 		}
-
 	}
 
 	private void animateTeleSmash(int fullTick) {

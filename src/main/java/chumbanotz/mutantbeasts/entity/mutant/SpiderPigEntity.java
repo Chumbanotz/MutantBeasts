@@ -515,7 +515,7 @@ public class SpiderPigEntity extends TameableEntity {
 	}
 
 	static class BlockCoord extends BlockPos {
-		public int timeLeft;
+		int timeLeft;
 
 		public BlockCoord(int x, int y, int z) {
 			super(x, y, z);

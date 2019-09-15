@@ -10,6 +10,7 @@ import chumbanotz.mutantbeasts.RegistryHandler;
 import chumbanotz.mutantbeasts.entity.CreeperMinionEntity;
 import chumbanotz.mutantbeasts.entity.EndermanCloneEntity;
 import chumbanotz.mutantbeasts.entity.mutant.MutantCreeperEntity;
+import chumbanotz.mutantbeasts.entity.mutant.MutantEndermanEntity;
 import chumbanotz.mutantbeasts.entity.mutant.MutantSkeletonEntity;
 import chumbanotz.mutantbeasts.entity.mutant.MutantSkeletonPartEntity;
 import chumbanotz.mutantbeasts.entity.mutant.MutantSnowGolemEntity;
@@ -54,6 +55,7 @@ public final class EntityEntry<T extends Entity> {
 		add("creeper_minion", create(CreeperMinionEntity::new, EntityClassification.MISC).size(0.6F, 1.7F), 894731, 12040119);
 		add("enderman_clone", create(EndermanCloneEntity::new, EntityClassification.MONSTER).size(0.6F, 2.9F));
 		add("mutant_creeper", create(MutantCreeperEntity::new, EntityClassification.MONSTER).size(1.4F, 2.7F), 5349438, 11013646);
+		add("mutant_enderman", create(MutantEndermanEntity::new, EntityClassification.MONSTER).size(1.2F, 4.8F), 1447446, 8860812);
 		add("mutant_skeleton", create(MutantSkeletonEntity::new, EntityClassification.MONSTER).size(1.2F, 3.6F), 12698049, 6310217);
 		add("mutant_skeleton_arrow", create(EntityClassification.MISC).setCustomClientFactory(MutantArrowEntity::new).setTrackingRange(80).setUpdateInterval(3));
 		add("mutant_skeleton_part", create(EntityClassification.MISC).setCustomClientFactory(MutantSkeletonPartEntity::new).setTrackingRange(64).setUpdateInterval(10).size(0.7F, 0.7F));

@@ -3,6 +3,7 @@ package chumbanotz.mutantbeasts.client.renderer.entity;
 import chumbanotz.mutantbeasts.entity.CreeperMinionEntity;
 import chumbanotz.mutantbeasts.entity.EndermanCloneEntity;
 import chumbanotz.mutantbeasts.entity.mutant.MutantCreeperEntity;
+import chumbanotz.mutantbeasts.entity.mutant.MutantEndermanEntity;
 import chumbanotz.mutantbeasts.entity.mutant.MutantSkeletonEntity;
 import chumbanotz.mutantbeasts.entity.mutant.MutantSkeletonPartEntity;
 import chumbanotz.mutantbeasts.entity.mutant.MutantSnowGolemEntity;
@@ -20,6 +21,7 @@ public class MBEntityRenderers {
 		render(EndermanCloneEntity.class, EndermanCloneRenderer::new);
 		render(MutantArrowEntity.class, MutantArrowRenderer::new);
 		render(MutantCreeperEntity.class, MutantCreeperRenderer::new);
+		render(MutantEndermanEntity.class, MutantEndermanRenderer::new);
 		render(MutantSkeletonEntity.class, MutantSkeletonRenderer::new);
 		render(MutantSkeletonPartEntity.class, MutantSkeletonPartRenderer::new);
 		render(MutantSnowGolemEntity.class, MutantSnowGolemRenderer::new);

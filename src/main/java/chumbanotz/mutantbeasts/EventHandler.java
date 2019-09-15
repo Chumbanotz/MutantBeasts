@@ -87,14 +87,6 @@ public class EventHandler {
 	}
 
 	@SubscribeEvent
-	public static void onLivingDeathEvent(LivingDeathEvent event) {
-		LivingEntity livingEntity = event.getEntityLiving();
-		if (SummonableCapability.isEntityEligible(livingEntity.getType()) && SummonableCapability.getFor((MobEntity)livingEntity).isPresent()) {
-			SummonableCapability.getFor((MobEntity)livingEntity).invalidate();
-		}
-	}
-
-	@SubscribeEvent
 	public static void onLivingUpdateEvent(LivingEvent.LivingUpdateEvent event) {
 		LivingEntity livingEntity = event.getEntityLiving();
 		if (livingEntity instanceof PlayerEntity && HulkHammerItem.chunkList.keySet().contains(livingEntity.getUniqueID())) {
@@ -145,6 +137,14 @@ public class EventHandler {
 					HulkHammerItem.chunkList.remove(name);
 				}
 			}
+		}
+	}
+
+	@SubscribeEvent
+	public static void onLivingDeathEvent(LivingDeathEvent event) {
+		LivingEntity livingEntity = event.getEntityLiving();
+		if (SummonableCapability.isEntityEligible(livingEntity.getType()) && SummonableCapability.getFor((MobEntity)livingEntity).isPresent()) {
+			SummonableCapability.getFor((MobEntity)livingEntity).invalidate();
 		}
 	}
 }

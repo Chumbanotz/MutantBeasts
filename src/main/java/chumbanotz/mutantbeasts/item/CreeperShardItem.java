@@ -85,7 +85,7 @@ public class CreeperShardItem extends Item {
 
 		playerIn.getCooldownTracker().setCooldown(this, 60);
 		playerIn.swingArm(handIn);
-		playerIn.setActiveHand(handIn);
+		//playerIn.setActiveHand(handIn);
 		playerIn.addStat(Stats.ITEM_USED.get(this));
 		return new ActionResult<>(ActionResultType.SUCCESS, stack);
 	}

@@ -116,19 +116,19 @@
 		"sounds": [
 			{
 				"name": "mutantbeasts:entity/mutant_zombie/roar1",
-				"attenuation_distance": 16
+				"attenuation_distance": 8
 			},
 			{
 				"name": "mutantbeasts:entity/mutant_zombie/roar2",
-				"attenuation_distance": 16
+				"attenuation_distance": 8
 			},
 			{
 				"name": "mutantbeasts:entity/mutant_zombie/roarslow1",
-				"attenuation_distance": 16
+				"attenuation_distance": 8
 			},
 			{
 				"name": "mutantbeasts:entity/mutant_zombie/roarslow2",
-				"attenuation_distance": 16
+				"attenuation_distance": 8
 			}
 		],
 		"subtitle": "subtitles.mutantbeasts.entity.mutant_zombie.roar"

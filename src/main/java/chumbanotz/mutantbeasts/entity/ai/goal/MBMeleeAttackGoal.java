@@ -49,7 +49,6 @@ public class MBMeleeAttackGoal extends Goal {
 	@Override
 	public boolean shouldContinueExecuting() {
 		LivingEntity livingentity = this.attacker.getAttackTarget();
-
 		if (livingentity == null) {
 			return false;
 		} else if (!livingentity.isAlive()) {

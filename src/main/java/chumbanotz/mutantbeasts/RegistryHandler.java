@@ -22,7 +22,8 @@ public class RegistryHandler {
 				setRegistryName("chemical_x", new ChemicalXItem(new Item.Properties().group(main))),
 				setRegistryName("creeper_shard", new CreeperShardItem(new Item.Properties().group(main))),
 				setRegistryName("creeper_stats", new Item(new Item.Properties().maxStackSize(1).group(main))),
-				setRegistryName("hulk_hammer", new HulkHammerItem(new Item.Properties().group(main))));
+				setRegistryName("hulk_hammer", new HulkHammerItem(new Item.Properties().group(main)))
+				);
 
 		EntityEntry.construct();
 		EntityEntry.SPAWN_EGGS.forEach(event.getRegistry()::register);

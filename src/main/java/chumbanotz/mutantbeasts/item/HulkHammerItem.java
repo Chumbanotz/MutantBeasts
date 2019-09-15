@@ -17,6 +17,7 @@ import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.EquipmentSlotType;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.stats.Stats;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.ActionResultType;
 import net.minecraft.util.Hand;
@@ -24,6 +25,8 @@ import net.minecraft.util.SoundCategory;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.RayTraceContext.FluidMode;
+import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
@@ -51,27 +54,32 @@ public class HulkHammerItem extends Item {
 
 	@Override
 	public ActionResult<ItemStack> onItemRightClick(World worldIn, PlayerEntity playerIn, Hand handIn) {
-		if (!worldIn.isRemote) {
-			List<ZombieChunk> list = new ArrayList<>();
-			float temp = playerIn.rotationPitch;
-			playerIn.rotationPitch = 0.0F;
-			Vec3d vec = playerIn.getLookVec();
-			playerIn.rotationPitch = temp;
-			int x = MathHelper.floor(playerIn.posX + vec.x * 1.5D);
-			int y = MathHelper.floor(playerIn.getBoundingBox().minY);
-			int z = MathHelper.floor(playerIn.posZ + vec.z * 1.5D);
-			int x1 = MathHelper.floor(playerIn.posX + vec.x * 8.0D);
-			int z1 = MathHelper.floor(playerIn.posZ + vec.z * 8.0D);
-			ZombieChunk.addLinePositions(worldIn, list, x, z, x1, z1, y);
-			addChunkAttack(playerIn.getUniqueID(), list);
-		}
+		ItemStack heldItemStack = playerIn.getHeldItem(handIn);
+		if (rayTrace(worldIn, playerIn, FluidMode.ANY).getType() == RayTraceResult.Type.MISS) {
+			return new ActionResult<>(ActionResultType.FAIL, heldItemStack);
+		} else {
+			if (!worldIn.isRemote) {
+				List<ZombieChunk> list = new ArrayList<>();
+				float temp = playerIn.rotationPitch;
+				playerIn.rotationPitch = 0.0F;
+				Vec3d vec = playerIn.getLookVec();
+				playerIn.rotationPitch = temp;
+				int x = MathHelper.floor(playerIn.posX + vec.x * 1.5D);
+				int y = MathHelper.floor(playerIn.getBoundingBox().minY);
+				int z = MathHelper.floor(playerIn.posZ + vec.z * 1.5D);
+				int x1 = MathHelper.floor(playerIn.posX + vec.x * 8.0D);
+				int z1 = MathHelper.floor(playerIn.posZ + vec.z * 8.0D);
+				ZombieChunk.addLinePositions(worldIn, list, x, z, x1, z1, y);
+				addChunkAttack(playerIn.getUniqueID(), list);
+			}
 
-		worldIn.playSound(playerIn, playerIn.getPosition(), SoundEvents.ENTITY_GENERIC_EXPLODE, SoundCategory.BLOCKS, 0.8F, 0.8F + playerIn.getRNG().nextFloat() * 0.4F);
-		playerIn.getCooldownTracker().setCooldown(this, 30);
-		playerIn.swingArm(handIn);
-		playerIn.setActiveHand(handIn);
-		playerIn.getHeldItem(handIn).damageItem(1, playerIn, e -> e.sendBreakAnimation(handIn));
-		return new ActionResult<>(ActionResultType.SUCCESS, playerIn.getHeldItem(handIn));
+			worldIn.playSound(playerIn, playerIn.getPosition(), SoundEvents.ENTITY_GENERIC_EXPLODE, SoundCategory.BLOCKS, 0.8F, 0.8F + playerIn.getRNG().nextFloat() * 0.4F);
+			playerIn.getCooldownTracker().setCooldown(this, 30);
+			playerIn.swingArm(handIn);
+			playerIn.addStat(Stats.ITEM_USED.get(this));
+			heldItemStack.damageItem(1, playerIn, e -> e.sendBreakAnimation(handIn));
+			return new ActionResult<>(ActionResultType.SUCCESS, heldItemStack);
+		}
 	}
 
 	@Override

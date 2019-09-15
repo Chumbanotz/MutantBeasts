@@ -70,8 +70,8 @@ public class CreeperMinionEntity extends CreeperEntity {
 	private int lastActiveTime;
 	private int timeSinceIgnited;
 	private int fuseTime = 30;
-	private AvoidEntityGoal<AnimalEntity> avoidEntityGoal = new AvoidEntityGoal<>(this, AnimalEntity.class, 6.0F, 1.0D, 1.2D, EntityUtil::isMobFeline);
-	private NearestAttackableTargetGoal<PlayerEntity> nearestAttackablePlayerGoal = new NearestAttackableTargetGoal<>(this, PlayerEntity.class, true);
+	private final AvoidEntityGoal<AnimalEntity> avoidEntityGoal = new AvoidEntityGoal<>(this, AnimalEntity.class, 6.0F, 1.0D, 1.2D, EntityUtil::isMobFeline);
+	private final NearestAttackableTargetGoal<PlayerEntity> nearestAttackablePlayerGoal = new NearestAttackableTargetGoal<>(this, PlayerEntity.class, true);
 
 	public CreeperMinionEntity(EntityType<? extends CreeperMinionEntity> type, World worldIn) {
 		super(type, worldIn);
