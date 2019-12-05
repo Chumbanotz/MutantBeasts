@@ -56,10 +56,7 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
 @EventBusSubscriber(modid = MutantBeasts.MOD_ID)
 public class EventHandler {
-	// private static final float OLD_HEIGHT_OFFSET = 0.6F;
-	// private static final float OLD_WIDTH_OFFSET = 0.3F;
-	// private static final float OLD_EYE_HEIGHT_OFFSET = 0.9F;
-	// data get entity @e[type=!minecraft:player,limit=1,distance=..5]
+	//data get entity @e[type=!minecraft:player,limit=1,distance=..5]
 	@SubscribeEvent
 	public static void onAttachEntityCapability(AttachCapabilitiesEvent<Entity> event) {
 		if (SummonableCapability.isEntityEligible(event.getObject().getType())) {

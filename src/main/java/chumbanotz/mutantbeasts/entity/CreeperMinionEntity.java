@@ -125,13 +125,11 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 		UUID uuid = this.getOwnerId();
 		if (uuid == null) {
 			return null;
+		} else if (this.world.getPlayerByUuid(uuid) != null) {
+			return this.world.getPlayerByUuid(uuid);
 		} else {
-			Entity entity = this.world.getPlayerByUuid(uuid);
-			if (entity == null && this.world instanceof ServerWorld) {
-				entity = ((ServerWorld)this.world).getEntityByUuid(uuid);
-			}
-
-			return entity instanceof LivingEntity ? (LivingEntity)entity : null;
+			Entity entity = this.world instanceof ServerWorld ? ((ServerWorld)this.world).getEntityByUuid(uuid) : null;
+			return entity != null && entity instanceof LivingEntity ? (LivingEntity)entity : null;
 		}
 	}
 
@@ -272,8 +270,6 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 			if (this.getBrightness() > 0.5F) {
 				this.idleTime += 2;
 			}
-		} else if (this.getOwner() == null || !(this.getOwner() instanceof PlayerEntity)) {
-			this.setTamed(false);
 		}
 
 		if (this.isAlive()) {
@@ -362,13 +358,13 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 					if (this.canExplodeContinuously()) {
 						float explosionRadius = this.getExplosionRadius();
 						if (explosionRadius < 4.0F) {
-							this.forcedAgeTimer += 15;
+							this.forcedAgeTimer += 10;
 							this.setExplosionRadius(explosionRadius + 0.11F);
 							itemstack.shrink(1);
 							return true;
 						}
 					} else {
-						this.forcedAgeTimer += 30;
+						this.forcedAgeTimer += 15;
 						this.setCanExplodeContinuously(true);
 						itemstack.shrink(1);
 						return true;
@@ -453,7 +449,7 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 
 	@Override
 	public boolean canDespawn(double distanceToClosestPlayer) {
-		return !this.isTamed() && this.getOwner() == null;
+		return !this.isTamed();
 	}
 
 	@Override
@@ -491,6 +487,7 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 	@Override
 	public void writeAdditional(CompoundNBT compound) {
 		super.writeAdditional(compound);
+		compound.putBoolean("Tamed", this.isTamed());
 		compound.putBoolean("ExplodesContinuously", this.canExplodeContinuously());
 		compound.putBoolean("DestroysBlocks", this.canDestroyBlocks());
 		compound.putBoolean("CanRideOnShoulder", this.canRideOnShoulder());
@@ -514,6 +511,7 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 	@Override
 	public void readAdditional(CompoundNBT compound) {
 		super.readAdditional(compound);
+		this.setTamed(compound.getBoolean("Tamed"));
 		this.setCanExplodeContinuously(compound.getBoolean("ExplodesContinuously"));
 		this.setDestroyBlocks(compound.getBoolean("DestroysBlocks"));
 		this.setCanRideOnShoulder(compound.getBoolean("CanRideOnShoulder"));
