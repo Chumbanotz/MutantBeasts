@@ -1,0 +1,19 @@
+{
+	"type": "minecraft:crafting_shaped",
+	"pattern": [
+		" I ",
+		"ISI",
+		" I "
+	],
+	"key": {
+		"I": {
+			"item": "minecraft:iron_ingot"
+		},
+		"S": {
+			"item": "mutantbeasts:creeper_shard"
+		}
+	},
+	"result": {
+		"item": "mutantbeasts:creeper_minion_tracker"
+	}
+}

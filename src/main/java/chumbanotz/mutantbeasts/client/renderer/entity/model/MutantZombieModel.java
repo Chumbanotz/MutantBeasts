@@ -9,20 +9,20 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 
 @OnlyIn(Dist.CLIENT)
 public class MutantZombieModel extends EntityModel<MutantZombieEntity> {
-	public RendererModel pelvis;
-	public RendererModel waist;
-	public RendererModel chest;
-	public RendererModel head;
-	public RendererModel villagerHead;
-	public RendererModel arm1;
-	public RendererModel arm2;
-	public RendererModel forearm1;
-	public RendererModel forearm2;
-	public RendererModel leg1;
-	public RendererModel leg2;
-	public RendererModel foreleg1;
-	public RendererModel foreleg2;
-	public float partialTick;
+	private final RendererModel pelvis;
+	private final RendererModel waist;
+	private final RendererModel chest;
+	private final RendererModel head;
+//	private final RendererModel villagerHead;
+	private final RendererModel arm1;
+	private final RendererModel arm2;
+	private final RendererModel forearm1;
+	private final RendererModel forearm2;
+	private final RendererModel leg1;
+	private final RendererModel leg2;
+	private final RendererModel foreleg1;
+	private final RendererModel foreleg2;
+	private float partialTick;
 
 	public MutantZombieModel() {
 		this.textureWidth = 128;
@@ -40,11 +40,11 @@ public class MutantZombieModel extends EntityModel<MutantZombieEntity> {
 		this.head.addBox(-4.0F, -8.0F, -4.0F, 8, 8, 8);
 		this.head.setRotationPoint(0.0F, -11.0F, -4.0F);
 		this.chest.addChild(this.head);
-		this.villagerHead = new RendererModel(this);
-		this.villagerHead.setTextureOffset(0, 72).addBox(-4.0F, -10.0F, -4.0F, 8, 10, 8);
-		this.villagerHead.setTextureOffset(24, 72).addBox(-1.0F, -3.0F, -6.0F, 2, 4, 2);
-		this.villagerHead.setRotationPoint(0.0F, -11.0F, -4.0F);
-		this.chest.addChild(this.villagerHead);
+//		this.villagerHead = new RendererModel(this);
+//		this.villagerHead.setTextureOffset(0, 72).addBox(-4.0F, -10.0F, -4.0F, 8, 10, 8);
+//		this.villagerHead.setTextureOffset(24, 72).addBox(-1.0F, -3.0F, -6.0F, 2, 4, 2);
+//		this.villagerHead.setRotationPoint(0.0F, -11.0F, -4.0F);
+//		this.chest.addChild(this.villagerHead);
 		this.arm1 = new RendererModel(this, 104, 0);
 		this.arm1.addBox(-3.0F, 0.0F, -3.0F, 6, 16, 6);
 		this.arm1.setRotationPoint(-11.0F, -8.0F, 2.0F);
@@ -87,8 +87,6 @@ public class MutantZombieModel extends EntityModel<MutantZombieEntity> {
 	public void render(MutantZombieEntity entity, float f, float f1, float f2, float f3, float f4, float f5) {
 		this.setAngles();
 		this.animate(entity, f, f1, f2, f3, f4, f5);
-		this.head.showModel = true;
-		this.villagerHead.showModel = false;
 		this.pelvis.render(f5);
 	}
 
@@ -123,27 +121,27 @@ public class MutantZombieModel extends EntityModel<MutantZombieEntity> {
 		float walkAnim2 = -(MathHelper.sin((f + 0.7F) * 0.4F) - 0.7F) * f1;
 		float walkAnim = MathHelper.sin(f * 0.4F) * f1;
 		float breatheAnim = MathHelper.sin(f2 * 0.1F);
-		float faceYaw = f3 * 3.1415927F / 180.0F;
-		float facePitch = f4 * 3.1415927F / 180.0F;
+		float faceYaw = f3 * (float)Math.PI / 180.0F;
+		float facePitch = f4 * (float)Math.PI / 180.0F;
 		float scale;
 
-		if (zombie.downTime <= 0) {
-			if (zombie.getAnimationID() == 1) {
-				this.animateMelee(zombie.getAnimationTick());
+		if (zombie.deathTime <= 0) {
+			if (zombie.getAttackId() == MutantZombieEntity.MELEE_ATTACK) {
+				this.animateMelee(zombie.getAttackTick());
 			}
 
-			if (zombie.getAnimationID() == 2) {
-				this.animateRoar(zombie.getAnimationTick());
-				scale = 1.0F - MathHelper.clamp((float)zombie.getAnimationTick() / 6.0F, 0.0F, 1.0F);
+			if (zombie.getAttackId() == MutantZombieEntity.ROAR_ATTACK) {
+				this.animateRoar(zombie.getAttackTick());
+				scale = 1.0F - MathHelper.clamp((float)zombie.getAttackTick() / 6.0F, 0.0F, 1.0F);
 				walkAnim1 *= scale;
 				walkAnim2 *= scale;
 				walkAnim *= scale;
 				facePitch *= scale;
 			}
 
-			if (zombie.getAnimationID() == 3) {
+			if (zombie.getAttackId() == MutantZombieEntity.THROW_ATTACK) {
 				this.animateThrow(zombie);
-				scale = 1.0F - MathHelper.clamp((float)zombie.getAnimationTick() / 3.0F, 0.0F, 1.0F);
+				scale = 1.0F - MathHelper.clamp((float)zombie.getAttackTick() / 3.0F, 0.0F, 1.0F);
 				walkAnim1 *= scale;
 				walkAnim2 *= scale;
 				walkAnim *= scale;
@@ -151,7 +149,7 @@ public class MutantZombieModel extends EntityModel<MutantZombieEntity> {
 			}
 		} else {
 			this.animateDeath(zombie);
-			scale = 1.0F - MathHelper.clamp((float)zombie.downTime / 6.0F, 0.0F, 1.0F);
+			scale = 1.0F - MathHelper.clamp((float)zombie.deathTime / 6.0F, 0.0F, 1.0F);
 			walkAnim1 *= scale;
 			walkAnim2 *= scale;
 			walkAnim *= scale;
@@ -174,9 +172,9 @@ public class MutantZombieModel extends EntityModel<MutantZombieEntity> {
 		this.arm2.rotateAngleX += walkAnim * 0.6F;
 		this.leg1.rotateAngleX += walkAnim1 * 0.9F;
 		this.leg2.rotateAngleX += walkAnim2 * 0.9F;
-		this.villagerHead.rotateAngleX = this.head.rotateAngleX;
-		this.villagerHead.rotateAngleY = this.head.rotateAngleY;
-		this.villagerHead.rotateAngleZ = this.head.rotateAngleZ;
+//		this.villagerHead.rotateAngleX = this.head.rotateAngleX;
+//		this.villagerHead.rotateAngleY = this.head.rotateAngleY;
+//		this.villagerHead.rotateAngleZ = this.head.rotateAngleZ;
 	}
 
 	protected void animateMelee(int fullTick) {
@@ -188,20 +186,20 @@ public class MutantZombieModel extends EntityModel<MutantZombieEntity> {
 
 		if (fullTick < 8) {
 			tick = ((float)fullTick + this.partialTick) / 8.0F;
-			f = -MathHelper.sin(tick * 3.1415927F / 2.0F);
-			f1 = MathHelper.cos(tick * 3.1415927F / 2.0F);
+			f = -MathHelper.sin(tick * (float)Math.PI / 2.0F);
+			f1 = MathHelper.cos(tick * (float)Math.PI / 2.0F);
 			this.waist.rotateAngleX += f * 0.2F;
 			this.chest.rotateAngleX += f * 0.2F;
 			this.arm1.rotateAngleX += f * 2.3F;
-			this.arm1.rotateAngleZ += f1 * 3.1415927F / 8.0F;
+			this.arm1.rotateAngleZ += f1 * (float)Math.PI / 8.0F;
 			this.arm2.rotateAngleX += f * 2.3F;
-			this.arm2.rotateAngleZ -= f1 * 3.1415927F / 8.0F;
+			this.arm2.rotateAngleZ -= f1 * (float)Math.PI / 8.0F;
 			this.forearm1.rotateAngleX += f * 0.8F;
 			this.forearm2.rotateAngleX += f * 0.8F;
 		} else if (fullTick < 12) {
 			tick = ((float)(fullTick - 8) + this.partialTick) / 4.0F;
-			f = -MathHelper.cos(tick * 3.1415927F / 2.0F);
-			f1 = MathHelper.sin(tick * 3.1415927F / 2.0F);
+			f = -MathHelper.cos(tick * (float)Math.PI / 2.0F);
+			f1 = MathHelper.sin(tick * (float)Math.PI / 2.0F);
 			this.waist.rotateAngleX += f * 0.9F + 0.7F;
 			this.chest.rotateAngleX += f * 0.9F + 0.7F;
 			this.arm1.rotateAngleX += f * 0.2F - 2.1F;
@@ -221,7 +219,7 @@ public class MutantZombieModel extends EntityModel<MutantZombieEntity> {
 			this.forearm2.rotateAngleX += 0.2F;
 		} else if (fullTick < 24) {
 			tick = ((float)(fullTick - 16) + this.partialTick) / 8.0F;
-			f = MathHelper.cos(tick * 3.1415927F / 2.0F);
+			f = MathHelper.cos(tick * (float)Math.PI / 2.0F);
 			this.waist.rotateAngleX += f * 0.7F;
 			this.chest.rotateAngleX += f * 0.7F;
 			this.arm1.rotateAngleX -= f * 2.1F;
@@ -243,8 +241,8 @@ public class MutantZombieModel extends EntityModel<MutantZombieEntity> {
 
 		if (fullTick < 10) {
 			tick = ((float)fullTick + this.partialTick) / 10.0F;
-			f = MathHelper.sin(tick * 3.1415927F / 2.0F);
-			f1 = MathHelper.sin(tick * 3.1415927F * 3.1415927F / 8.0F);
+			f = MathHelper.sin(tick * (float)Math.PI / 2.0F);
+			f1 = MathHelper.sin(tick * (float)Math.PI * (float)Math.PI / 8.0F);
 			this.waist.rotateAngleX += f * 0.2F;
 			this.chest.rotateAngleX += f * 0.4F;
 			this.chest.rotateAngleY += f1 * 0.06F;
@@ -257,8 +255,8 @@ public class MutantZombieModel extends EntityModel<MutantZombieEntity> {
 			this.forearm2.rotateAngleX -= f * 0.8F;
 		} else if (fullTick < 15) {
 			tick = ((float)(fullTick - 10) + this.partialTick) / 5.0F;
-			f = MathHelper.cos(tick * 3.1415927F / 2.0F);
-			f1 = MathHelper.sin(tick * 3.1415927F / 2.0F);
+			f = MathHelper.cos(tick * (float)Math.PI / 2.0F);
+			f1 = MathHelper.sin(tick * (float)Math.PI / 2.0F);
 			this.waist.rotateAngleX += f * 0.39634955F - 0.19634955F;
 			this.chest.rotateAngleX += f * 0.6F - 0.2F;
 			this.head.rotateAngleX += f * 1.0F - 0.2F;
@@ -276,20 +274,20 @@ public class MutantZombieModel extends EntityModel<MutantZombieEntity> {
 			this.waist.rotateAngleX -= 0.19634955F;
 			this.chest.rotateAngleX -= 0.2F;
 			this.head.rotateAngleX -= 0.2F;
-			this.addRotation(this.arm1, 1.0F, 0.4F, 0.6F);
-			this.addRotation(this.arm2, 1.0F, -0.4F, -0.6F);
+			addRotation(this.arm1, 1.0F, 0.4F, 0.6F);
+			addRotation(this.arm2, 1.0F, -0.4F, -0.6F);
 			this.forearm1.rotateAngleX += 0.2F;
 			this.forearm2.rotateAngleX += 0.2F;
 			this.leg1.rotateAngleY += 0.3F;
 			this.leg2.rotateAngleY -= 0.3F;
 		} else if (fullTick < 90) {
 			tick = ((float)(fullTick - 75) + this.partialTick) / 15.0F;
-			f = MathHelper.cos(tick * 3.1415927F / 2.0F);
+			f = MathHelper.cos(tick * (float)Math.PI / 2.0F);
 			this.waist.rotateAngleX -= f * 0.69634956F - 0.5F;
 			this.chest.rotateAngleX -= f * 0.7F - 0.5F;
 			this.head.rotateAngleX -= f * 0.6F - 0.4F;
-			this.addRotation(this.arm1, f * 2.6F - 1.6F, f * 0.4F, f * 0.99269915F - 0.3926991F);
-			this.addRotation(this.arm2, f * 2.6F - 1.6F, -f * 0.4F, -f * 0.99269915F + 0.3926991F);
+			addRotation(this.arm1, f * 2.6F - 1.6F, f * 0.4F, f * 0.99269915F - 0.3926991F);
+			addRotation(this.arm2, f * 2.6F - 1.6F, -f * 0.4F, -f * 0.99269915F + 0.3926991F);
 			this.forearm1.rotateAngleX += f * -0.6F + 0.8F;
 			this.forearm2.rotateAngleX += f * -0.6F + 0.8F;
 			this.leg1.rotateAngleY += f * 0.3F;
@@ -298,26 +296,26 @@ public class MutantZombieModel extends EntityModel<MutantZombieEntity> {
 			this.waist.rotateAngleX += 0.5F;
 			this.chest.rotateAngleX += 0.5F;
 			this.head.rotateAngleX += 0.4F;
-			this.addRotation(this.arm1, -1.6F, 0.0F, -0.3926991F);
-			this.addRotation(this.arm2, -1.6F, 0.0F, 0.3926991F);
+			addRotation(this.arm1, -1.6F, 0.0F, -0.3926991F);
+			addRotation(this.arm2, -1.6F, 0.0F, 0.3926991F);
 			this.forearm1.rotateAngleX += 0.8F;
 			this.forearm2.rotateAngleX += 0.8F;
 		} else {
 			tick = ((float)(fullTick - 110) + this.partialTick) / 10.0F;
-			f = MathHelper.cos(tick * 3.1415927F / 2.0F);
+			f = MathHelper.cos(tick * (float)Math.PI / 2.0F);
 			this.waist.rotateAngleX += f * 0.5F;
 			this.chest.rotateAngleX += f * 0.5F;
 			this.head.rotateAngleX += f * 0.4F;
-			this.addRotation(this.arm1, f * -1.6F, 0.0F, f * -3.1415927F / 8.0F);
-			this.addRotation(this.arm2, f * -1.6F, 0.0F, f * 3.1415927F / 8.0F);
+			addRotation(this.arm1, f * -1.6F, 0.0F, f * -(float)Math.PI / 8.0F);
+			addRotation(this.arm2, f * -1.6F, 0.0F, f * (float)Math.PI / 8.0F);
 			this.forearm1.rotateAngleX += f * 0.8F;
 			this.forearm2.rotateAngleX += f * 0.8F;
 		}
 
 		if (fullTick >= 10 && fullTick < 75) {
 			tick = ((float)(fullTick - 10) + this.partialTick) / 65.0F;
-			f = MathHelper.sin(tick * 3.1415927F * 8.0F);
-			f1 = MathHelper.sin(tick * 3.1415927F * 8.0F + 0.7853982F);
+			f = MathHelper.sin(tick * (float)Math.PI * 8.0F);
+			f1 = MathHelper.sin(tick * (float)Math.PI * 8.0F + 0.7853982F);
 			this.head.rotateAngleY += f * 0.5F - f1 * 0.2F;
 			this.head.rotateAngleZ -= f * 0.5F;
 			this.chest.rotateAngleY += f1 * 0.06F;
@@ -328,15 +326,15 @@ public class MutantZombieModel extends EntityModel<MutantZombieEntity> {
 		float tick;
 		float f;
 
-		if (zombie.getAnimationTick() < 3) {
-			tick = ((float)zombie.getAnimationTick() + this.partialTick) / 3.0F;
-			f = MathHelper.sin(tick * 3.1415927F / 2.0F);
+		if (zombie.getAttackTick() < 3) {
+			tick = ((float)zombie.getAttackTick() + this.partialTick) / 3.0F;
+			f = MathHelper.sin(tick * (float)Math.PI / 2.0F);
 			this.chest.rotateAngleX -= f * 0.4F;
 			this.arm1.rotateAngleX -= f * 1.8F;
-			this.arm1.rotateAngleZ -= f * 3.1415927F / 8.0F;
+			this.arm1.rotateAngleZ -= f * (float)Math.PI / 8.0F;
 			this.arm2.rotateAngleX -= f * 1.8F;
-			this.arm2.rotateAngleZ += f * 3.1415927F / 8.0F;
-		} else if (zombie.getAnimationTick() < 5) {
+			this.arm2.rotateAngleZ += f * (float)Math.PI / 8.0F;
+		} else if (zombie.getAttackTick() < 5) {
 			this.chest.rotateAngleX -= 0.4F;
 			--this.arm1.rotateAngleX;
 			this.arm1.rotateAngleZ = 0.0F;
@@ -345,29 +343,29 @@ public class MutantZombieModel extends EntityModel<MutantZombieEntity> {
 		} else {
 			float f1;
 
-			if (zombie.getAnimationTick() < 8) {
-				tick = ((float)(zombie.getAnimationTick() - 5) + this.partialTick) / 3.0F;
-				f = MathHelper.cos(tick * 3.1415927F / 2.0F);
-				f1 = MathHelper.sin(tick * 3.1415927F / 2.0F);
+			if (zombie.getAttackTick() < 8) {
+				tick = ((float)(zombie.getAttackTick() - 5) + this.partialTick) / 3.0F;
+				f = MathHelper.cos(tick * (float)Math.PI / 2.0F);
+				f1 = MathHelper.sin(tick * (float)Math.PI / 2.0F);
 				this.waist.rotateAngleX += f1 * 0.2F;
 				this.chest.rotateAngleX -= f * 0.6F - 0.2F;
 				this.arm1.rotateAngleX -= f * 2.2F - 0.4F;
-				this.arm1.rotateAngleZ -= f * 3.1415927F / 8.0F;
+				this.arm1.rotateAngleZ -= f * (float)Math.PI / 8.0F;
 				this.arm2.rotateAngleX -= f * 2.2F - 0.4F;
-				this.arm2.rotateAngleZ += f * 3.1415927F / 8.0F;
+				this.arm2.rotateAngleZ += f * (float)Math.PI / 8.0F;
 				this.forearm1.rotateAngleX -= f1 * 0.4F;
 				this.forearm2.rotateAngleX -= f1 * 0.4F;
-			} else if (zombie.getAnimationTick() < 10) {
+			} else if (zombie.getAttackTick() < 10) {
 				this.waist.rotateAngleX += 0.2F;
 				this.chest.rotateAngleX += 0.2F;
 				this.arm1.rotateAngleX += 0.4F;
 				this.arm2.rotateAngleX += 0.4F;
 				this.forearm1.rotateAngleX -= 0.4F;
 				this.forearm2.rotateAngleX -= 0.4F;
-			} else if (zombie.getAnimationTick() < 15) {
-				tick = ((float)(zombie.getAnimationTick() - 10) + this.partialTick) / 5.0F;
-				f = MathHelper.cos(tick * 3.1415927F / 2.0F);
-				f1 = MathHelper.sin(tick * 3.1415927F / 2.0F);
+			} else if (zombie.getAttackTick() < 15) {
+				tick = ((float)(zombie.getAttackTick() - 10) + this.partialTick) / 5.0F;
+				f = MathHelper.cos(tick * (float)Math.PI / 2.0F);
+				f1 = MathHelper.sin(tick * (float)Math.PI / 2.0F);
 				this.waist.rotateAngleX += f * 0.39634955F - 0.19634955F;
 				this.chest.rotateAngleX += f * 0.8F - 0.6F;
 				this.arm1.rotateAngleX += f * 3.0F - 2.6F;
@@ -385,12 +383,12 @@ public class MutantZombieModel extends EntityModel<MutantZombieEntity> {
 				this.leg2.rotateAngleX += 0.6F;
 			} else if (zombie.throwHitTick < 5) {
 				tick = ((float)zombie.throwHitTick + this.partialTick) / 3.0F;
-				f = MathHelper.cos(tick * 3.1415927F / 2.0F);
-				f1 = MathHelper.sin(tick * 3.1415927F / 2.0F);
+				f = MathHelper.cos(tick * (float)Math.PI / 2.0F);
+				f1 = MathHelper.sin(tick * (float)Math.PI / 2.0F);
 				this.waist.rotateAngleX -= f * 0.39634955F - 0.2F;
 				this.chest.rotateAngleX -= f * 0.8F - 0.2F;
-				this.addRotation(this.arm1, -(f * 2.2F + 0.4F), -f1 * 3.1415927F / 8.0F, f1 * 0.4F);
-				this.addRotation(this.arm2, -(f * 2.2F + 0.4F), f1 * 3.1415927F / 8.0F, -f1 * 0.4F);
+				addRotation(this.arm1, -(f * 2.2F + 0.4F), -f1 * (float)Math.PI / 8.0F, f1 * 0.4F);
+				addRotation(this.arm2, -(f * 2.2F + 0.4F), f1 * (float)Math.PI / 8.0F, -f1 * 0.4F);
 				this.forearm1.rotateAngleX += f1 * 0.2F;
 				this.forearm2.rotateAngleX += f1 * 0.2F;
 				this.leg1.rotateAngleX += f * 0.8F - 0.2F;
@@ -398,19 +396,19 @@ public class MutantZombieModel extends EntityModel<MutantZombieEntity> {
 			} else if (zombie.throwFinishTick == -1) {
 				this.waist.rotateAngleX += 0.2F;
 				this.chest.rotateAngleX += 0.2F;
-				this.addRotation(this.arm1, -0.4F, -0.3926991F, 0.4F);
-				this.addRotation(this.arm2, -0.4F, 0.3926991F, -0.4F);
+				addRotation(this.arm1, -0.4F, -0.3926991F, 0.4F);
+				addRotation(this.arm2, -0.4F, 0.3926991F, -0.4F);
 				this.forearm1.rotateAngleX += 0.2F;
 				this.forearm2.rotateAngleX += 0.2F;
 				this.leg1.rotateAngleX -= 0.2F;
 				this.leg2.rotateAngleX -= 0.2F;
 			} else if (zombie.throwFinishTick < 10) {
 				tick = ((float)zombie.throwFinishTick + this.partialTick) / 10.0F;
-				f = MathHelper.cos(tick * 3.1415927F / 2.0F);
+				f = MathHelper.cos(tick * (float)Math.PI / 2.0F);
 				this.waist.rotateAngleX += f * 0.2F;
 				this.chest.rotateAngleX += f * 0.2F;
-				this.addRotation(this.arm1, -f * 0.4F, -f * 3.1415927F / 8.0F, f * 0.4F);
-				this.addRotation(this.arm1, -f * 0.4F, f * 3.1415927F / 8.0F, -f * 0.4F);
+				addRotation(this.arm1, -f * 0.4F, -f * (float)Math.PI / 8.0F, f * 0.4F);
+				addRotation(this.arm1, -f * 0.4F, f * (float)Math.PI / 8.0F, -f * 0.4F);
 				this.forearm1.rotateAngleX += f * 0.2F;
 				this.forearm2.rotateAngleX += f * 0.2F;
 				this.leg1.rotateAngleX -= f * 0.2F;
@@ -423,59 +421,63 @@ public class MutantZombieModel extends EntityModel<MutantZombieEntity> {
 		float tick;
 		float f;
 
-		if (zombie.downTime <= 20) {
-			tick = ((float)zombie.downTime + this.partialTick - 1.0F) / 20.0F;
-			f = MathHelper.sin(tick * 3.1415927F / 2.0F);
+		if (zombie.deathTime <= 20) {
+			tick = ((float)zombie.deathTime + this.partialTick - 1.0F) / 20.0F;
+			f = MathHelper.sin(tick * (float)Math.PI / 2.0F);
 			this.pelvis.rotationPointY += f * 28.0F;
-			this.head.rotateAngleX -= f * 3.1415927F / 10.0F;
-			this.head.rotateAngleY += f * 3.1415927F / 5.0F;
-			this.chest.rotateAngleX -= f * 3.1415927F / 12.0F;
-			this.waist.rotateAngleX -= f * 3.1415927F / 10.0F;
-			this.arm1.rotateAngleX -= f * 3.1415927F / 2.0F;
-			this.arm1.rotateAngleY += f * 3.1415927F / 2.8F;
-			this.arm2.rotateAngleX -= f * 3.1415927F / 2.0F;
-			this.arm2.rotateAngleY -= f * 3.1415927F / 2.8F;
-			this.leg1.rotateAngleX += f * 3.1415927F / 6.0F;
-			this.leg1.rotateAngleZ += f * 3.1415927F / 12.0F;
-			this.leg2.rotateAngleX += f * 3.1415927F / 6.0F;
-			this.leg2.rotateAngleZ -= f * 3.1415927F / 12.0F;
-		} else if (zombie.downTime <= MutantZombieEntity.MAX_DOWN_TIME - 40) {
+			this.head.rotateAngleX -= f * (float)Math.PI / 10.0F;
+			this.head.rotateAngleY += f * (float)Math.PI / 5.0F;
+			this.chest.rotateAngleX -= f * (float)Math.PI / 12.0F;
+			this.waist.rotateAngleX -= f * (float)Math.PI / 10.0F;
+			this.arm1.rotateAngleX -= f * (float)Math.PI / 2.0F;
+			this.arm1.rotateAngleY += f * (float)Math.PI / 2.8F;
+			this.arm2.rotateAngleX -= f * (float)Math.PI / 2.0F;
+			this.arm2.rotateAngleY -= f * (float)Math.PI / 2.8F;
+			this.leg1.rotateAngleX += f * (float)Math.PI / 6.0F;
+			this.leg1.rotateAngleZ += f * (float)Math.PI / 12.0F;
+			this.leg2.rotateAngleX += f * (float)Math.PI / 6.0F;
+			this.leg2.rotateAngleZ -= f * (float)Math.PI / 12.0F;
+		} else if (zombie.deathTime <= MutantZombieEntity.MAX_DEATH_TIME - 40) {
 			this.pelvis.rotationPointY += 28.0F;
 			this.head.rotateAngleX -= 0.31415927F;
 			this.head.rotateAngleY += 0.62831855F;
 			this.chest.rotateAngleX -= 0.2617994F;
 			this.waist.rotateAngleX -= 0.31415927F;
-			this.arm1.rotateAngleX -= 1.57079635; // Fixed
-			this.arm1.rotateAngleY += 1.12199739; // Fixed
-			this.arm2.rotateAngleX -= 1.57079635; // Fixed
-			this.arm2.rotateAngleY -= 1.12199739; // Fixed
+			this.arm1.rotateAngleX -= 1.57079635F; // Fixed
+			this.arm1.rotateAngleY += 1.12199739F; // Fixed
+			this.arm2.rotateAngleX -= 1.57079635F; // Fixed
+			this.arm2.rotateAngleY -= 1.12199739F; // Fixed
 			this.leg1.rotateAngleX += 0.5235988F;
 			this.leg1.rotateAngleZ += 0.2617994F;
 			this.leg2.rotateAngleX += 0.5235988F;
 			this.leg2.rotateAngleZ -= 0.2617994F;
 		} else {
-			tick = ((float)(40 - (MutantZombieEntity.MAX_DOWN_TIME - zombie.downTime)) + this.partialTick) / 40.0F;
-			f = MathHelper.cos(tick * 3.1415927F / 2.0F);
+			tick = ((float)(40 - (MutantZombieEntity.MAX_DEATH_TIME - zombie.deathTime)) + this.partialTick) / 40.0F;
+			f = MathHelper.cos(tick * (float)Math.PI / 2.0F);
 			this.pelvis.rotationPointY += f * 28.0F;
-			this.head.rotateAngleX -= f * 3.1415927F / 10.0F;
-			this.head.rotateAngleY += f * 3.1415927F / 5.0F;
-			this.chest.rotateAngleX -= f * 3.1415927F / 12.0F;
-			this.waist.rotateAngleX -= f * 3.1415927F / 10.0F;
-			this.arm1.rotateAngleX -= f * 3.1415927F / 2.0F;
-			this.arm1.rotateAngleY += f * 3.1415927F / 2.8F;
-			this.arm2.rotateAngleX -= f * 3.1415927F / 2.0F;
-			this.arm2.rotateAngleY -= f * 3.1415927F / 2.8F;
-			this.leg1.rotateAngleX += f * 3.1415927F / 6.0F;
-			this.leg1.rotateAngleZ += f * 3.1415927F / 12.0F;
-			this.leg2.rotateAngleX += f * 3.1415927F / 6.0F;
-			this.leg2.rotateAngleZ -= f * 3.1415927F / 12.0F;
+			this.head.rotateAngleX -= f * (float)Math.PI / 10.0F;
+			this.head.rotateAngleY += f * (float)Math.PI / 5.0F;
+			this.chest.rotateAngleX -= f * (float)Math.PI / 12.0F;
+			this.waist.rotateAngleX -= f * (float)Math.PI / 10.0F;
+			this.arm1.rotateAngleX -= f * (float)Math.PI / 2.0F;
+			this.arm1.rotateAngleY += f * (float)Math.PI / 2.8F;
+			this.arm2.rotateAngleX -= f * (float)Math.PI / 2.0F;
+			this.arm2.rotateAngleY -= f * (float)Math.PI / 2.8F;
+			this.leg1.rotateAngleX += f * (float)Math.PI / 6.0F;
+			this.leg1.rotateAngleZ += f * (float)Math.PI / 12.0F;
+			this.leg2.rotateAngleX += f * (float)Math.PI / 6.0F;
+			this.leg2.rotateAngleZ -= f * (float)Math.PI / 12.0F;
 		}
 	}
 
-	public void addRotation(RendererModel model, float x, float y, float z) {
+	public static void addRotation(RendererModel model, float x, float y, float z) {
 		model.rotateAngleX += x;
 		model.rotateAngleY += y;
 		model.rotateAngleZ += z;
+	}
+
+	public float getPartialTick() {
+		return this.partialTick;
 	}
 
 	@Override

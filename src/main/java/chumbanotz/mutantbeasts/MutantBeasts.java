@@ -5,14 +5,21 @@ import org.apache.logging.log4j.Logger;
 
 import chumbanotz.mutantbeasts.capability.ISummonable;
 import chumbanotz.mutantbeasts.capability.SummonableCapability;
-import chumbanotz.mutantbeasts.client.renderer.entity.MBEntityRenderers;
+import chumbanotz.mutantbeasts.client.ClientEventHandler;
+import chumbanotz.mutantbeasts.entity.CreeperMinionEntity;
+import chumbanotz.mutantbeasts.entity.MBEntityType;
+import chumbanotz.mutantbeasts.entity.mutant.MutantEndermanEntity;
+import chumbanotz.mutantbeasts.item.ChemicalXItem;
 import chumbanotz.mutantbeasts.item.MBItems;
 import chumbanotz.mutantbeasts.packet.PacketHandler;
-import net.minecraft.entity.Entity;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.common.brewing.BrewingRecipeRegistry;
 import net.minecraftforge.common.capabilities.CapabilityManager;
+import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -24,6 +31,7 @@ public class MutantBeasts {
 	public static final Logger LOGGER = LogManager.getLogger(MOD_ID);
 	public static final ItemGroup ITEM_GROUP = new ItemGroup(MOD_ID) {
 		@Override
+		@OnlyIn(Dist.CLIENT)
 		public ItemStack createIcon() {
 			return new ItemStack(MBItems.CHEMICAL_X);
 		}
@@ -35,19 +43,23 @@ public class MutantBeasts {
 	}
 
 	private void onCommonSetup(FMLCommonSetupEvent event) {
-		CapabilityManager.INSTANCE.register(ISummonable.class, new SummonableCapability.Storage(), new SummonableCapability.Factory());
+		MBEntityType.addSpawns();
 		PacketHandler.register();
+		BrewingRecipeRegistry.addRecipe(new ChemicalXItem.BrewingRecipe());
+		CapabilityManager.INSTANCE.register(ISummonable.class, new SummonableCapability.Storage(), new SummonableCapability.Factory());
 	}
 
 	private void onClientSetup(FMLClientSetupEvent event) {
-		MBEntityRenderers.register();
+		ClientEventHandler.registerEntityRenderers(event.getMinecraftSupplier().get());
+		ClientRegistry.registerEntityShader(CreeperMinionEntity.class, new ResourceLocation("shaders/post/creeper.json"));
+		ClientRegistry.registerEntityShader(MutantEndermanEntity.class, new ResourceLocation("shaders/post/invert.json"));
 	}
 
-	public static ResourceLocation createResource(String name) {
+	public static ResourceLocation prefix(String name) {
 		return new ResourceLocation(MOD_ID, name);
 	}
 
-	public static ResourceLocation getEntityTexture(Entity entity) {
-		return createResource("textures/entity/" + entity.getType().getRegistryName().getPath() + ".png");
+	public static ResourceLocation getEntityTexture(String entityName) {
+		return prefix("textures/entity/" + entityName + ".png");
 	}
 }

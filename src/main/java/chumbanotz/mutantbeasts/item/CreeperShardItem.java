@@ -47,10 +47,13 @@ public class CreeperShardItem extends Item {
 		double y = target.posY - player.posY;
 		double z = target.posZ - player.posZ;
 		double d = Math.sqrt(x * x + y * y + z * z);
-		target.setMotion(x / d * 0.8999999761581421D, y / d * 0.20000000298023224D + 0.30000001192092896D, z / d * 0.8999999761581421D);
-		player.world.playSound(player, player.getPosition(), SoundEvents.ENTITY_GENERIC_EXPLODE, SoundCategory.NEUTRAL, 0.3F, 0.8F + player.getRNG().nextFloat() * 0.4F);
 
-		if (player.getRNG().nextInt(4) == 0) {
+		if (target.hurtResistantTime > 10) {
+			target.setMotion(x / d * 0.8999999761581421D, y / d * 0.20000000298023224D + 0.30000001192092896D, z / d * 0.8999999761581421D);
+			player.world.playSound(player, player.getPosition(), SoundEvents.ENTITY_GENERIC_EXPLODE, SoundCategory.NEUTRAL, 0.3F, 0.8F + player.getRNG().nextFloat() * 0.4F);
+		}
+
+		if (!player.isCreative() && player.getRNG().nextInt(4) == 0) {
 			player.addPotionEffect(new EffectInstance(Effects.POISON, 80 + player.getRNG().nextInt(40)));
 		}
 
@@ -83,9 +86,8 @@ public class CreeperShardItem extends Item {
 			stack.setDamage(maxDmg);
 		}
 
-		playerIn.getCooldownTracker().setCooldown(this, 60);
 		playerIn.swingArm(handIn);
-		//playerIn.setActiveHand(handIn);
+		playerIn.getCooldownTracker().setCooldown(this, maxDmg - dmg);
 		playerIn.addStat(Stats.ITEM_USED.get(this));
 		return new ActionResult<>(ActionResultType.SUCCESS, stack);
 	}
@@ -96,7 +98,7 @@ public class CreeperShardItem extends Item {
 
 		if (slot == EquipmentSlotType.MAINHAND) {
 			multimap.put(SharedMonsterAttributes.ATTACK_DAMAGE.getName(), new AttributeModifier(ATTACK_DAMAGE_MODIFIER, "Weapon modifier", 2.0D, AttributeModifier.Operation.ADDITION));
-			multimap.put(SharedMonsterAttributes.ATTACK_SPEED.getName(), new AttributeModifier(ATTACK_SPEED_MODIFIER, "Weapon modifier", -1.0D, AttributeModifier.Operation.ADDITION));
+			multimap.put(SharedMonsterAttributes.ATTACK_SPEED.getName(), new AttributeModifier(ATTACK_SPEED_MODIFIER, "Weapon modifier", -1.5D, AttributeModifier.Operation.ADDITION));
 		}
 
 		return multimap;

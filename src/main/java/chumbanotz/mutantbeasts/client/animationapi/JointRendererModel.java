@@ -29,15 +29,8 @@ public class JointRendererModel extends RendererModel {
 		super.addChild(this.model);
 	}
 
-	public RendererModel setModel(RendererModel newModel) {
-		this.childModels.remove(this.model);
-		this.model = newModel;
-		super.addChild(newModel);
-		return this;
-	}
-
 	@Override
-	public RendererModel setTextureOffset(int x, int y) {
+	public JointRendererModel setTextureOffset(int x, int y) {
 		if (this.model != null) {
 			this.model.setTextureOffset(x, y);
 		}
@@ -46,7 +39,7 @@ public class JointRendererModel extends RendererModel {
 	}
 
 	@Override
-	public RendererModel setTextureSize(int w, int h) {
+	public JointRendererModel setTextureSize(int w, int h) {
 		if (this.model != null) {
 			this.model.setTextureSize(w, h);
 		}
@@ -55,7 +48,7 @@ public class JointRendererModel extends RendererModel {
 	}
 
 	@Override
-	public RendererModel addBox(float x, float y, float z, int w, int h, int d) {
+	public JointRendererModel addBox(float x, float y, float z, int w, int h, int d) {
 		this.model.addBox(x, y, z, w, h, d);
 		return this;
 	}
@@ -66,7 +59,7 @@ public class JointRendererModel extends RendererModel {
 	}
 
 	@Override
-	public RendererModel addBox(float offX, float offY, float offZ, int width, int height, int depth, boolean mirrored) {
+	public JointRendererModel addBox(float offX, float offY, float offZ, int width, int height, int depth, boolean mirrored) {
 		this.model.addBox(offX, offY, offZ, width, height, depth, mirrored);
 		return this;
 	}

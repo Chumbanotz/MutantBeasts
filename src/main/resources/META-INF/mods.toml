@@ -4,7 +4,7 @@ issueTrackerURL="https://www.curseforge.com/minecraft/mc-mods/mutant-beasts/issu
 
 [[mods]]
 modId="mutantbeasts"
-version="0.4.0"
+version="${version}"
 displayName="Mutant Beasts"
 #updateJSONURL="http://myurl.me/"
 displayURL="https://www.curseforge.com/minecraft/mc-mods/mutant-beasts"

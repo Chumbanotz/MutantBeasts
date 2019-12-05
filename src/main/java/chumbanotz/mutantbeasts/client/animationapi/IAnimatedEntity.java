@@ -1,20 +1,8 @@
 package chumbanotz.mutantbeasts.client.animationapi;
 
-import chumbanotz.mutantbeasts.packet.AnimationPacket;
-import chumbanotz.mutantbeasts.packet.PacketHandler;
-import net.minecraft.entity.Entity;
-
+/** Implement this on an entity that needs to use the {@link Animator} */
 public interface IAnimatedEntity {
 	int getAnimationID();
 
-	void setAnimationID(int id);
-
 	int getAnimationTick();
-
-	void setAnimationTick(int tick);
-
-	default void sendPacket(int animId) {
-		this.setAnimationID(animId);
-		PacketHandler.INSTANCE.sendToServer(new AnimationPacket(animId, ((Entity)this).getEntityId()));
-	}
 }

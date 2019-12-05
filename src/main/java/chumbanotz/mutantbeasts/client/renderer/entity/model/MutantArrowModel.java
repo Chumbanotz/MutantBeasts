@@ -8,11 +8,11 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 
 @OnlyIn(Dist.CLIENT)
 public class MutantArrowModel extends EntityModel<MutantArrowEntity> {
-	public RendererModel stick = new RendererModel(this, 0, 0);
-	public RendererModel point1;
-	public RendererModel point2;
-	public RendererModel point3;
-	public RendererModel point4;
+	private final RendererModel stick = new RendererModel(this, 0, 0);
+	private final RendererModel point1;
+	private final RendererModel point2;
+	private final RendererModel point3;
+	private final RendererModel point4;
 
 	public MutantArrowModel() {
 		this.stick.addBox(-0.5F, -0.5F, -13.0F, 1, 1, 26);

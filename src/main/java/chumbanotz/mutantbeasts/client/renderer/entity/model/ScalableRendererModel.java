@@ -11,10 +11,6 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 public class ScalableRendererModel extends RendererModel {
 	private float scale = 1.0F;
 
-	public ScalableRendererModel(Model par1Model, String par2Str) {
-		super(par1Model, par2Str);
-	}
-
 	public ScalableRendererModel(Model par1Model) {
 		super(par1Model);
 	}

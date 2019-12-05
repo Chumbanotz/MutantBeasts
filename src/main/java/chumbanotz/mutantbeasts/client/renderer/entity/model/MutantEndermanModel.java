@@ -2,38 +2,39 @@ package chumbanotz.mutantbeasts.client.renderer.entity.model;
 
 import java.util.Arrays;
 
+import com.mojang.blaze3d.platform.GlStateManager;
+
 import chumbanotz.mutantbeasts.entity.mutant.MutantEndermanEntity;
 import net.minecraft.client.renderer.entity.model.EntityModel;
 import net.minecraft.client.renderer.entity.model.RendererModel;
+import net.minecraft.client.renderer.model.Model;
 import net.minecraft.util.math.MathHelper;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
 @OnlyIn(Dist.CLIENT)
 public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
-	public RendererModel pelvis;
-	public RendererModel abdomen;
-	public RendererModel chest;
-	public RendererModel neck;
-	public RendererModel head;
-	public RendererModel mouth;
-	public EndermanArm rightArm;
-	public EndermanArm leftArm;
-	public EndermanArm lowerRightArm;
-	public EndermanArm lowerLeftArm;
-	public RendererModel legjoint1;
-	public RendererModel legjoint2;
-	public RendererModel leg1;
-	public RendererModel leg2;
-	public RendererModel foreleg1;
-	public RendererModel foreleg2;
-	private float animTick;
-	public static final float PI = 3.1415927F;
+	private final RendererModel pelvis;
+	private final RendererModel abdomen;
+	private final RendererModel chest;
+	private final RendererModel neck;
+	private final RendererModel head;
+	private final RendererModel mouth;
+	private final MutantEndermanModel.ArmModel rightArm;
+	private final MutantEndermanModel.ArmModel leftArm;
+	private final MutantEndermanModel.ArmModel lowerRightArm;
+	private final MutantEndermanModel.ArmModel lowerLeftArm;
+	private final RendererModel legjoint1;
+	private final RendererModel legjoint2;
+	private final RendererModel leg1;
+	private final RendererModel leg2;
+	private final RendererModel foreleg1;
+	private final RendererModel foreleg2;
+	private float partialTick;
 
 	public MutantEndermanModel() {
 		this.textureWidth = 128;
 		this.textureHeight = 64;
-		this.animTick = 0.0F;
 		this.pelvis = new RendererModel(this);
 		this.pelvis.setRotationPoint(0.0F, -15.5F, 8.0F);
 		this.abdomen = new RendererModel(this, 32, 0);
@@ -55,15 +56,11 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 		this.mouth = new RendererModel(this, 0, 24);
 		this.mouth.addBox(-4.0F, 3.0F, -8.0F, 8, 2, 8);
 		this.head.addChild(this.mouth);
-		this.rightArm = new EndermanArm(true);
-		this.rightArm.init(this, this.chest);
-		this.leftArm = new EndermanArm(false);
-		this.leftArm.init(this, this.chest);
-		this.lowerRightArm = new EndermanArm(true);
-		this.lowerRightArm.init(this, this.chest);
+		this.rightArm = new MutantEndermanModel.ArmModel(this, this.chest, true);
+		this.leftArm = new MutantEndermanModel.ArmModel(this, this.chest, false);
+		this.lowerRightArm = new MutantEndermanModel.ArmModel(this, this.chest, true);
 		this.lowerRightArm.arm.rotationPointY += 6.0F;
-		this.lowerLeftArm = new EndermanArm(false);
-		this.lowerLeftArm.init(this, this.chest);
+		this.lowerLeftArm = new MutantEndermanModel.ArmModel(this, this.chest, false);
 		this.lowerLeftArm.arm.rotationPointY += 6.0F;
 		this.legjoint1 = new RendererModel(this);
 		this.legjoint1.setRotationPoint(-1.5F, 0.0F, 0.75F);
@@ -92,17 +89,17 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 	}
 
 	@Override
-	public void render(MutantEndermanEntity entity, float f, float f1, float f2, float f3, float f4, float f5) {
+	public void render(MutantEndermanEntity entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch, float scale) {
 		this.setAngles();
-		this.animate(entity, f, f1, f2, f3, f4, f5);
-		this.lowerRightArm.arm.animTick = this.animTick;
+		this.animate(entity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scale);
+		this.lowerRightArm.arm.partialTick = this.partialTick;
 		this.lowerRightArm.arm.enderman = entity;
-		this.lowerLeftArm.arm.animTick = this.animTick;
+		this.lowerLeftArm.arm.partialTick = this.partialTick;
 		this.lowerLeftArm.arm.enderman = entity;
-		this.pelvis.render(f5);
+		this.pelvis.render(scale);
 	}
 
-	public void setAngles() {
+	private void setAngles() {
 		this.pelvis.rotationPointY = -15.5F;
 		this.abdomen.rotateAngleX = 0.31415927F;
 		this.chest.rotateAngleX = 0.3926991F;
@@ -136,7 +133,7 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 		this.foreleg2.rotateAngleZ = 0.1308997F;
 	}
 
-	public void animate(MutantEndermanEntity enderman, float f, float f1, float f2, float f3, float f4, float f5) {
+	private void animate(MutantEndermanEntity enderman, float f, float f1, float f2, float f3, float f4, float f5) {
 		float walkSpeed = 0.3F;
 		float walkAnim1 = (MathHelper.sin((f - 0.8F) * walkSpeed) + 0.8F) * f1;
 		float walkAnim2 = -(MathHelper.sin((f + 0.8F) * walkSpeed) - 0.8F) * f1;
@@ -145,8 +142,8 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 		float[] walkAnim = new float[5];
 		Arrays.fill(walkAnim, MathHelper.sin(f * walkSpeed) * f1);
 		float breatheAnim = MathHelper.sin(f2 * 0.15F);
-		float faceYaw = f3 * 3.1415927F / 180.0F;
-		float facePitch = f4 * 3.1415927F / 180.0F;
+		float faceYaw = f3 * (float)Math.PI / 180.0F;
+		float facePitch = f4 * (float)Math.PI / 180.0F;
 
 		int arm;
 		for (arm = 1; arm < enderman.heldBlock.length; ++arm) {
@@ -156,21 +153,21 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 			}
 		}
 
-		if (enderman.currentAttackID == 1) {
+		if (enderman.getAttackID() == MutantEndermanEntity.MELEE_ATTACK) {
 			arm = enderman.getMeleeArm();
-			this.animateMelee(enderman.animTick, arm);
+			this.animateMelee(enderman.getAttackTick(), arm);
 			walkAnim[arm] = 0.0F;
 		}
 
-		if (enderman.currentAttackID == 2) {
-			arm = enderman.getThrownBlock();
-			this.animateThrowBlock(enderman.animTick, arm);
+		if (enderman.getAttackID() == MutantEndermanEntity.THROW_ATTACK) {
+			arm = enderman.getThrowingArm();
+			this.animateThrowBlock(enderman.getAttackTick(), arm);
 		}
 
 		float scale;
-		if (enderman.currentAttackID == 5) {
-			this.animateScream(enderman.animTick);
-			scale = 1.0F - MathHelper.clamp((float)enderman.deathTick / 6.0F, 0.0F, 1.0F);
+		if (enderman.getAttackID() == MutantEndermanEntity.SCREAM_ATTACK) {
+			this.animateScream(enderman.getAttackTick());
+			scale = 1.0F - MathHelper.clamp((float)enderman.deathTime / 6.0F, 0.0F, 1.0F);
 			faceYaw *= scale;
 			facePitch *= scale;
 			walkAnim1 *= scale;
@@ -180,13 +177,13 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 			Arrays.fill(walkAnim, 0.0F);
 		}
 
-		if (enderman.currentAttackID == 7) {
-			this.animateTeleSmash(enderman.animTick);
+		if (enderman.getAttackID() == MutantEndermanEntity.TELESMASH_ATTACK) {
+			this.animateTeleSmash(enderman.getAttackTick());
 		}
 
-		if (enderman.currentAttackID == 10) {
-			this.animateDeath(enderman.deathTick);
-			scale = 1.0F - MathHelper.clamp((float)enderman.deathTick / 6.0F, 0.0F, 1.0F);
+		if (enderman.getAttackID() == MutantEndermanEntity.DEATH_ATTACK) {
+			this.animateDeath(enderman.deathTime);
+			scale = 1.0F - MathHelper.clamp((float)enderman.deathTime / 6.0F, 0.0F, 1.0F);
 			faceYaw *= scale;
 			facePitch *= scale;
 			walkAnim1 *= scale;
@@ -262,12 +259,12 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 	}
 
 	private void animateHoldBlock(int fullTick, int armID, boolean hasTarget) {
-		float tick = ((float)fullTick + this.animTick) / 10.0F;
+		float tick = ((float)fullTick + this.partialTick) / 10.0F;
 		if (!hasTarget) {
-			tick = fullTick == 0 ? 0.0F : ((float)fullTick - this.animTick) / 10.0F;
+			tick = fullTick == 0 ? 0.0F : ((float)fullTick - this.partialTick) / 10.0F;
 		}
 
-		float f = MathHelper.sin(tick * 3.1415927F / 2.0F);
+		float f = MathHelper.sin(tick * (float)Math.PI / 2.0F);
 		int i;
 		if (armID == 1) {
 			this.rightArm.arm.rotateAngleZ += f * 0.8F;
@@ -318,18 +315,16 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 
 			this.lowerLeftArm.thumb.rotateAngleZ += f * 0.4F;
 		}
-
 	}
 
 	private void animateMelee(int fullTick, int armID) {
 		int right = (armID & 1) == 1 ? 1 : -1;
-		// boolean lower = armID >= 3;
-		EndermanArm arm = this.getArmFromID(armID);
+		ArmModel arm = this.getArmFromID(armID);
 		float tick;
 		float f;
 		if (fullTick < 2) {
-			tick = ((float)fullTick + this.animTick) / 2.0F;
-			f = MathHelper.sin(tick * 3.1415927F / 2.0F);
+			tick = ((float)fullTick + this.partialTick) / 2.0F;
+			f = MathHelper.sin(tick * (float)Math.PI / 2.0F);
 			arm.arm.rotateAngleX += f * 0.2F;
 			arm.finger[0].rotateAngleZ += f * 0.3F * (float)right;
 			arm.finger[1].rotateAngleZ += f * 0.3F * (float)right;
@@ -338,9 +333,9 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 			arm.foreFinger[1].rotateAngleZ += -f * 0.5F * (float)right;
 			arm.foreFinger[2].rotateAngleZ += -f * 0.5F * (float)right;
 		} else if (fullTick < 5) {
-			tick = ((float)(fullTick - 2) + this.animTick) / 3.0F;
-			f = MathHelper.cos(tick * 3.1415927F / 2.0F);
-			float f1 = MathHelper.sin(tick * 3.1415927F / 2.0F);
+			tick = ((float)(fullTick - 2) + this.partialTick) / 3.0F;
+			f = MathHelper.cos(tick * (float)Math.PI / 2.0F);
+			float f1 = MathHelper.sin(tick * (float)Math.PI / 2.0F);
 			this.chest.rotateAngleY += -f1 * 0.1F * (float)right;
 			arm.arm.rotateAngleX += f * 1.1F - 1.1F;
 			arm.forearm.rotateAngleX += -f * 0.4F;
@@ -361,8 +356,8 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 			arm.foreFinger[1].rotateAngleZ += -0.5F * (float)right;
 			arm.foreFinger[2].rotateAngleZ += -0.5F * (float)right;
 		} else if (fullTick < 10) {
-			tick = ((float)(fullTick - 6) + this.animTick) / 4.0F;
-			f = MathHelper.cos(tick * 3.1415927F / 2.0F);
+			tick = ((float)(fullTick - 6) + this.partialTick) / 4.0F;
+			f = MathHelper.cos(tick * (float)Math.PI / 2.0F);
 			this.chest.rotateAngleY += -f * 0.1F * (float)right;
 			arm.arm.rotateAngleX += -f * 1.1F;
 			arm.forearm.rotateAngleX += -f * 0.4F;
@@ -382,9 +377,9 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 		int i;
 		if (armID == 1) {
 			if (fullTick < 4) {
-				tick = ((float)fullTick + this.animTick) / 4.0F;
-				f = MathHelper.cos(tick * 3.1415927F / 2.0F);
-				f1 = MathHelper.sin(tick * 3.1415927F / 2.0F);
+				tick = ((float)fullTick + this.partialTick) / 4.0F;
+				f = MathHelper.cos(tick * (float)Math.PI / 2.0F);
+				f1 = MathHelper.sin(tick * (float)Math.PI / 2.0F);
 				this.rightArm.arm.rotateAngleX += -f1 * 1.5F;
 				this.rightArm.arm.rotateAngleZ += f * 0.8F;
 				this.rightArm.forearm.rotateAngleZ += f * 0.6F;
@@ -400,15 +395,15 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 			} else if (fullTick < 7) {
 				this.rightArm.arm.rotateAngleX += -1.5F;
 			} else if (fullTick < 14) {
-				tick = ((float)(fullTick - 7) + this.animTick) / 7.0F;
-				f = MathHelper.cos(tick * 3.1415927F / 2.0F);
+				tick = ((float)(fullTick - 7) + this.partialTick) / 7.0F;
+				f = MathHelper.cos(tick * (float)Math.PI / 2.0F);
 				this.rightArm.arm.rotateAngleX += -f * 1.5F;
 			}
 		} else if (armID == 2) {
 			if (fullTick < 4) {
-				tick = ((float)fullTick + this.animTick) / 4.0F;
-				f = MathHelper.cos(tick * 3.1415927F / 2.0F);
-				f1 = MathHelper.sin(tick * 3.1415927F / 2.0F);
+				tick = ((float)fullTick + this.partialTick) / 4.0F;
+				f = MathHelper.cos(tick * (float)Math.PI / 2.0F);
+				f1 = MathHelper.sin(tick * (float)Math.PI / 2.0F);
 				this.leftArm.arm.rotateAngleX += -f1 * 1.5F;
 				this.leftArm.arm.rotateAngleZ += -f * 0.8F;
 				this.leftArm.forearm.rotateAngleZ += -f * 0.6F;
@@ -424,15 +419,15 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 			} else if (fullTick < 7) {
 				this.leftArm.arm.rotateAngleX += -1.5F;
 			} else if (fullTick < 14) {
-				tick = ((float)(fullTick - 7) + this.animTick) / 7.0F;
-				f = MathHelper.cos(tick * 3.1415927F / 2.0F);
+				tick = ((float)(fullTick - 7) + this.partialTick) / 7.0F;
+				f = MathHelper.cos(tick * (float)Math.PI / 2.0F);
 				this.leftArm.arm.rotateAngleX += -f * 1.5F;
 			}
 		} else if (armID == 3) {
 			if (fullTick < 4) {
-				tick = ((float)fullTick + this.animTick) / 4.0F;
-				f = MathHelper.cos(tick * 3.1415927F / 2.0F);
-				f1 = MathHelper.sin(tick * 3.1415927F / 2.0F);
+				tick = ((float)fullTick + this.partialTick) / 4.0F;
+				f = MathHelper.cos(tick * (float)Math.PI / 2.0F);
+				f1 = MathHelper.sin(tick * (float)Math.PI / 2.0F);
 				this.lowerRightArm.arm.rotateAngleX += -f1 * 1.5F;
 				this.lowerRightArm.arm.rotateAngleZ += f * 0.5F;
 				this.lowerRightArm.forearm.rotateAngleZ += f * 0.4F;
@@ -448,15 +443,15 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 			} else if (fullTick < 7) {
 				this.lowerRightArm.arm.rotateAngleX += -1.5F;
 			} else if (fullTick < 14) {
-				tick = ((float)(fullTick - 7) + this.animTick) / 7.0F;
-				f = MathHelper.cos(tick * 3.1415927F / 2.0F);
+				tick = ((float)(fullTick - 7) + this.partialTick) / 7.0F;
+				f = MathHelper.cos(tick * (float)Math.PI / 2.0F);
 				this.lowerRightArm.arm.rotateAngleX += -f * 1.5F;
 			}
 		} else if (armID == 4) {
 			if (fullTick < 4) {
-				tick = ((float)fullTick + this.animTick) / 4.0F;
-				f = MathHelper.cos(tick * 3.1415927F / 2.0F);
-				f1 = MathHelper.sin(tick * 3.1415927F / 2.0F);
+				tick = ((float)fullTick + this.partialTick) / 4.0F;
+				f = MathHelper.cos(tick * (float)Math.PI / 2.0F);
+				f1 = MathHelper.sin(tick * (float)Math.PI / 2.0F);
 				this.lowerLeftArm.arm.rotateAngleX += -f1 * 1.5F;
 				this.lowerLeftArm.arm.rotateAngleZ += -f * 0.5F;
 				this.lowerLeftArm.forearm.rotateAngleZ += -f * 0.4F;
@@ -472,8 +467,8 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 			} else if (fullTick < 7) {
 				this.lowerLeftArm.arm.rotateAngleX += -1.5F;
 			} else if (fullTick < 14) {
-				tick = ((float)(fullTick - 7) + this.animTick) / 7.0F;
-				f = MathHelper.cos(tick * 3.1415927F / 2.0F);
+				tick = ((float)(fullTick - 7) + this.partialTick) / 7.0F;
+				f = MathHelper.cos(tick * (float)Math.PI / 2.0F);
 				this.lowerLeftArm.arm.rotateAngleX += -f * 1.5F;
 			}
 		}
@@ -483,8 +478,8 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 		float tick;
 		float f;
 		if (fullTick < 35) {
-			tick = ((float)fullTick + this.animTick) / 35.0F;
-			f = MathHelper.sin(tick * 3.1415927F / 2.0F);
+			tick = ((float)fullTick + this.partialTick) / 35.0F;
+			f = MathHelper.sin(tick * (float)Math.PI / 2.0F);
 			this.abdomen.rotateAngleX += f * 0.3F;
 			this.chest.rotateAngleX += f * 0.4F;
 			this.neck.rotateAngleX += f * 0.2F;
@@ -575,9 +570,9 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 				this.lowerLeftArm.foreFinger[i].rotateAngleZ += 0.5F;
 			}
 		} else if (fullTick < 44) {
-			tick = ((float)(fullTick - 40) + this.animTick) / 4.0F;
-			f = MathHelper.cos(tick * 3.1415927F / 2.0F);
-			float f1 = MathHelper.sin(tick * 3.1415927F / 2.0F);
+			tick = ((float)(fullTick - 40) + this.partialTick) / 4.0F;
+			f = MathHelper.cos(tick * (float)Math.PI / 2.0F);
+			float f1 = MathHelper.sin(tick * (float)Math.PI / 2.0F);
 			this.abdomen.rotateAngleX += -f * 0.1F + 0.4F;
 			this.chest.rotateAngleX += f * 0.1F + 0.3F;
 			this.chest.rotateAngleZ += f1 * 0.5F;
@@ -630,8 +625,8 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 			this.leg1.rotateAngleZ += f1 * 0.1F;
 			this.leg2.rotateAngleZ += -f1 * 0.1F;
 		} else if (fullTick < 155) {
-			tick = ((float)(fullTick - 44) + this.animTick) / 111.0F;
-			f = MathHelper.cos(tick * 3.1415927F / 2.0F);
+			tick = ((float)(fullTick - 44) + this.partialTick) / 111.0F;
+			f = MathHelper.cos(tick * (float)Math.PI / 2.0F);
 			this.abdomen.rotateAngleX += 0.4F;
 			this.chest.rotateAngleX += 0.3F;
 			this.chest.rotateAngleZ += f * 1.0F - 0.5F;
@@ -646,8 +641,8 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 			this.leg1.rotateAngleZ += 0.1F;
 			this.leg2.rotateAngleZ += -0.1F;
 		} else if (fullTick < 160) {
-			tick = ((float)(fullTick - 155) + this.animTick) / 5.0F;
-			f = MathHelper.cos(tick * 3.1415927F / 2.0F);
+			tick = ((float)(fullTick - 155) + this.partialTick) / 5.0F;
+			f = MathHelper.cos(tick * (float)Math.PI / 2.0F);
 			this.abdomen.rotateAngleX += f * 0.4F;
 			this.chest.rotateAngleX += f * 0.3F;
 			this.chest.rotateAngleZ += -f * 0.5F;
@@ -668,8 +663,8 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 		float tick;
 		float f;
 		if (fullTick < 18) {
-			tick = ((float)fullTick + this.animTick) / 18.0F;
-			f = MathHelper.sin(tick * 3.1415927F / 2.0F);
+			tick = ((float)fullTick + this.partialTick) / 18.0F;
+			f = MathHelper.sin(tick * (float)Math.PI / 2.0F);
 			this.chest.rotateAngleX += -f * 0.3F;
 			this.rightArm.arm.rotateAngleY += f * 0.2F;
 			this.rightArm.arm.rotateAngleZ += f * 0.8F;
@@ -684,9 +679,9 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 			this.lowerLeftArm.arm.rotateAngleZ += -f * 0.6F;
 			this.lowerLeftArm.hand.rotateAngleY += -f * 1.7F;
 		} else if (fullTick < 20) {
-			tick = ((float)(fullTick - 18) + this.animTick) / 2.0F;
-			f = MathHelper.cos(tick * 3.1415927F / 2.0F);
-			float f1 = MathHelper.sin(tick * 3.1415927F / 2.0F);
+			tick = ((float)(fullTick - 18) + this.partialTick) / 2.0F;
+			f = MathHelper.cos(tick * (float)Math.PI / 2.0F);
+			float f1 = MathHelper.sin(tick * (float)Math.PI / 2.0F);
 			this.chest.rotateAngleX += -f * 0.3F;
 			this.rightArm.arm.rotateAngleX += -f1 * 0.8F;
 			this.rightArm.arm.rotateAngleY += 0.2F;
@@ -722,8 +717,8 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 			this.lowerLeftArm.arm.rotateAngleZ += -0.6F;
 			this.lowerLeftArm.hand.rotateAngleY += -1.7F;
 		} else if (fullTick < 30) {
-			tick = ((float)(fullTick - 24) + this.animTick) / 6.0F;
-			f = MathHelper.cos(tick * 3.1415927F / 2.0F);
+			tick = ((float)(fullTick - 24) + this.partialTick) / 6.0F;
+			f = MathHelper.cos(tick * (float)Math.PI / 2.0F);
 			this.rightArm.arm.rotateAngleX += -f * 0.8F;
 			this.rightArm.arm.rotateAngleY += f * 0.2F;
 			this.rightArm.arm.rotateAngleZ += f * 0.8F;
@@ -741,15 +736,14 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 			this.lowerLeftArm.arm.rotateAngleZ += -f * 0.6F;
 			this.lowerLeftArm.hand.rotateAngleY += -f * 1.7F;
 		}
-
 	}
 
 	private void animateDeath(int deathTick) {
 		float tick;
 		float f;
 		if (deathTick < 80) {
-			tick = ((float)deathTick + this.animTick) / 80.0F;
-			f = MathHelper.sin(tick * 3.1415927F / 2.0F);
+			tick = ((float)deathTick + this.partialTick) / 80.0F;
+			f = MathHelper.sin(tick * (float)Math.PI / 2.0F);
 			this.head.rotateAngleX += f * 0.4F;
 			this.neck.rotateAngleX += f * 0.3F;
 			this.pelvis.rotationPointY += -f * 12.0F;
@@ -776,9 +770,9 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 			this.foreleg1.rotateAngleX += f * 1.6F;
 			this.foreleg2.rotateAngleX += f * 1.6F;
 		} else if (deathTick < 84) {
-			tick = ((float)(deathTick - 80) + this.animTick) / 4.0F;
-			f = MathHelper.cos(tick * 3.1415927F / 2.0F);
-			float f1 = MathHelper.sin(tick * 3.1415927F / 2.0F);
+			tick = ((float)(deathTick - 80) + this.partialTick) / 4.0F;
+			f = MathHelper.cos(tick * (float)Math.PI / 2.0F);
+			float f1 = MathHelper.sin(tick * (float)Math.PI / 2.0F);
 			this.head.rotateAngleX += f * 0.4F;
 			this.neck.rotateAngleX += f * 0.4F - 0.1F;
 			this.chest.rotateAngleX += -f1 * 0.8F;
@@ -826,7 +820,158 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 		}
 	}
 
-	public EndermanArm getArmFromID(int armID) {
+	private ArmModel getArmFromID(int armID) {
 		return armID == 1 ? this.rightArm : (armID == 2 ? this.leftArm : (armID == 3 ? this.lowerRightArm : this.lowerLeftArm));
+	}
+
+	public void postRenderArm(float scale, int armID) {
+		this.pelvis.postRender(scale);
+		this.abdomen.postRender(scale);
+		this.chest.postRender(scale);
+		this.getArmFromID(armID).postRender(scale);
+	}
+
+	@Override
+	public void setLivingAnimations(MutantEndermanEntity entityIn, float limbSwing, float limbSwingAmount, float partialTick) {
+		this.partialTick = partialTick;
+	}
+
+	@OnlyIn(Dist.CLIENT)
+	static class ArmModel {
+		private final ArmRenderer arm;
+		private final RendererModel forearm;
+		private final RendererModel hand;
+		private final RendererModel[] finger;
+		private final RendererModel[] foreFinger;
+		private final RendererModel thumb;
+		private final boolean right;
+
+		private ArmModel(Model model, RendererModel connect, boolean right) {
+			this.right = right;
+			this.finger = new RendererModel[3];
+			this.foreFinger = new RendererModel[3];
+			this.arm = new ArmRenderer(model, 92, 0);
+			this.arm.mirror = !this.right;
+			this.arm.addBox(-1.5F, 0.0F, -1.5F, 3, 22, 3, 0.1F);
+			this.arm.setRotationPoint(this.right ? -4.0F : 4.0F, -14.0F, 0.0F);
+			connect.addChild(this.arm);
+			this.forearm = new RendererModel(model, 104, 0);
+			this.forearm.mirror = !this.right;
+			this.forearm.addBox(-1.5F, 0.0F, -1.5F, 3, 18, 3);
+			this.forearm.setRotationPoint(0.0F, 21.0F, 1.0F);
+			this.arm.addChild(this.forearm);
+			this.hand = new RendererModel(model);
+			this.hand.setRotationPoint(0.0F, 17.5F, 0.0F);
+			this.forearm.addChild(this.hand);
+			float fingerScale = 0.6F;
+
+			int i;
+
+			for (i = 0; i < this.finger.length; ++i) {
+				this.finger[i] = new RendererModel(model, 76, 0);
+				this.finger[i].mirror = !this.right;
+				this.finger[i].addBox(-0.5F, 0.0F, -0.5F, 1, i == 1 ? 6 : 5, 1, fingerScale);
+			}
+
+			this.finger[0].setRotationPoint(this.right ? -0.5F : 0.5F, 0.0F, -1.0F);
+			this.finger[1].setRotationPoint(this.right ? -0.5F : 0.5F, 0.0F, 0.0F);
+			this.finger[2].setRotationPoint(this.right ? -0.5F : 0.5F, 0.0F, 1.0F);
+
+			for (i = 0; i < this.foreFinger.length; ++i) {
+				this.foreFinger[i] = new RendererModel(model, 76, 0);
+				this.foreFinger[i].mirror = !this.right;
+				this.foreFinger[i].addBox(-0.5F, 0.0F, -0.5F, 1, i == 1 ? 6 : 5, 1, fingerScale - 0.01F);
+				this.foreFinger[i].setRotationPoint(0.0F, 0.5F + (float)(i == 1 ? 6 : 5), 0.0F);
+			}
+
+			for (i = 0; i < this.finger.length; ++i) {
+				this.hand.addChild(this.finger[i]);
+				this.finger[i].addChild(this.foreFinger[i]);
+			}
+
+			this.thumb = new RendererModel(model, 76, 0);
+			this.thumb.mirror = this.right;
+			this.thumb.addBox(-0.5F, 0.0F, -0.5F, 1, 5, 1, fingerScale);
+			this.thumb.setRotationPoint(this.right ? 0.5F : -0.5F, 0.0F, -0.5F);
+			this.hand.addChild(this.thumb);
+		}
+
+		private void resetAngles(RendererModel model) {
+			model.rotateAngleX = 0.0F;
+			model.rotateAngleY = 0.0F;
+			model.rotateAngleZ = 0.0F;
+		}
+
+		private void setAngles() {
+			this.resetAngles(this.arm);
+			this.resetAngles(this.forearm);
+			this.resetAngles(this.hand);
+
+			for (int i = 0; i < this.finger.length; ++i) {
+				this.resetAngles(this.finger[i]);
+				this.resetAngles(this.foreFinger[i]);
+			}
+
+			this.resetAngles(this.thumb);
+
+			if (this.right) {
+				this.arm.rotateAngleX = -0.5235988F;
+				this.arm.rotateAngleZ = 0.5235988F;
+				this.forearm.rotateAngleX = -0.62831855F;
+				this.hand.rotateAngleY = -0.3926991F;
+				this.finger[0].rotateAngleX = -0.2617994F;
+				this.finger[1].rotateAngleZ = 0.17453294F;
+				this.finger[2].rotateAngleX = 0.2617994F;
+				this.foreFinger[0].rotateAngleZ = -0.2617994F;
+				this.foreFinger[1].rotateAngleZ = -0.3926991F;
+				this.foreFinger[2].rotateAngleZ = -0.2617994F;
+				this.thumb.rotateAngleX = -0.62831855F;
+				this.thumb.rotateAngleZ = -0.3926991F;
+			} else {
+				this.arm.rotateAngleX = -0.5235988F;
+				this.arm.rotateAngleZ = -0.5235988F;
+				this.forearm.rotateAngleX = -0.62831855F;
+				this.hand.rotateAngleY = 0.3926991F;
+				this.finger[0].rotateAngleX = -0.2617994F;
+				this.finger[1].rotateAngleZ = -0.17453294F;
+				this.finger[2].rotateAngleX = 0.2617994F;
+				this.foreFinger[0].rotateAngleZ = 0.2617994F;
+				this.foreFinger[1].rotateAngleZ = 0.3926991F;
+				this.foreFinger[2].rotateAngleZ = 0.2617994F;
+				this.thumb.rotateAngleX = -0.62831855F;
+				this.thumb.rotateAngleZ = 0.3926991F;
+			}
+		}
+
+		private void postRender(float scale) {
+			this.arm.postRender(scale);
+			this.forearm.postRender(scale);
+			this.hand.postRender(scale);
+		}
+	}
+
+	@OnlyIn(Dist.CLIENT)
+	static class ArmRenderer extends RendererModel {
+		private float partialTick;
+		private MutantEndermanEntity enderman;
+
+		private ArmRenderer(Model model, int x, int y) {
+			super(model, x, y);
+		}
+
+		@Override
+		public void render(float scale) {
+			if (this.enderman != null) {
+				float armScale = this.enderman.getInnerArmScale(this.partialTick);
+				GlStateManager.pushMatrix();
+				GlStateManager.scalef(armScale, armScale, armScale);
+			}
+
+			super.render(scale);
+
+			if (this.enderman != null) {
+				GlStateManager.popMatrix();
+			}
+		}
 	}
 }

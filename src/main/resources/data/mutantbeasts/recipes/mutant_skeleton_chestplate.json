@@ -1,0 +1,19 @@
+{
+	"type": "minecraft:crafting_shaped",
+	"pattern": [
+		" A ",
+		" R ",
+		"   "
+	],
+	"key": {
+		"A": {
+			"item": "mutantbeasts:mutant_skeleton_arms"
+		},	
+		"R": {
+			"item": "mutantbeasts:mutant_skeleton_rib_cage"
+		}
+	},
+	"result": {
+		"item": "mutantbeasts:mutant_skeleton_chestplate"
+	}
+}

@@ -8,7 +8,7 @@ import java.util.UUID;
 
 import com.google.common.collect.Multimap;
 
-import chumbanotz.mutantbeasts.util.ZombieChunk;
+import chumbanotz.mutantbeasts.util.SeismicWave;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.SharedMonsterAttributes;
@@ -31,10 +31,15 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class HulkHammerItem extends Item {
-	public static Map<UUID, List<ZombieChunk>> chunkList = new HashMap<>();
+	public static final Map<UUID, List<SeismicWave>> SEISMIC_WAVES = new HashMap<>();
 
 	public HulkHammerItem(Item.Properties properties) {
 		super(properties.maxDamage(64));
+	}
+
+	@Override
+	public boolean canDisableShield(ItemStack stack, ItemStack shield, LivingEntity entity, LivingEntity attacker) {
+		return true;
 	}
 
 	@Override
@@ -55,26 +60,26 @@ public class HulkHammerItem extends Item {
 	@Override
 	public ActionResult<ItemStack> onItemRightClick(World worldIn, PlayerEntity playerIn, Hand handIn) {
 		ItemStack heldItemStack = playerIn.getHeldItem(handIn);
-		if (rayTrace(worldIn, playerIn, FluidMode.ANY).getType() == RayTraceResult.Type.MISS) {
+		if (rayTrace(worldIn, playerIn, FluidMode.SOURCE_ONLY).getType() == RayTraceResult.Type.MISS) {
 			return new ActionResult<>(ActionResultType.FAIL, heldItemStack);
 		} else {
 			if (!worldIn.isRemote) {
-				List<ZombieChunk> list = new ArrayList<>();
+				List<SeismicWave> list = new ArrayList<>();
 				float temp = playerIn.rotationPitch;
 				playerIn.rotationPitch = 0.0F;
 				Vec3d vec = playerIn.getLookVec();
 				playerIn.rotationPitch = temp;
-				int x = MathHelper.floor(playerIn.posX + vec.x * 1.5D);
+				int x = MathHelper.floor(playerIn.posX + vec.x * 1.0D);
 				int y = MathHelper.floor(playerIn.getBoundingBox().minY);
-				int z = MathHelper.floor(playerIn.posZ + vec.z * 1.5D);
+				int z = MathHelper.floor(playerIn.posZ + vec.z * 1.0D);
 				int x1 = MathHelper.floor(playerIn.posX + vec.x * 8.0D);
 				int z1 = MathHelper.floor(playerIn.posZ + vec.z * 8.0D);
-				ZombieChunk.addLinePositions(worldIn, list, x, z, x1, z1, y);
+				SeismicWave.createWaves(worldIn, list, x, z, x1, z1, y);
 				addChunkAttack(playerIn.getUniqueID(), list);
 			}
 
 			worldIn.playSound(playerIn, playerIn.getPosition(), SoundEvents.ENTITY_GENERIC_EXPLODE, SoundCategory.BLOCKS, 0.8F, 0.8F + playerIn.getRNG().nextFloat() * 0.4F);
-			playerIn.getCooldownTracker().setCooldown(this, 30);
+			playerIn.getCooldownTracker().setCooldown(this, 25);
 			playerIn.swingArm(handIn);
 			playerIn.addStat(Stats.ITEM_USED.get(this));
 			heldItemStack.damageItem(1, playerIn, e -> e.sendBreakAnimation(handIn));
@@ -87,24 +92,24 @@ public class HulkHammerItem extends Item {
 		Multimap<String, AttributeModifier> multimap = super.getAttributeModifiers(slot, stack);
 
 		if (slot == EquipmentSlotType.MAINHAND) {
-			multimap.put(SharedMonsterAttributes.ATTACK_DAMAGE.getName(), new AttributeModifier(ATTACK_DAMAGE_MODIFIER, "Weapon modifier", 9.0D, AttributeModifier.Operation.ADDITION));
+			multimap.put(SharedMonsterAttributes.ATTACK_DAMAGE.getName(), new AttributeModifier(ATTACK_DAMAGE_MODIFIER, "Weapon modifier", 8.0D, AttributeModifier.Operation.ADDITION));
 			multimap.put(SharedMonsterAttributes.ATTACK_SPEED.getName(), new AttributeModifier(ATTACK_SPEED_MODIFIER, "Weapon modifier", -3.0D, AttributeModifier.Operation.ADDITION));
 		}
 
 		return multimap;
 	}
 
-	public static void addChunkAttack(UUID name, List<ZombieChunk> list) {
-		List<ZombieChunk> chunks = null;
-		for (List<ZombieChunk> chunks1 : chunkList.values()) {
+	public static void addChunkAttack(UUID name, List<SeismicWave> list) {
+		List<SeismicWave> chunks = null;
+		for (List<SeismicWave> chunks1 : SEISMIC_WAVES.values()) {
 			chunks = chunks1;
 		}
 
 		if (chunks == null) {
-			chunkList.put(name, list);
+			SEISMIC_WAVES.put(name, list);
 		} else {
 			chunks.addAll(list);
-			chunkList.put(name, chunks);
+			SEISMIC_WAVES.put(name, chunks);
 		}
 	}
 }

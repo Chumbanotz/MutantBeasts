@@ -8,21 +8,20 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 
 @OnlyIn(Dist.CLIENT)
 public class MutantSkeletonPartModel extends Model {
-	public RendererModel pelvis;
-	public RendererModel waist;
-	public MutantSkeletonSpineModel[] spine;
-	public JointRendererModel head;
-	public RendererModel jaw;
-	public JointRendererModel arm1;
-	public JointRendererModel arm2;
-	public JointRendererModel forearm1;
-	public JointRendererModel forearm2;
-	public JointRendererModel leg1;
-	public JointRendererModel leg2;
-	public JointRendererModel foreleg1;
-	public JointRendererModel foreleg2;
-	public RendererModel shoulder1;
-	public RendererModel shoulder2;
+	private final RendererModel pelvis;
+	private final MutantSkeletonSpineModel[] spine;
+	private final JointRendererModel head;
+	private final RendererModel jaw;
+	private final JointRendererModel arm1;
+	private final JointRendererModel arm2;
+	private final JointRendererModel forearm1;
+	private final JointRendererModel forearm2;
+	private final JointRendererModel leg1;
+	private final JointRendererModel leg2;
+	private final JointRendererModel foreleg1;
+	private final JointRendererModel foreleg2;
+	private final RendererModel shoulder1;
+	private final RendererModel shoulder2;
 
 	public MutantSkeletonPartModel() {
 		this.textureWidth = 128;
@@ -73,7 +72,7 @@ public class MutantSkeletonPartModel extends Model {
 		this.jaw.rotateAngleX = 0.09817477F;
 
 		for (int i = 0; i < this.spine.length; ++i) {
-			this.spine[i].setAngles(3.1415927F, i == 1);
+			this.spine[i].setAngles((float)Math.PI, i == 1);
 		}
 	}
 

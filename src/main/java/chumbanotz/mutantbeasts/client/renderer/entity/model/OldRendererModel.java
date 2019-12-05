@@ -10,7 +10,7 @@ import net.minecraft.client.renderer.model.Model;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
-/** Copied from 1.12.2 ModelRenderer */
+/** Taken from 1.12.2 ModelRenderer */
 @OnlyIn(Dist.CLIENT)
 public class OldRendererModel extends RendererModel {
 	private boolean compiled;

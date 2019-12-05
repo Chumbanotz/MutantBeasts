@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.UUID;
 
 import chumbanotz.mutantbeasts.client.animationapi.IAnimatedEntity;
+import chumbanotz.mutantbeasts.entity.BodyPartEntity;
+import chumbanotz.mutantbeasts.entity.ai.goal.AvoidDamageGoal;
 import chumbanotz.mutantbeasts.entity.ai.goal.MBHurtByTargetGoal;
 import chumbanotz.mutantbeasts.entity.ai.goal.MBMeleeAttackGoal;
 import chumbanotz.mutantbeasts.entity.projectile.MutantArrowEntity;
@@ -26,13 +28,12 @@ import net.minecraft.entity.ai.goal.LookAtGoal;
 import net.minecraft.entity.ai.goal.LookRandomlyGoal;
 import net.minecraft.entity.ai.goal.NearestAttackableTargetGoal;
 import net.minecraft.entity.ai.goal.WaterAvoidingRandomWalkingGoal;
-import net.minecraft.entity.item.ArmorStandEntity;
 import net.minecraft.entity.monster.AbstractSkeletonEntity;
 import net.minecraft.entity.passive.IronGolemEntity;
-import net.minecraft.entity.passive.TurtleEntity;
 import net.minecraft.entity.passive.WolfEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.pathfinding.PathNavigator;
 import net.minecraft.pathfinding.PathNodeType;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
@@ -40,42 +41,40 @@ import net.minecraft.util.DamageSource;
 import net.minecraft.util.EntityPredicates;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.util.SoundEvents;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 
 public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAnimatedEntity {
 	private static final UUID MELEE_DAMAGE_MODIFIER = UUID.fromString("9edabc04-ce89-11e9-a32f-2a2ae2dbcce4");
 	private static final AttributeModifier RIB_CONSTRICT_DAMAGE = new AttributeModifier(UUID.fromString("a50db906-ce88-11e9-a32f-2a2ae2dbcce4"), "Rib constrict damage", 6.0D, AttributeModifier.Operation.ADDITION).setSaved(false);
-	private int currentAttackID;
+	public static final byte MELEE_ATTACK = 4, SHOOT_ATTACK = 5, MULTI_SHOT_ATTACK = 6, CONSTRICT_RIBS_ATTACK = 7;
+	private int animation;
 	private int animTick;
 
 	public MutantSkeletonEntity(EntityType<? extends MutantSkeletonEntity> type, World worldIn) {
 		super(type, worldIn);
 		this.stepHeight = 1.5F;
 		this.experienceValue = 30;
-		this.ignoreFrustumCheck = true;
-		this.navigator = new MBGroundPathNavigator(this, worldIn);
 	}
 
 	@Override
 	protected void registerGoals() {
 		this.goalSelector.addGoal(0, new MutantSkeletonEntity.MeleeGoal());
-		//this.goalSelector.addGoal(0, new MutantSkeletonEntity.ShootGoal());
-		//this.goalSelector.addGoal(0, new MutantSkeletonEntity.MultiShotGoal());
+		this.goalSelector.addGoal(0, new MutantSkeletonEntity.ShootGoal());
+		this.goalSelector.addGoal(0, new MutantSkeletonEntity.MultiShotGoal());
 		this.goalSelector.addGoal(0, new MutantSkeletonEntity.ConstrictRibsAttackGoal());
-		this.goalSelector.addGoal(1, new MBMeleeAttackGoal(this, PlayerEntity.class, 1.1D, true).setMaxAttackTick(10));
-		this.goalSelector.addGoal(2, new MBMeleeAttackGoal(this, 1.1D, false).setMaxAttackTick(10));
+		this.goalSelector.addGoal(2, new MBMeleeAttackGoal(this, 1.1D).setMaxAttackTick(10));
+		this.goalSelector.addGoal(3, new AvoidDamageGoal(this, 1.1D));
 		this.goalSelector.addGoal(4, new WaterAvoidingRandomWalkingGoal(this, 1.0D));
 		this.goalSelector.addGoal(5, new LookAtGoal(this, PlayerEntity.class, 8.0F));
 		this.goalSelector.addGoal(5, new LookRandomlyGoal(this));
-		this.targetSelector.addGoal(1, new MBHurtByTargetGoal(this, MutantSkeletonEntity.class));
+		this.targetSelector.addGoal(1, new MBHurtByTargetGoal(this));
 		this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, PlayerEntity.class, true).setUnseenMemoryTicks(300));
 		this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, IronGolemEntity.class, true));
-		this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, WolfEntity.class, true));
-		this.targetSelector.addGoal(4, new NearestAttackableTargetGoal<>(this, TurtleEntity.class, 60, true, true, TurtleEntity.TARGET_DRY_BABY));
-		this.targetSelector.addGoal(5, new NearestAttackableTargetGoal<>(this, ArmorStandEntity.class, 80, true, true, null));
+		this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, WolfEntity.class, true, true));
 	}
 
 	@Override
@@ -92,6 +91,11 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 	@Override
 	protected float getStandingEyeHeight(Pose poseIn, EntitySize sizeIn) {
 		return 3.25F;
+	}
+
+	@Override
+	protected PathNavigator createNavigator(World worldIn) {
+		return new MBGroundPathNavigator(this, worldIn);
 	}
 
 	@Override
@@ -114,26 +118,37 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 	}
 
 	@Override
+	@OnlyIn(Dist.CLIENT)
+	public void handleStatusUpdate(byte id) {
+		if (id == 0 || id >= 4 && id <= 7) {
+			this.animation = id;
+			this.animTick = 0;
+		} else {
+			super.handleStatusUpdate(id);
+		}
+	}
+
+	@Override
 	public void livingTick() {
 		super.livingTick();
 		this.setPathPriority(PathNodeType.WATER, this.isInWaterOrBubbleColumn() ? 16.0F : -1.0F);
 
-		if (this.currentAttackID != 0) {
+		if (this.animation != 0) {
 			++this.animTick;
 		}
 
-		if (this.getHealth() > 0.0F && this.ticksExisted % 100 == 0 && !this.world.isDaytime() && this.getHealth() < this.getMaxHealth()) {
+		if (this.isAlive() && this.ticksExisted % 100 == 0 && !this.world.isDaytime() && this.getHealth() < this.getMaxHealth()) {
 			this.heal(2.0F);
 		}
 	}
 
 	@Override
 	public boolean attackEntityAsMob(Entity entityIn) {
-		if (!this.world.isRemote && this.currentAttackID == 0) {
+		if (!this.world.isRemote && this.animation == 0) {
 			if (this.rand.nextInt(4) != 0) {
-				this.sendPacket(1);
+				this.setAttackId(MELEE_ATTACK);
 			} else if (this.onGround || this.world.containsAnyLiquid(this.getBoundingBox())) {
-				this.sendPacket(4);
+				this.setAttackId(CONSTRICT_RIBS_ATTACK);
 			}
 		}
 
@@ -141,8 +156,8 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 	}
 
 	@Override
-	public boolean attackEntityFrom(DamageSource source, float amount) {
-		return !(source.getTrueSource() instanceof MutantSkeletonEntity) && super.attackEntityFrom(source, amount);
+	public boolean isInvulnerableTo(DamageSource source) {
+		return super.isInvulnerableTo(source) && source.getTrueSource() instanceof MutantSkeletonEntity;
 	}
 
 	@Override
@@ -164,31 +179,21 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 	}
 
 	@Override
-	protected void func_213371_e(LivingEntity p_213371_1_) {
-		if (this.currentAttackID == 1) {
-			p_213371_1_.applyEntityCollision(this);
-			p_213371_1_.velocityChanged = true;
+	protected void constructKnockBackVector(LivingEntity livingEntity) {
+		if (this.animation == MELEE_ATTACK || this.animation == CONSTRICT_RIBS_ATTACK) {
+			livingEntity.applyEntityCollision(this);
+			livingEntity.velocityChanged = true;
 		}
 	}
 
 	@Override
 	public int getAnimationID() {
-		return this.currentAttackID;
-	}
-
-	@Override
-	public void setAnimationID(int id) {
-		this.currentAttackID = id;
+		return this.animation;
 	}
 
 	@Override
 	public int getAnimationTick() {
 		return this.animTick;
-	}
-
-	@Override
-	public void setAnimationTick(int tick) {
-		this.animTick = tick;
 	}
 
 	@Override
@@ -260,7 +265,7 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 					++j;
 				}
 
-				MutantSkeletonPartEntity part = new MutantSkeletonPartEntity(this.world, this, j);
+				BodyPartEntity part = new BodyPartEntity(this.world, this, j);
 				part.setMotion(part.getMotion().add((double)(this.rand.nextFloat() * 0.8F * 2.0F - 0.8F), (double)(this.rand.nextFloat() * 0.25F + 0.1F), (double)(this.rand.nextFloat() * 0.8F * 2.0F - 0.8F)));
 				this.world.addEntity(part);
 			}
@@ -289,27 +294,20 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 		return MBSoundEvents.ENTITY_MUTANT_SKELETON_STEP;
 	}
 
-	@Override
-	public void writeAdditional(CompoundNBT compound) {
-		super.writeAdditional(compound);
-	}
-
-	@Override
-	public void readAdditional(CompoundNBT compound) {
-		super.readAdditional(compound);
+	private void setAttackId(int id) {
+		this.animation = id;
+		this.animTick = 0;
+		this.world.setEntityState(this, (byte)id);
 	}
 
 	class MeleeGoal extends Goal {
-		private LivingEntity attackTarget;
-
 		public MeleeGoal() {
-			this.setMutexFlags(EnumSet.of(Goal.Flag.JUMP, Goal.Flag.LOOK, Goal.Flag.MOVE));
+			setMutexFlags(EnumSet.of(Goal.Flag.JUMP, Goal.Flag.LOOK, Goal.Flag.MOVE));
 		}
 
 		@Override
 		public boolean shouldExecute() {
-			this.attackTarget = getAttackTarget();
-			return this.attackTarget != null && currentAttackID == 1;
+			return getAttackTarget() != null && animation == MELEE_ATTACK;
 		}
 
 		@Override
@@ -320,34 +318,27 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 		@Override
 		public void startExecuting() {
 			animTick = 0;
-			getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).applyModifier(new AttributeModifier(MELEE_DAMAGE_MODIFIER, "Melee damage", (double)rand.nextInt(2), AttributeModifier.Operation.ADDITION).setSaved(false));
 		}
-
+	
 		@Override
 		public void tick() {
-			lookController.setLookPositionWithEntity(this.attackTarget, 30.0F, 30.0F);
+			if (getAttackTarget() != null && getAttackTarget().isAlive()) {
+				lookController.setLookPositionWithEntity(getAttackTarget(), 30.0F, 30.0F);
+			}
 
 			if (animTick == 3) {
+				getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).applyModifier(new AttributeModifier(MELEE_DAMAGE_MODIFIER, "Melee damage", (double)rand.nextInt(2), AttributeModifier.Operation.ADDITION).setSaved(false));
 				for (Entity entity : world.getEntitiesInAABBexcluding(MutantSkeletonEntity.this, getBoundingBox().grow((double)(2.3F + rand.nextFloat() * 0.3F)), EntityPredicates.CAN_AI_TARGET)) {
 					double dist = (double)getDistance(entity);
 					double x = posX - entity.posX;
 					double z = posZ - entity.posZ;
-					float rot;
 
-					for (rot = (float)(Math.atan2(z, x) * 180.0D / 3.141592653589793D) + 90.0F; rot > rotationYawHead + 180.0F; rot -= 360.0F) {
-						;
-					}
-
-					while (rot <= rotationYawHead - 180.0F) {
-						rot += 360.0F;
-					}
-
-					if (Math.abs(rotationYawHead - rot) < 60.0F && !(entity instanceof MutantSkeletonEntity)) {
+					if (EntityUtil.isFacingEntity(MutantSkeletonEntity.this, x, z, 60.0F) && !(entity instanceof MutantSkeletonEntity)) {
 						float power = 1.8F + (float)rand.nextInt(5) * 0.15F;
-						entity.removePassengers();
+						entity.stopRiding();
 						entity.attackEntityFrom(DamageSource.causeMobDamage(MutantSkeletonEntity.this), (float)getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getValue());
 						entity.setMotion(-x / dist * (double)power, Math.max(0.2800000011920929D, entity.getMotion().y), -z / dist * (double)power);
-						EntityUtil.sendVelocityPacket(entity);
+						EntityUtil.sendPlayerVelocityPacket(entity);
 					}
 				}
 
@@ -357,22 +348,21 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 
 		@Override
 		public void resetTask() {
-			sendPacket(0);
-			this.attackTarget = null;
+			setAttackId(0);
 			getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).removeModifier(MELEE_DAMAGE_MODIFIER);
 		}
 	}
 
 	class ConstrictRibsAttackGoal extends Goal {
 		private LivingEntity attackTarget;
-
 		public ConstrictRibsAttackGoal() {
-			this.setMutexFlags(EnumSet.of(Goal.Flag.JUMP, Goal.Flag.LOOK, Goal.Flag.MOVE));
+			setMutexFlags(EnumSet.of(Goal.Flag.JUMP, Goal.Flag.LOOK, Goal.Flag.MOVE));
 		}
 
 		@Override
 		public boolean shouldExecute() {
-			return currentAttackID == 4;
+			this.attackTarget = getAttackTarget();
+			return attackTarget != null && animation == CONSTRICT_RIBS_ATTACK;
 		}
 
 		@Override
@@ -383,29 +373,25 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 		@Override
 		public void startExecuting() {
 			animTick = 0;
-			this.attackTarget = getAttackTarget();
 			getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).applyModifier(RIB_CONSTRICT_DAMAGE);
 		}
 
 		@Override
 		public void tick() {
-			if (animTick == 6 && this.attackTarget != null) {
-				if (this.attackTarget.getRidingEntity() != null) {
-					this.attackTarget.getRidingEntity().removePassengers();
-				}
+			if (animTick == 5)
+				this.attackTarget.stopRiding();
+			if (animTick == 6) {
 				this.attackTarget.attackEntityFrom(DamageSource.causeMobDamage(MutantSkeletonEntity.this), (float)getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getValue());
-				double d0 = (double)((1.0F + rand.nextFloat() * 0.4F) * (float)(rand.nextBoolean() ? 1 : -1));
-				this.attackTarget.setMotion(d0, (double)(0.4F + rand.nextFloat() * 0.8F), d0);
+				this.attackTarget.setMotion((double)((1.0F + rand.nextFloat() * 0.4F) * (float)(rand.nextBoolean() ? 1 : -1)), (double)(0.4F + rand.nextFloat() * 0.8F), (double)((1.0F + rand.nextFloat() * 0.4F) * (float)(rand.nextBoolean() ? 1 : -1)));
 				playSound(SoundEvents.ENTITY_GENERIC_EXPLODE, 0.5F, 0.8F + rand.nextFloat() * 0.4F);
 				EntityUtil.disableShield(this.attackTarget, DamageSource.causeMobDamage(MutantSkeletonEntity.this), 100);
-				EntityUtil.sendVelocityPacket(this.attackTarget);
+				EntityUtil.sendPlayerVelocityPacket(this.attackTarget);
 			}
 		}
 
 		@Override
 		public void resetTask() {
-			sendPacket(0);
-			this.attackTarget = null;
+			setAttackId(0);
 			getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).removeModifier(RIB_CONSTRICT_DAMAGE);
 		}
 	}
@@ -414,24 +400,23 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 		private LivingEntity attackTarget;
 
 		public ShootGoal() {
-			this.setMutexFlags(EnumSet.of(Goal.Flag.JUMP, Goal.Flag.LOOK, Goal.Flag.MOVE));
+			setMutexFlags(EnumSet.of(Goal.Flag.JUMP, Goal.Flag.LOOK, Goal.Flag.MOVE));
 		}
 
 		@Override
 		public boolean shouldExecute() {
 			this.attackTarget = getAttackTarget();
-			return this.attackTarget != null && canEntityBeSeen(this.attackTarget) && getDistanceSq(this.attackTarget) > 4.0D && currentAttackID == 0 && rand.nextInt(12) == 0;
-		}
-
-		@Override
-		public void startExecuting() {
-			sendPacket(2);
-			animTick = 0;
+			return this.attackTarget != null && canEntityBeSeen(this.attackTarget) && getDistanceSq(this.attackTarget) > 4.0D && animation == 0 && rand.nextInt(12) == 0;
 		}
 
 		@Override
 		public boolean shouldContinueExecuting() {
 			return animTick < 32;
+		}
+
+		@Override
+		public void startExecuting() {
+			setAttackId(SHOOT_ATTACK);
 		}
 
 		@Override
@@ -450,8 +435,10 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 			if (animTick == 26) {
 				MutantArrowEntity arrowEntity = new MutantArrowEntity(world, MutantSkeletonEntity.this, this.attackTarget);
 
-				if (hurtTime > 0) {
-					arrowEntity.randomize((float)hurtTime / 2.0F);
+				if (hurtTime > 0 && lastDamage > 0.0F) {
+					arrowEntity.randomize((float)hurtTime / 3.0F);
+				} else if (!canEntityBeSeen(this.attackTarget)) {
+					arrowEntity.randomize(0.1F + rand.nextFloat());
 				}
 
 				if (rand.nextInt(4) == 0) {
@@ -473,34 +460,32 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 
 		@Override
 		public void resetTask() {
-			sendPacket(0);
-			this.attackTarget = null;
+			setAttackId(0);
 		}
 	}
 
 	class MultiShotGoal extends Goal {
-		private LivingEntity attackTarget;
 		private final List<MutantArrowEntity> shots = new ArrayList<>();
+		private LivingEntity attackTarget;
 
 		public MultiShotGoal() {
-			this.setMutexFlags(EnumSet.of(Goal.Flag.JUMP, Goal.Flag.LOOK, Goal.Flag.MOVE));
+			setMutexFlags(EnumSet.of(Goal.Flag.JUMP, Goal.Flag.LOOK, Goal.Flag.MOVE));
 		}
 
 		@Override
 		public boolean shouldExecute() {
 			this.attackTarget = getAttackTarget();
-			return this.attackTarget != null && (onGround || world.containsAnyLiquid(getBoundingBox())) && getDistanceSq(this.attackTarget) > 16.0D && currentAttackID == 0 && rand.nextInt(26) == 0 && canEntityBeSeen(this.attackTarget);
-		}
-
-		@Override
-		public void startExecuting() {
-			sendPacket(3);
-			animTick = 0;
+			return this.attackTarget != null && (onGround || world.containsAnyLiquid(getBoundingBox())) && (getDistanceSq(this.attackTarget) > 16.0D) && animation == 0 && rand.nextInt(26) == 0 && canEntityBeSeen(this.attackTarget);
 		}
 
 		@Override
 		public boolean shouldContinueExecuting() {
 			return animTick < 30;
+		}
+
+		@Override
+		public void startExecuting() {
+			setAttackId(MULTI_SHOT_ATTACK);
 		}
 
 		@Override
@@ -549,7 +534,7 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 
 		@Override
 		public void resetTask() {
-			sendPacket(0);
+			setAttackId(0);
 			this.shots.clear();
 		}
 	}

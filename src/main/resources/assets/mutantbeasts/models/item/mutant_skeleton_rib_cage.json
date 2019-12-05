@@ -1,0 +1,6 @@
+{
+	"parent": "item/generated",
+	"textures": {
+		"layer0": "mutantbeasts:item/mutant_skeleton/rib_cage"
+	}
+}

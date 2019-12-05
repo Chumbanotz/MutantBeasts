@@ -1,9 +1,47 @@
 {
-	"entity.creeper_minion.hatch": {
+	"entity.creeper_minion.ambient": {
 		"sounds": [
-			"mutantbeasts:entity/egg_hatch"
+			{
+				"name": "entity.creeper.hurt",
+				"type": "event",
+				"volume": 0.6
+			}
 		],
-		"subtitle": "subtitles.mutantbeasts.entity.creeper_minion.hatch"
+		"subtitle": "subtitles.mutantbeasts.entity.creeper_minion.ambient"
+	},
+	"entity.creeper_minion.death": {
+		"sounds": [
+			{
+				"name": "entity.creeper.death",
+				"type": "event"
+			}
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.creeper_minion.death"
+	},
+	"entity.creeper_minion.hurt": {
+		"sounds": [
+			{
+				"name": "entity.creeper.hurt",
+				"type": "event"
+			}
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.creeper_minion.hurt"
+	},
+	"entity.creeper_minion.primed": {
+		"sounds": [
+			{
+				"name": "entity.creeper.primed",
+				"type": "event",
+				"pitch": 0.9
+			}
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.creeper_minion.primed"
+	},
+	"entity.creeper_minion_egg.hatch": {
+		"sounds": [
+			"mutantbeasts:entity/creeper_minion_egg_hatch"
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.creeper_minion_egg.hatch"
 	},
 	"entity.mutant_creeper.ambient": {
 		"sounds": [
@@ -32,6 +70,52 @@
 			"mutantbeasts:entity/mutant_creeper/hurt2"
 		],
 		"subtitle": "subtitles.mutantbeasts.entity.mutant_creeper.hurt"
+	},
+	"entity.mutant_enderman.ambient": {
+		"sounds": [
+			"mutantbeasts:entity/mutant_enderman/ambient1",
+			"mutantbeasts:entity/mutant_enderman/ambient2"
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.mutant_enderman.ambient"
+	},
+	"entity.mutant_enderman.death": {
+		"sounds": [
+			"mutantbeasts:entity/mutant_enderman/death"
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.mutant_enderman.death"
+	},
+	"entity.mutant_enderman.hurt": {
+		"sounds": [
+			"mutantbeasts:entity/mutant_enderman/hurt1",
+			"mutantbeasts:entity/mutant_enderman/hurt2",
+			"mutantbeasts:entity/mutant_enderman/hurt3"
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.mutant_enderman.hurt"
+	},
+	"entity.mutant_enderman.scream": {
+		"sounds": [
+			{
+				"name": "mutantbeasts:entity/mutant_enderman/scream",
+				"attenuation_distance": 32
+			}
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.mutant_enderman.scream"
+	},
+	"entity.mutant_enderman.stare": {
+		"sounds": [
+			"mutantbeasts:entity/mutant_enderman/stare"
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.mutant_enderman.stare"
+	},
+	"entity.mutant_enderman.teleport": {
+		"sounds": [
+			{
+				"name": "entity.enderman.teleport",
+				"type": "event",
+				"pitch": 0.98
+			}
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.mutant_enderman.teleport"
 	},
 	"entity.mutant_skeleton.ambient": {
 		"sounds": [
@@ -99,6 +183,13 @@
 		],
 		"subtitle": "subtitles.mutantbeasts.entity.mutant_zombie.attack"
 	},
+	"entity.mutant_zombie.death": {
+		"sounds": [
+			"mutantbeasts:entity/mutant_zombie/hurt1",
+			"mutantbeasts:entity/mutant_zombie/hurt2"
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.mutant_zombie.death"
+	},
 	"entity.mutant_zombie.grunt": {
 		"sounds": [
 			"mutantbeasts:entity/mutant_zombie/grunt"
@@ -116,21 +207,56 @@
 		"sounds": [
 			{
 				"name": "mutantbeasts:entity/mutant_zombie/roar1",
-				"attenuation_distance": 8
+				"weight": 2,
+				"attenuation_distance": 32
 			},
 			{
 				"name": "mutantbeasts:entity/mutant_zombie/roar2",
-				"attenuation_distance": 8
+				"weight": 2,
+				"attenuation_distance": 32
 			},
 			{
 				"name": "mutantbeasts:entity/mutant_zombie/roarslow1",
-				"attenuation_distance": 8
+				"attenuation_distance": 32
 			},
 			{
 				"name": "mutantbeasts:entity/mutant_zombie/roarslow2",
-				"attenuation_distance": 8
+				"attenuation_distance": 32
 			}
 		],
 		"subtitle": "subtitles.mutantbeasts.entity.mutant_zombie.roar"
+	},
+	"entity.spider_pig.ambient": {
+		"sounds": [
+			{
+				"name": "entity.pig.ambient",
+				"type": "event"
+			}
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.spider_pig.ambient"
+	},
+	"entity.spider_pig.charge": {
+		"sounds": [
+			"mutantbeasts:entity/spider_pig/charge"
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.spider_pig.charge"
+	},
+	"entity.spider_pig.death": {
+		"sounds": [
+			{
+				"name": "entity.pig.death",
+				"type": "event"
+			}
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.spider_pig.death"
+	},
+	"entity.spider_pig.hurt": {
+		"sounds": [
+			{
+				"name": "entity.pig.hurt",
+				"type": "event"
+			}
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.spider_pig.hurt"
 	}
 }

@@ -1,0 +1,16 @@
+{
+	"type": "minecraft:crafting_shaped",
+	"pattern": [
+		"   ",
+		"   ",
+		"L L"
+	],
+	"key": {
+		"L": {
+			"item": "mutantbeasts:mutant_skeleton_limb"
+		}
+	},
+	"result": {
+		"item": "mutantbeasts:mutant_skeleton_boots"
+	}
+}

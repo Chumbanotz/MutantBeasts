@@ -1,48 +1,80 @@
 package chumbanotz.mutantbeasts.entity;
 
+import java.util.Optional;
+import java.util.UUID;
+
+import javax.annotation.Nullable;
+
+import chumbanotz.mutantbeasts.item.MBItems;
+import chumbanotz.mutantbeasts.util.MBSoundEvents;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.MoverType;
+import net.minecraft.entity.Pose;
 import net.minecraft.entity.monster.CreeperEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.IPacket;
+import net.minecraft.network.datasync.DataParameter;
+import net.minecraft.network.datasync.DataSerializers;
+import net.minecraft.network.datasync.EntityDataManager;
+import net.minecraft.particles.ParticleTypes;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.Hand;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.world.Explosion;
+import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
+import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.fml.network.FMLPlayMessages;
 import net.minecraftforge.fml.network.NetworkHooks;
 
 public class CreeperMinionEggEntity extends Entity {
-	public int health = this.getMaxHealth();
-	public int age;
-	public float rotationRoll;
-	protected int recentlyHit;
+	private static final DataParameter<Optional<UUID>> OWNER_UNIQUE_ID = EntityDataManager.createKey(CreeperMinionEggEntity.class, DataSerializers.OPTIONAL_UNIQUE_ID);
+	private int health = this.getMaxHealth();
+	private int age = (60 + this.rand.nextInt(40)) * 1200;
+	private int recentlyHit;
 	@OnlyIn(Dist.CLIENT)
-	private double velX;
+	private double velocityX;
 	@OnlyIn(Dist.CLIENT)
-	private double velY;
+	private double velocityY;
 	@OnlyIn(Dist.CLIENT)
-	private double velZ;
+	private double velocityZ;
+
+	public CreeperMinionEggEntity(EntityType<? extends CreeperMinionEggEntity> type, World world) {
+		super(type, world);
+		this.preventEntitySpawning = true;
+	}
 
 	public CreeperMinionEggEntity(World world) {
-		super(null, world);
-		int minToTick = 1200;
-		this.age = (60 + this.rand.nextInt(40)) * minToTick;
-		this.preventEntitySpawning = true;
-		// this.setSize(0.5625F, 0.75F);
+		this(MBEntityType.CREEPER_MINION_EGG, world);
+	}
+
+	public CreeperMinionEggEntity(FMLPlayMessages.SpawnEntity packet, World world) {
+		this(MBEntityType.CREEPER_MINION_EGG, world);
 	}
 
 	@Override
 	protected void registerData() {
+		this.dataManager.register(OWNER_UNIQUE_ID, Optional.empty());
+	}
+
+	@Nullable
+	public UUID getOwnerUniqueId() {
+		return this.dataManager.get(OWNER_UNIQUE_ID).orElse(null);
+	}
+
+	public void setOwnerUniqueId(@Nullable UUID uuid) {
+		this.dataManager.set(OWNER_UNIQUE_ID, Optional.ofNullable(uuid));
 	}
 
 	@Override
 	public double getYOffset() {
-		return this.getRidingEntity() != null && this.getRidingEntity() instanceof PlayerEntity ? -1.0625D : (double)this.getYOffset();
+		return this.getRidingEntity() instanceof PlayerEntity ? (double)this.getHeight() - 0.2D : super.getYOffset();
 	}
 
 	@Override
@@ -55,17 +87,14 @@ public class CreeperMinionEggEntity extends Entity {
 		return false;
 	}
 
+	@Override
 	public AxisAlignedBB getCollisionBox(Entity entity) {
-		return entity.getBoundingBox();
-	}
-
-	public AxisAlignedBB getBoundingBox() {
-		return this.getRidingEntity() != null ? null : this.getBoundingBox();
+		return entity.canBePushed() ? entity.getBoundingBox() : null;
 	}
 
 	@Override
 	public boolean canBeCollidedWith() {
-		return this.isAlive();
+		return this.isAlive() && !this.isPassenger();
 	}
 
 	@Override
@@ -77,50 +106,55 @@ public class CreeperMinionEggEntity extends Entity {
 		return 8;
 	}
 
-	public void setPositionAndRotation2(double x, double y, double z, float yaw, float pitch, int i) {
-		// super.setPositionAndRotation2(x, y, z, yaw, pitch, i);
-		// this.motionX = this.velX;
-		// this.motionY = this.velY;
-		// this.motionZ = this.velZ;
+	@Override
+	@OnlyIn(Dist.CLIENT)
+	public void setPositionAndRotationDirect(double x, double y, double z, float yaw, float pitch, int posRotationIncrements, boolean teleport) {
+		super.setPositionAndRotationDirect(x, y, z, yaw, pitch, posRotationIncrements, teleport);
+		this.setMotion(this.velocityX, this.velocityY, this.velocityZ);
 	}
 
 	@Override
 	@OnlyIn(Dist.CLIENT)
 	public void setVelocity(double x, double y, double z) {
 		super.setVelocity(x, y, z);
-		this.velX = x;
-		this.velY = y;
-		this.velZ = z;
+		this.velocityX = x;
+		this.velocityY = y;
+		this.velocityZ = z;
 	}
 
-	protected void move() {
-		if (this.getRidingEntity() == null) {
+	private void move() {
+		if (!this.isPassenger()) {
 			this.prevPosX = this.posX;
 			this.prevPosY = this.posY;
 			this.prevPosZ = this.posZ;
-			this.setMotion(this.getMotion().subtract(0.0D, 0.03999999910593033D, 0.0D));
+			if (!this.hasNoGravity())
+				this.setMotion(this.getMotion().subtract(0.0D, 0.04, 0.0D));
 			this.move(MoverType.SELF, this.getMotion());
-			this.setMotion(this.getMotion().mul(0.9800000190734863D, 0.9800000190734863D, 0.9800000190734863D));
+			this.setMotion(this.getMotion().scale(0.98D));
 
 			if (this.onGround) {
-				this.setMotion(this.getMotion().mul(0.699999988079071D, 0.0D, 0.699999988079071D));
+				this.setMotion(this.getMotion().mul(0.7D, 0.0D, 0.7D));
 			}
 		}
 	}
 
-	public void hatchEgg() {
-		CreeperMinionEntity minion = new CreeperMinionEntity(null, this.world);
-		// minion.setOwner(this.getOwner());
-		minion.setSitting(true);
-		minion.setHealth(minion.getMaxHealth());
+	private void hatch() {
+		CreeperMinionEntity minion = MBEntityType.CREEPER_MINION.create(this.world);
+		UUID uuid = this.getOwnerUniqueId();
+
+		if (uuid != null) {
+			PlayerEntity playerEntity = this.world.getPlayerByUuid(uuid);
+			if (playerEntity != null) {
+				minion.setTamedBy(playerEntity);
+			} else {
+				minion.setOwnerId(uuid);
+			}
+		}
+
+		minion.setSitting(minion.isTamed());
 		minion.setPosition(this.posX, this.posY, this.posZ);
 		this.world.addEntity(minion);
-		// this.world.playSoundAtEntity(minion,
-		// "MutantCreatures:mutantcreeper.egghatch", 0.7F, 0.9F + this.rand.nextFloat()
-		// * 0.1F);
-		// int x = MathHelper.floor(this.posX);
-		// int y = MathHelper.floor(this.getBoundingBox().minY);
-		// int z = MathHelper.floor(this.posZ);
+		this.playSound(MBSoundEvents.ENTITY_CREEPER_MINION_EGG_HATCH, 0.7F, 0.9F + this.rand.nextFloat() * 0.1F);
 		this.remove();
 	}
 
@@ -129,6 +163,11 @@ public class CreeperMinionEggEntity extends Entity {
 		super.tick();
 		this.move();
 
+		if (this.isPassenger() && (this.isEntityInsideOpaqueBlock() || this.getRidingEntity().getPose() != Pose.STANDING || this.getRidingEntity().isSpectator())) {
+			this.detach();
+			this.playMountSound(false);
+		}
+
 		if (!this.world.isRemote) {
 			--this.age;
 
@@ -136,109 +175,79 @@ public class CreeperMinionEggEntity extends Entity {
 				++this.health;
 			}
 
-			if (this.age <= 0 && this.getRidingEntity() == null) {
-				this.hatchEgg();
+			if (this.age <= 0 && !this.isPassenger()) {
+				this.hatch();
 			}
 		}
-
-	}
-
-	public static void entityMountEntity(Entity entity, Entity entity1) {
-		// if (entity != null && !entity.world.isRemote)
-		// {
-		// entity.mountEntity(entity1);
-		// }
-	}
-
-	protected void removeTopEgg() {
-		// if (this.riddenByEntity != null && this.riddenByEntity instanceof
-		// CreeperMinionEggEntity)
-		// {
-		// CreeperMinionEggEntity egg = (CreeperMinionEggEntity)this.riddenByEntity;
-		// egg.removeTopEgg();
-		// }
-		// else
-		// {
-		// this.mountEntity((Entity)null);
-		// }
-	}
-
-	protected void mountEgg(CreeperMinionEggEntity egg) {
-		// if (egg.riddenByEntity == null)
-		// {
-		// this.mountEntity(egg);
-		// }
-		// else if (!(egg.riddenByEntity instanceof CreeperMinionEgg))
-		// {
-		// entityMountEntity(egg.riddenByEntity, (Entity) null);
-		// this.mountEntity(egg);
-		// }
-		// else
-		// {
-		// CreeperMinionEgg eggRiding = (CreeperMinionEgg) egg.riddenByEntity;
-		// this.mountEgg(eggRiding);
-		// }
 	}
 
 	@Override
 	public boolean processInitialInteract(PlayerEntity player, Hand hand) {
-		boolean mount = false;
-		Entity entity = player.getRidingEntity();
-
-		if (!this.world.isRemote) {
-			if (entity == null) {
-				this.startRiding(player);
-				mount = true;
-			} else if (entity instanceof CreeperMinionEggEntity) {
-				if (entity == this) {
-					this.removeTopEgg();
-				} else {
-					this.mountEgg((CreeperMinionEggEntity)entity);
-					mount = true;
-				}
+		if (player.getPose() == Pose.STANDING) {
+			if (!player.isBeingRidden()) {
+				return this.canMount(player);
+			} else if (!player.getPassengers().get(0).isBeingRidden()) {
+				return this.canMount(player.getPassengers().get(0));
 			}
-
-			this.playSound(SoundEvents.ENTITY_ITEM_PICKUP, 0.7F, (mount ? 0.6F : 0.3F) + this.rand.nextFloat() * 0.1F);
 		}
 
-		return super.processInitialInteract(player, hand);
+		return false;
+	}
+
+	private boolean canMount(Entity entity) {
+		if (this.startRiding(entity, true)) {
+			this.playMountSound(true);
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	private void playMountSound(boolean mount) {
+		this.playSound(SoundEvents.ENTITY_ITEM_PICKUP, 0.7F, (mount ? 0.6F : 0.3F) + this.rand.nextFloat() * 0.1F);
 	}
 
 	@Override
-	public boolean attackEntityFrom(DamageSource source, float f) {
-		if (this.getRidingEntity() != null) {
+	public boolean attackEntityFrom(DamageSource source, float amount) {
+		if (this.isInvulnerableTo(source) || this.isPassenger()) {
 			return false;
 		} else {
 			Entity entity = source.getTrueSource();
-
-			if (entity == null || !(entity instanceof CreeperEntity)) {
+			if (entity == null || !(entity instanceof CreeperEntity) && !(entity instanceof CreeperMinionEntity)) {
 				if (source.isExplosion()) {
 					if (!this.world.isRemote) {
-						this.age = (int)((float)this.age - f * 80.0F);
+						this.age = (int)((float)this.age - amount * 80.0F);
 					}
 
-					if (!this.world.isRemote) {
-						// MCHandler.spawnHeartsAtEntity(this, (int) (f / 2.0F));
+					if (this.world instanceof ServerWorld) {
+						for (int i = 0; i < (int)(amount / 2.0F); i++) {
+							double d0 = this.rand.nextGaussian() * 0.02D;
+							double d1 = this.rand.nextGaussian() * 0.02D;
+							double d2 = this.rand.nextGaussian() * 0.02D;
+							((ServerWorld)this.world).spawnParticle(ParticleTypes.HEART, this.posX + (double)(this.rand.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(), this.posY + 0.5D + (double)(this.rand.nextFloat() * this.getHeight()), this.posZ + (double)(this.rand.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(), 0, d0, d1, d2, 1.0D);
+						}
 					}
 
 					return false;
 				} else {
 					this.recentlyHit = this.ticksExisted;
 					this.setMotion(0.0D, 0.2D, 0.0D);
+					this.markVelocityChanged();
 
 					if (!this.world.isRemote) {
-						this.health = (int)((float)this.health - f);
+						this.health = (int)((float)this.health - amount);
 					}
 
 					if (this.health <= 0) {
+						this.world.createExplosion(null, this.posX, this.posY, this.posZ, 0.0F, true, Explosion.Mode.DESTROY);
 						if (!this.world.isRemote) {
-							this.world.createExplosion(null, source, this.posX, this.posY, this.posZ, 0.0F, true, Explosion.Mode.BREAK);
-
-							if (this.rand.nextInt(3) == 0) {
-								// this.dropItem(MutantCreatures.creeperShard, 1);
-							} else {
-								for (int j = 5 + this.rand.nextInt(6); j > 0; --j) {
-									// this.dropItem(Items.gunpowder, 1);
+							if (this.world.getGameRules().getBoolean(GameRules.DO_ENTITY_DROPS)) {
+								if (this.rand.nextInt(3) == 0) {
+									this.entityDropItem(MBItems.CREEPER_SHARD);
+								} else {
+									for (int j = 5 + this.rand.nextInt(6); j > 0; --j) {
+										this.entityDropItem(Items.GUNPOWDER);
+									}
 								}
 							}
 						}
@@ -255,11 +264,21 @@ public class CreeperMinionEggEntity extends Entity {
 	}
 
 	@Override
-	protected void readAdditional(CompoundNBT compound) {
+	protected void writeAdditional(CompoundNBT compound) {
+		compound.putInt("Health", this.health);
+		compound.putInt("Age", this.age);
+		if (this.getOwnerUniqueId() != null) {
+			compound.putUniqueId("OwnerUUID", this.getOwnerUniqueId());
+		}
 	}
 
 	@Override
-	protected void writeAdditional(CompoundNBT compound) {
+	protected void readAdditional(CompoundNBT compound) {
+		this.health = compound.getInt("Health");
+		this.age = compound.getInt("Age");
+		if (compound.hasUniqueId("OwnerUUID")) {
+			this.setOwnerUniqueId(compound.getUniqueId("OwnerUUID"));
+		}
 	}
 
 	@Override

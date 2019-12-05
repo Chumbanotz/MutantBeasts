@@ -1,3 +1,24 @@
 {
-	"type": "minecraft:entity"
+	"type": "minecraft:entity",
+	"pools": [
+		{
+			"rolls": 1,
+			"entries": [
+				{
+					"type": "minecraft:tag",
+					"name": "minecraft:music_discs",
+					"expand": true
+				}
+			],
+			"conditions": [
+				{
+					"condition": "minecraft:entity_properties",
+					"predicate": {
+						"type": "#minecraft:skeletons"
+					},
+					"entity": "killer"
+				}
+			]
+		}
+	]
 }

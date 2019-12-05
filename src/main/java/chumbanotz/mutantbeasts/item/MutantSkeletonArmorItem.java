@@ -1,62 +1,62 @@
 package chumbanotz.mutantbeasts.item;
 
+import java.util.List;
+
+import chumbanotz.mutantbeasts.client.renderer.entity.model.MutantSkeletonModel;
 import net.minecraft.client.renderer.entity.model.BipedModel;
+import net.minecraft.client.util.ITooltipFlag;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.EquipmentSlotType;
 import net.minecraft.item.ArmorItem;
-import net.minecraft.item.IArmorMaterial;
+import net.minecraft.item.ArmorMaterial;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.crafting.Ingredient;
-import net.minecraft.util.SoundEvent;
+import net.minecraft.potion.EffectInstance;
+import net.minecraft.potion.Effects;
+import net.minecraft.util.text.ITextComponent;
+import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
 public class MutantSkeletonArmorItem extends ArmorItem {
-	public MutantSkeletonArmorItem(IArmorMaterial materialIn, EquipmentSlotType slot, Item.Properties properties) {
-		super(materialIn, slot, properties);
+	public MutantSkeletonArmorItem(EquipmentSlotType slot, Item.Properties properties) {
+		super(ArmorMaterial.IRON, slot, properties);
 	}
 
 	@Override
-	public <A extends BipedModel<?>> A getArmorModel(LivingEntity entityLiving, ItemStack itemStack, EquipmentSlotType armorSlot, A _default) {
-		return super.getArmorModel(entityLiving, itemStack, armorSlot, _default);
+	@OnlyIn(Dist.CLIENT)
+	public void addInformation(ItemStack stack, World worldIn, List<ITextComponent> tooltip, ITooltipFlag flagIn) {
+
 	}
 
-	class ExoskeletonMaterial implements IArmorMaterial {
-		@Override
-		public int getDurability(EquipmentSlotType slotIn) {
-			return 0;
+	@Override
+	public void onArmorTick(ItemStack stack, World world, PlayerEntity player) {
+		if (this.slot == EquipmentSlotType.CHEST) {
+			// MutantCreatures.proxy.increaseBowSpeed(player);
 		}
 
-		@Override
-		public int getDamageReductionAmount(EquipmentSlotType slotIn) {
-			return 0;
+		if (this.slot == EquipmentSlotType.LEGS) {
+			player.addPotionEffect(new EffectInstance(Effects.SPEED, 1, 1, false, false));
 		}
 
-		@Override
-		public int getEnchantability() {
-			return 0;
+		if (this.slot == EquipmentSlotType.FEET) {
+			//player.getAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).applyModifier(null);
+			player.addPotionEffect(new EffectInstance(Effects.JUMP_BOOST, 1, player.isSprinting() ? 1 : 0, false, false));
 		}
+	}
 
-		@Override
-		public SoundEvent getSoundEvent() {
-			return null;
-		}
+	@Override
+	public String getArmorTexture(ItemStack stack, Entity entity, EquipmentSlotType slot, String type) {
+		int layer = (slot == EquipmentSlotType.LEGS) ? 2 : 1;
+		return "mutantbeasts:textures/armor/mutant_skeleton_layer_" + layer + ".png";
+	}
 
-		@Override
-		public Ingredient getRepairMaterial() {
-			return Ingredient.EMPTY;
-		}
-
-		@Override
-		@OnlyIn(Dist.CLIENT)
-		public String getName() {
-			return null;
-		}
-
-		@Override
-		public float getToughness() {
-			return 0;
-		}
+	@Override
+	@OnlyIn(Dist.CLIENT)
+	public <A extends BipedModel<?>> A getArmorModel(LivingEntity entityLiving, ItemStack itemStack, EquipmentSlotType armorSlot, A _default) {
+		_default.bipedHeadwear = MutantSkeletonModel.createSkull(_default);
+		return _default;
 	}
 }

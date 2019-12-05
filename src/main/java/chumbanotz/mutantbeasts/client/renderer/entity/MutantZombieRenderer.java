@@ -2,18 +2,22 @@ package chumbanotz.mutantbeasts.client.renderer.entity;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 
+import chumbanotz.mutantbeasts.MutantBeasts;
 import chumbanotz.mutantbeasts.client.renderer.entity.model.MutantZombieModel;
 import chumbanotz.mutantbeasts.entity.mutant.MutantZombieEntity;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
 @OnlyIn(Dist.CLIENT)
-public class MutantZombieRenderer extends MobAutoTextureRenderer<MutantZombieEntity, MutantZombieModel> {
+public class MutantZombieRenderer extends MutantRenderer<MutantZombieEntity, MutantZombieModel> {
+	private static final ResourceLocation TEXTURE = MutantBeasts.getEntityTexture("mutant_zombie");
+
 	public MutantZombieRenderer(EntityRendererManager manager) {
-		super(manager, new MutantZombieModel(), 1.3F);
+		super(manager, new MutantZombieModel(), 1.0F);
 	}
 
 	@Override
@@ -22,7 +26,7 @@ public class MutantZombieRenderer extends MobAutoTextureRenderer<MutantZombieEnt
 			GlStateManager.enableNormalize();
 			GlStateManager.enableBlend();
 			GlStateManager.blendFunc(770, 771);
-			GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F - ((float)living.vanishTime + this.entityModel.partialTick) / (float)MutantZombieEntity.MAX_VANISH_TIME * 0.6F);
+			GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F - (float)living.vanishTime + this.entityModel.getPartialTick() / (float)MutantZombieEntity.MAX_DEATH_TIME * 0.6F);
 		}
 
 		super.renderModel(living, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scaleFactor);
@@ -41,11 +45,11 @@ public class MutantZombieRenderer extends MobAutoTextureRenderer<MutantZombieEnt
 	@Override
 	protected void applyRotations(MutantZombieEntity entityLiving, float ageInTicks, float rotationYaw, float partialTicks) {
 		GlStateManager.rotatef(180.0F - rotationYaw, 0.0F, 1.0F, 0.0F);
-		int pitch = Math.min(20, entityLiving.downTime);
+		int pitch = Math.min(20, entityLiving.deathTime);
 		boolean reviving = false;
 
-		if (entityLiving.downTime > MutantZombieEntity.MAX_DOWN_TIME - 40) {
-			pitch = MutantZombieEntity.MAX_DOWN_TIME - entityLiving.downTime;
+		if (entityLiving.deathTime > MutantZombieEntity.MAX_DEATH_TIME - 40) {
+			pitch = MutantZombieEntity.MAX_DEATH_TIME - entityLiving.deathTime;
 			reviving = true;
 		}
 
@@ -77,5 +81,10 @@ public class MutantZombieRenderer extends MobAutoTextureRenderer<MutantZombieEnt
 	@Override
 	protected float getDeathMaxRotation(MutantZombieEntity living) {
 		return 80.0F;
+	}
+
+	@Override
+	protected ResourceLocation getEntityTexture(MutantZombieEntity entity) {
+		return TEXTURE;
 	}
 }

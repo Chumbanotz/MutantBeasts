@@ -1,32 +1,34 @@
 package chumbanotz.mutantbeasts.client.renderer.entity.layers;
 
+import java.util.function.Predicate;
+
 import com.mojang.blaze3d.platform.GlStateManager;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.entity.IEntityRenderer;
 import net.minecraft.client.renderer.entity.layers.LayerRenderer;
 import net.minecraft.client.renderer.entity.model.EntityModel;
-import net.minecraft.entity.monster.CreeperEntity;
+import net.minecraft.entity.MobEntity;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
 @OnlyIn(Dist.CLIENT)
-public class CreeperChargeLayer<T extends CreeperEntity, M extends EntityModel<T>> extends LayerRenderer<T, M> {
-	private static final ResourceLocation LIGHTNING_TEXTURE = new ResourceLocation("textures/entity/creeper/creeper_armor.png");
+public class CreeperChargeLayer<T extends MobEntity, M extends EntityModel<T>> extends LayerRenderer<T, M> {
+	public static final ResourceLocation LIGHTNING_TEXTURE = new ResourceLocation("textures/entity/creeper/creeper_armor.png");
 	private final M model;
+	private final Predicate<T> shouldRender;
 
-	public CreeperChargeLayer(IEntityRenderer<T, M> renderer, M model) {
+	public CreeperChargeLayer(IEntityRenderer<T, M> renderer, M model, Predicate<T> shouldRender) {
 		super(renderer);
 		this.model = model;
+		this.shouldRender = shouldRender;
 	}
 
 	@Override
 	public void render(T entityIn, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch, float scale) {
-		if (entityIn.getPowered()) {
-			boolean flag = entityIn.isInvisible();
-			GlStateManager.depthMask(!flag);
+		if (this.shouldRender.test(entityIn)) {
+			GlStateManager.depthMask(!entityIn.isInvisible());
 			this.bindTexture(LIGHTNING_TEXTURE);
 			GlStateManager.matrixMode(5890);
 			GlStateManager.loadIdentity();
@@ -38,10 +40,9 @@ public class CreeperChargeLayer<T extends CreeperEntity, M extends EntityModel<T
 			GlStateManager.disableLighting();
 			GlStateManager.blendFunc(GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE);
 			this.getEntityModel().setModelAttributes(this.model);
-			GameRenderer gamerenderer = Minecraft.getInstance().gameRenderer;
-			gamerenderer.setupFogColor(true);
+			Minecraft.getInstance().gameRenderer.setupFogColor(true);
 			this.model.render(entityIn, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scale);
-			gamerenderer.setupFogColor(false);
+			Minecraft.getInstance().gameRenderer.setupFogColor(false);
 			GlStateManager.matrixMode(5890);
 			GlStateManager.loadIdentity();
 			GlStateManager.matrixMode(5888);

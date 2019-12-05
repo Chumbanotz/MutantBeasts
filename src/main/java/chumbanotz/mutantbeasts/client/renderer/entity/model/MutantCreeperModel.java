@@ -9,19 +9,18 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 
 @OnlyIn(Dist.CLIENT)
 public class MutantCreeperModel extends EntityModel<MutantCreeperEntity> {
-	public RendererModel pelvis;
-	public RendererModel body;
-	public RendererModel neck;
-	public RendererModel head;
-	public RendererModel frleg;
-	public RendererModel flleg;
-	public RendererModel frforeleg;
-	public RendererModel flforeleg;
-	public RendererModel brleg;
-	public RendererModel blleg;
-	public RendererModel brforeleg;
-	public RendererModel blforeleg;
-	public static final float PI = 3.1415927F;
+	private final RendererModel pelvis;
+	private final RendererModel body;
+	private final RendererModel neck;
+	private final RendererModel head;
+	private final RendererModel frleg;
+	private final RendererModel flleg;
+	private final RendererModel frforeleg;
+	private final RendererModel flforeleg;
+	private final RendererModel brleg;
+	private final RendererModel blleg;
+	private final RendererModel brforeleg;
+	private final RendererModel blforeleg;
 
 	public MutantCreeperModel() {
 		this(0.0F);
@@ -86,11 +85,11 @@ public class MutantCreeperModel extends EntityModel<MutantCreeperEntity> {
 	@Override
 	public void render(MutantCreeperEntity entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch, float scale) {
 		this.setAngles();
-		this.setRotationAngles(limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scale);
+		this.animate(entity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scale);
 		this.pelvis.render(scale);
 	}
 
-	public void setAngles() {
+	private void setAngles() {
 		this.pelvis.rotationPointY = 14.0F;
 		this.pelvis.rotateAngleX = -0.7853982F;
 		this.body.rotateAngleX = 0.9424778F;
@@ -117,10 +116,10 @@ public class MutantCreeperModel extends EntityModel<MutantCreeperEntity> {
 		this.blforeleg.rotateAngleX = 0.48332196F;
 	}
 
-	public void setRotationAngles(float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch, float scaleFactor) {
+	private void animate(MutantCreeperEntity entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch, float scale) {
 		float breatheAnim = MathHelper.sin(ageInTicks * 0.1F);
-		float walkAnim1 = (MathHelper.sin(limbSwing * PI / 4.0F) + 0.4F) * limbSwingAmount;
-		float walkAnim2 = (MathHelper.sin(limbSwing * PI / 4.0F + PI) + 0.4F) * limbSwingAmount;
+		float walkAnim1 = (MathHelper.sin(limbSwing * (float)Math.PI / 4.0F) + 0.4F) * limbSwingAmount;
+		float walkAnim2 = (MathHelper.sin(limbSwing * (float)Math.PI / 4.0F + (float)Math.PI) + 0.4F) * limbSwingAmount;
 
 		if (walkAnim1 < 0.0F) {
 			walkAnim1 = 0.0F;
@@ -130,9 +129,9 @@ public class MutantCreeperModel extends EntityModel<MutantCreeperEntity> {
 			walkAnim2 = 0.0F;
 		}
 
-		float walkAnim3 = MathHelper.sin(limbSwing * PI / 8.0F) * limbSwingAmount;
-		float walkAnim4 = (MathHelper.sin(limbSwing * PI / 4.0F + 1.5707964F) + 0.4F) * limbSwingAmount;
-		float walkAnim5 = (MathHelper.sin(limbSwing * PI / 4.0F + 4.712389F) + 0.4F) * limbSwingAmount;
+		float walkAnim3 = MathHelper.sin(limbSwing * (float)Math.PI / 8.0F) * limbSwingAmount;
+		float walkAnim4 = (MathHelper.sin(limbSwing * (float)Math.PI / 4.0F + 1.5707964F) + 0.4F) * limbSwingAmount;
+		float walkAnim5 = (MathHelper.sin(limbSwing * (float)Math.PI / 4.0F + 4.712389F) + 0.4F) * limbSwingAmount;
 
 		if (walkAnim4 < 0.0F) {
 			walkAnim4 = 0.0F;
@@ -142,12 +141,12 @@ public class MutantCreeperModel extends EntityModel<MutantCreeperEntity> {
 			walkAnim5 = 0.0F;
 		}
 
-		float walkAnim6 = MathHelper.sin(limbSwing * PI / 8.0F + 1.5707964F) * limbSwingAmount;
+		float walkAnim6 = MathHelper.sin(limbSwing * (float)Math.PI / 8.0F + 1.5707964F) * limbSwingAmount;
 		float faceYaw = netHeadYaw / 57.295776F;
 		float facePitch = headPitch / 57.295776F;
 		float f6 = faceYaw / 3.0F;
 		float f7 = facePitch / 3.0F;
-		this.pelvis.rotationPointY += MathHelper.sin(limbSwing * PI / 4.0F) * limbSwingAmount * 0.5F;
+		this.pelvis.rotationPointY += MathHelper.sin(limbSwing * (float)Math.PI / 4.0F) * limbSwingAmount * 0.5F;
 		this.body.rotateAngleX += breatheAnim * 0.02F;
 		this.body.rotateAngleX += f7;
 		this.body.rotateAngleY += f6;
@@ -171,9 +170,9 @@ public class MutantCreeperModel extends EntityModel<MutantCreeperEntity> {
 		this.blleg.rotateAngleZ += walkAnim6 * 0.2F;
 
 		if (this.swingProgress > -9990.0F) {
-			float swingAnim = MathHelper.sin(this.swingProgress * PI);
-			this.body.rotateAngleX += swingAnim * PI / 3.0F;
-			this.neck.rotateAngleX -= swingAnim * PI / 4.0F;
+			float swingAnim = MathHelper.sin(this.swingProgress * (float)Math.PI);
+			this.body.rotateAngleX += swingAnim * (float)Math.PI / 3.0F;
+			this.neck.rotateAngleX -= swingAnim * (float)Math.PI / 4.0F;
 		}
 	}
 }

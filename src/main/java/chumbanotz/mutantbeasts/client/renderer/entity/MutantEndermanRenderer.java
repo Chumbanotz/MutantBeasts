@@ -1,242 +1,270 @@
 package chumbanotz.mutantbeasts.client.renderer.entity;
 
+import java.lang.reflect.Field;
+
+import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
 
+import chumbanotz.mutantbeasts.MutantBeasts;
 import chumbanotz.mutantbeasts.client.renderer.entity.model.MutantEndermanModel;
 import chumbanotz.mutantbeasts.entity.mutant.MutantEndermanEntity;
+import net.minecraft.block.Block;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
+import net.minecraft.client.renderer.entity.IEntityRenderer;
+import net.minecraft.client.renderer.entity.layers.LayerRenderer;
 import net.minecraft.client.renderer.entity.model.EndermanModel;
 import net.minecraft.client.renderer.entity.model.EntityModel;
+import net.minecraft.client.renderer.texture.AtlasTexture;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 
 @OnlyIn(Dist.CLIENT)
-public class MutantEndermanRenderer extends MobAutoTextureRenderer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> {
-	private boolean teleportAttack = false;
-	private MutantEndermanModel endermanModel;
-	private EndermanModel<MutantEndermanEntity> cloneModel;
-	private static final ResourceLocation texture = new ResourceLocation("mutantbeasts:textures/entity/enderman.png");
-	private static final ResourceLocation blankTexture = new ResourceLocation("mutantbeasts:textures/entity/blank.png");
-	private static final ResourceLocation glowTexture = new ResourceLocation("mutantbeasts:textures/entity/enderman_glow.png");
-	private static final ResourceLocation cloneTexture = new ResourceLocation("mutantbeasts:textures/entity/enderman_clone.png");
-	private static final ResourceLocation shuffleTexture = new ResourceLocation("mutantbeasts:textures/entity/enderman_shuffle.png");
+public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> {
+	private static final Field RENDER_POS_X = ObfuscationReflectionHelper.findField(EntityRendererManager.class, "field_78725_b");
+	private static final Field RENDER_POS_Y = ObfuscationReflectionHelper.findField(EntityRendererManager.class, "field_78726_c");
+	private static final Field RENDER_POS_Z = ObfuscationReflectionHelper.findField(EntityRendererManager.class, "field_78723_d");
+	private static final ResourceLocation TEXTURE = MutantBeasts.getEntityTexture("mutant_enderman");
+	private static final ResourceLocation BLANK_TEXTURE = MutantBeasts.prefix("textures/blank.png");
+	private static final ResourceLocation CLONE_TEXTURE = MutantBeasts.getEntityTexture("mutant_enderman_clone");
+	private static final ResourceLocation EYES_TEXTURE = MutantBeasts.getEntityTexture("mutant_enderman_eyes");
+	private static final ResourceLocation SHUFFLE_TEXTURE = MutantBeasts.getEntityTexture("mutant_enderman_shuffle");
+	private final MutantEndermanModel endermanModel;
+	private final EndermanModel<MutantEndermanEntity> cloneModel;
+	private boolean teleportAttack;
 
 	public MutantEndermanRenderer(EntityRendererManager manager) {
-		super(manager, new MutantEndermanModel(), 1);
+		super(manager, new MutantEndermanModel(), 0.8F);
 		this.endermanModel = (MutantEndermanModel)this.entityModel;
-		this.cloneModel = new EndermanModel<>(1);
-		this.cloneModel.isAttacking = true;
+		this.cloneModel = new EndermanModel<>(0.0F);
+		this.addLayer(new MutantEndermanRenderer.EyesLayer(this));
+		this.addLayer(new MutantEndermanRenderer.GlowLayer(this));
+		this.addLayer(new MutantEndermanRenderer.CarriedBlocksLayer(this));
 	}
 
 	@Override
-	protected void renderModel(MutantEndermanEntity entitylivingbaseIn, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch, float scaleFactor) {
-		if (entitylivingbaseIn.deathTick > 80) {
-			float blendFactor = (float)(entitylivingbaseIn.deathTick - 80) / (float)(entitylivingbaseIn.maxDeathTick() - 80);
+	protected void renderModel(MutantEndermanEntity livingEntity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch, float scaleFactor) {
+		if (livingEntity.deathTime > 80) {
+			float blendFactor = (float)(livingEntity.deathTime - 80) / (float)(MutantEndermanEntity.MAX_DEATH_TIME - 80);
 			GlStateManager.depthFunc(515);
 			GlStateManager.enableAlphaTest();
 			GlStateManager.alphaFunc(516, blendFactor);
-			this.bindTexture(shuffleTexture);
-			this.entityModel.render(entitylivingbaseIn, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scaleFactor);
+			this.bindTexture(SHUFFLE_TEXTURE);
+			this.entityModel.render(livingEntity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scaleFactor);
 			GlStateManager.alphaFunc(516, 0.1F);
 			GlStateManager.depthFunc(514);
 		}
 
-		this.bindEntityTexture(entitylivingbaseIn);
-		this.entityModel.render(entitylivingbaseIn, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scaleFactor);
+		super.renderModel(livingEntity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scaleFactor);
 		GlStateManager.depthFunc(515);
 	}
 
 	@Override
 	public void doRender(MutantEndermanEntity entity, double x, double y, double z, float entityYaw, float partialTicks) {
+		this.shadowSize = entity.isClone() ? 0.5F : 0.8F;
+		this.shadowOpaque = entity.isClone() ? 0.5F : 1.0F;
 		this.teleportAttack = false;
 		double addX = 0.0D;
 		double addZ = 0.0D;
-		this.entityModel = (entity.currentAttackID == 6 ? this.cloneModel : this.endermanModel);
-		boolean forcedLook = entity.currentAttackID == 3;
-		boolean scream = entity.currentAttackID == 5;
-		boolean telesmash = entity.currentAttackID == 7 && entity.animTick < 18;
-		boolean death = entity.currentAttackID == 10;
-		double scale;
-		if (forcedLook || scream || telesmash || death) {
-			scale = 0.03D;
-			if (entity.animTick >= 40 && !death) {
-				scale *= 0.5D;
+		this.entityModel = entity.isClone() ? this.cloneModel : this.endermanModel;
+		this.cloneModel.isAttacking = entity.isAggressive();
+		boolean forcedLook = entity.getAttackID() == MutantEndermanEntity.STARE_ATTACK;
+		boolean scream = entity.getAttackID() == MutantEndermanEntity.SCREAM_ATTACK;
+		boolean clone = entity.isClone() && entity.isAggressive();
+		boolean telesmash = entity.getAttackID() == MutantEndermanEntity.TELESMASH_ATTACK && entity.getAttackTick() < 18;
+		boolean death = entity.getAttackID() == MutantEndermanEntity.DEATH_ATTACK;
+		if (forcedLook || scream || clone || telesmash || death) {
+			double shake = 0.03D;
+			if (entity.getAttackTick() >= 40 && !death) {
+				shake *= 0.5D;
+			}
+
+			if (clone) {
+				shake = 0.02D;
 			}
 
 			if (death) {
-				if (entity.animTick < 80) {
-					scale = 0.019999999552965164D;
-				} else {
-					scale = 0.05000000074505806D;
-				}
+				shake = entity.getAttackTick() < 80 ? 0.019999999552965164D : 0.05000000074505806D;
 			}
 
-			addX = entity.getRNG().nextGaussian() * scale;
-			addZ = entity.getRNG().nextGaussian() * scale;
+			addX = entity.getRNG().nextGaussian() * shake;
+			addZ = entity.getRNG().nextGaussian() * shake;
 		}
 
 		super.doRender(entity, x + addX, y, z + addZ, entityYaw, partialTicks);
-		if (entity.currentAttackID == 4) {
+		if (entity.getAttackID() == MutantEndermanEntity.TELEPORT_ATTACK) {
 			this.teleportAttack = true;
-			scale = (double)entity.teleX + 0.5D;
-			double teleY = (double)entity.teleY;
-			double teleZ = (double)entity.teleZ + 0.5D;
-			double var10002 = scale - this.renderManager.playerViewX;
-			double var24 = teleY - this.renderManager.playerViewY;
-			super.doRender(entity, var10002, var24, teleZ - this.renderManager.playerViewY, entityYaw, partialTicks);
+			try {
+				double renderPosX = (double)entity.teleX + 0.5D - RENDER_POS_X.getDouble(this.renderManager);
+				double renderPosY = (double)entity.teleY - RENDER_POS_Y.getDouble(this.renderManager);
+				double renderPosZ = (double)entity.teleZ + 0.5D - RENDER_POS_Z.getDouble(this.renderManager);
+				super.doRender(entity, renderPosX, renderPosY, renderPosZ, entityYaw, partialTicks);
+			} catch (IllegalArgumentException | IllegalAccessException exception) {
+				MutantBeasts.LOGGER.error("Failed to render mutant enderman teleport position", exception);
+			}
 		}
 	}
 
-	// protected void renderCarrying(MutantEndermanEntity enderman, float par2) {
-	// //super.renderEquippedItems(enderman, par2);
-	// GL11.glEnable(32826);
-	//
-	// for(int i = 1; i < enderman.heldBlock.length; ++i) {
-	// if (enderman.heldBlock[i] != 0) {
-	// GL11.glPushMatrix();
-	// this.postRenderArm(0.0625F, i);
-	// GL11.glTranslatef(0.0F, 1.2F, 0.0F);
-	// float var10000 = (float)enderman.ticksExisted;
-	// float var10001 = (float)i * 2.0F;
-	// MutantEndermanModel var10002 = this.endermanModel;
-	// float tick = var10000 + var10001 * 3.1415927F + par2;
-	// GL11.glRotatef(tick * 10.0F, 1.0F, 0.0F, 0.0F);
-	// GL11.glRotatef(tick * 8.0F, 0.0F, 1.0F, 0.0F);
-	// GL11.glRotatef(tick * 6.0F, 0.0F, 0.0F, 1.0F);
-	// float f = 0.75F;
-	// GL11.glScalef(-f, -f, f);
-	// int var4 = enderman.getBrightnessForRender();
-	// int var5 = var4 % 65536;
-	// int var6 = var4 / 65536;
-	// OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit,
-	// (float)var5, (float)var6);
-	// GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
-	// this.bindTexture(TextureMap.locationBlocksTexture);
-	// this.field_147909_c.renderBlockAsItem(Block.getBlockById(enderman.heldBlock[i]),
-	// enderman.heldBlockData[i], 1.0F);
-	// GL11.glPopMatrix();
-	// }
-	// }
-	//
-	// GL11.glDisable(32826);
-	// }
-
-	protected void postRenderArm(float scale, int armID) {
-		this.endermanModel.pelvis.postRender(scale);
-		this.endermanModel.abdomen.postRender(scale);
-		this.endermanModel.chest.postRender(scale);
-		this.endermanModel.getArmFromID(armID).postRender(scale);
+	@Override
+	protected float getDeathMaxRotation(MutantEndermanEntity livingEntity) {
+		return 0.0F;
 	}
 
-	// protected int renderGlowModels(MutantEndermanEntity enderman, int state,
-	// float animTick) {
-	// if (enderman.isInvisible()) {
-	// GL11.glDepthMask(false);
-	// } else {
-	// GL11.glDepthMask(true);
-	// }
-	//
-	// if (state == 0 && enderman.currentAttackID != 6) {
-	// GL11.glDisable(2896);
-	// this.bindTexture(glowTexture);
-	// int var5 = '\uf0f0';
-	// int var6 = var5 % 65536;
-	// int var7 = var5 / 65536;
-	// OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit,
-	// (float)var6, (float)var7);
-	// GL11.glColor4f(1.0F, 1.0F, 1.0F, 1.0F);
-	// return 1;
-	// } else {
-	// if (state == 1 && enderman.currentAttackID != 6) {
-	// GL11.glEnable(2896);
-	// } else {
-	// boolean teleport;
-	// boolean scream;
-	// boolean clone;
-	// if (state != 2) {
-	// if (state == 3) {
-	// teleport = enderman.currentAttackID == 4 && enderman.animTick < 10;
-	// scream = enderman.currentAttackID == 5;
-	// clone = enderman.currentAttackID == 6;
-	// if (teleport || scream || clone) {
-	// GL11.glMatrixMode(5890);
-	// GL11.glLoadIdentity();
-	// GL11.glMatrixMode(5888);
-	// GL11.glDisable(3042);
-	// }
-	// }
-	// } else {
-	// teleport = enderman.currentAttackID == 4 && enderman.animTick < 10;
-	// scream = enderman.currentAttackID == 5;
-	// clone = enderman.currentAttackID == 6;
-	// if (teleport || scream || clone) {
-	// GL11.glDisable(2896);
-	// this.bindTexture(cloneTexture);
-	// GL11.glMatrixMode(5890);
-	// GL11.glLoadIdentity();
-	// float f = ((float)enderman.ticksExisted + animTick) * 0.008F;
-	// GL11.glTranslatef(f, f, 0.0F);
-	// GL11.glMatrixMode(5888);
-	// GL11.glEnable(2977);
-	// GL11.glEnable(3042);
-	// GL11.glBlendFunc(770, 771);
-	// int var5 = '\uf0f0';
-	// int var6 = var5 % 65536;
-	// int var7 = var5 / 65536;
-	// OpenGlHelper.setLightmapTextureCoords(OpenGlHelper.lightmapTexUnit,
-	// (float)var6, (float)var7);
-	// float alpha = 1.0F;
-	// if (teleport) {
-	// if (!this.teleportAttack && enderman.animTick >= 8) {
-	// alpha -= ((float)(enderman.animTick - 8) + animTick) / 2.0F;
-	// }
-	//
-	// if (this.teleportAttack && enderman.animTick < 2) {
-	// alpha = ((float)enderman.animTick + animTick) / 2.0F;
-	// }
-	// }
-	//
-	// if (scream) {
-	// if (enderman.animTick < 40) {
-	// alpha = ((float)enderman.animTick + animTick) / 40.0F;
-	// } else if (enderman.animTick >= 160) {
-	// alpha = 1.0F - ((float)enderman.animTick + animTick) / 40.0F;
-	// }
-	// }
-	//
-	// GL11.glColor4f(0.9F, 0.3F, 1.0F, alpha);
-	// GL11.glEnable(2896);
-	// float scale = 0.0F;
-	// if (teleport) {
-	// scale = 1.2F + ((float)enderman.animTick + animTick) / 10.0F;
-	// if (this.teleportAttack) {
-	// scale = 2.2F - ((float)enderman.animTick + animTick) / 10.0F;
-	// }
-	// }
-	//
-	// if (scream) {
-	// if (enderman.animTick < 40) {
-	// scale = 1.2F + ((float)enderman.animTick + animTick) / 40.0F;
-	// } else if (enderman.animTick < 160) {
-	// scale = 2.2F;
-	// } else {
-	// scale = 2.2F - ((float)enderman.animTick + animTick) / 10.0F;
-	// }
-	// }
-	//
-	// if (clone) {
-	// GL11.glScalef(1.25F, 1.25F, 1.25F);
-	// } else {
-	// GL11.glScalef(scale, scale * 0.8F, scale);
-	// }
-	//
-	// return 1;
-	// }
-	// }
-	// }
-	//
-	// return -1;
-	// }
-	// }
+	@Override
+	protected ResourceLocation getEntityTexture(MutantEndermanEntity entity) {
+		return entity.isClone() ? BLANK_TEXTURE : TEXTURE;
+	}
+
+	@OnlyIn(Dist.CLIENT)
+	static class EyesLayer extends LayerRenderer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> {
+		public EyesLayer(IEntityRenderer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> entityRendererIn) {
+			super(entityRendererIn);
+		}
+
+		@Override
+		public void render(MutantEndermanEntity entityIn, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch, float scale) {
+			if (!entityIn.isClone()) {
+				GlStateManager.disableLighting();
+				this.bindTexture(EYES_TEXTURE);
+				GLX.glMultiTexCoord2f(GLX.GL_TEXTURE1, 61680.0F, 0.0F);
+				GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+				this.getEntityModel().render(entityIn, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scale);
+				GlStateManager.enableLighting();
+			}
+		}
+
+		@Override
+		public boolean shouldCombineTextures() {
+			return false;
+		}
+	}
+
+	@OnlyIn(Dist.CLIENT)
+	class GlowLayer extends LayerRenderer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> {
+		public GlowLayer(IEntityRenderer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> entityRendererIn) {
+			super(entityRendererIn);
+		}
+
+		@Override
+		public void render(MutantEndermanEntity entityIn, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch, float scale) {
+			boolean teleport = entityIn.getAttackID() == MutantEndermanEntity.TELEPORT_ATTACK && entityIn.getAttackTick() < 10;
+			boolean scream = entityIn.getAttackID() == MutantEndermanEntity.SCREAM_ATTACK;
+			boolean clone = entityIn.isClone();
+
+			if (teleport || scream || clone) {
+				GlStateManager.disableLighting();
+				this.bindTexture(CLONE_TEXTURE);
+				GlStateManager.matrixMode(5890);
+				GlStateManager.loadIdentity();
+				float f = ((float)entityIn.ticksExisted + partialTicks) * 0.008F;
+				GlStateManager.translatef(f, f, 0.0F);
+				GlStateManager.matrixMode(5888);
+				GlStateManager.enableNormalize();
+				GlStateManager.enableBlend();
+				GlStateManager.blendFunc(770, 771);
+				int var5 = '\uf0f0';
+				int var6 = var5 % 65536;
+				int var7 = var5 / 65536;
+				GLX.glMultiTexCoord2f(GLX.GL_TEXTURE1, (float)var6, (float)var7);
+				float alpha = 1.0F;
+				float scaleGlow = 2.0F;
+
+				if (teleport) {
+					if (!teleportAttack && entityIn.getAttackTick() >= 8) {
+						alpha -= ((float)(entityIn.getAttackTick() - 8) + partialTicks) / 2.0F;
+					}
+
+					if (teleportAttack && entityIn.getAttackTick() < 2) {
+						alpha = ((float)entityIn.getAttackTick() + partialTicks) / 2.0F;
+					}
+
+					scaleGlow = 1.2F + ((float)entityIn.getAttackTick() + partialTicks) / 10.0F;
+					if (teleportAttack) {
+						scaleGlow = 2.2F - ((float)entityIn.getAttackTick() + partialTicks) / 10.0F;
+					}
+				}
+
+				if (scream) {
+					if (entityIn.getAttackTick() < 40) {
+						alpha = ((float)entityIn.getAttackTick() + partialTicks) / 40.0F;
+					} else if (entityIn.getAttackTick() >= 160) {
+						alpha = 1.0F - ((float)entityIn.getAttackTick() + partialTicks) / 40.0F;
+					}
+
+					if (entityIn.getAttackTick() < 40) {
+						scaleGlow = 1.2F + ((float)entityIn.getAttackTick() + partialTicks) / 40.0F;
+					} else if (entityIn.getAttackTick() < 160) {
+						scaleGlow = 2.2F;
+					} else {
+						scaleGlow = 2.2F - ((float)entityIn.getAttackTick() + partialTicks) / 10.0F;
+					}
+				}
+
+				GlStateManager.enableLighting();
+				GlStateManager.color4f(0.9F, 0.3F, 1.0F, alpha);
+				Minecraft.getInstance().gameRenderer.setupFogColor(true);
+				if (clone) {
+					this.getEntityModel().render(entityIn, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scale);
+				} else {
+					GlStateManager.pushMatrix();
+					GlStateManager.scalef(scaleGlow, scaleGlow * 0.8F, scaleGlow);
+					this.getEntityModel().render(entityIn, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scale);
+					GlStateManager.popMatrix();
+				}
+				Minecraft.getInstance().gameRenderer.setupFogColor(false);
+				GlStateManager.matrixMode(5890);
+				GlStateManager.loadIdentity();
+				GlStateManager.matrixMode(5888);
+				GlStateManager.disableBlend();
+			}
+		}
+
+		@Override
+		public boolean shouldCombineTextures() {
+			return false;
+		}
+	}
+
+	@OnlyIn(Dist.CLIENT)
+	static class CarriedBlocksLayer extends LayerRenderer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> {
+		public CarriedBlocksLayer(IEntityRenderer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> entityRendererIn) {
+			super(entityRendererIn);
+		}
+
+		@Override
+		public void render(MutantEndermanEntity entityIn, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch, float scale) {
+			GlStateManager.enableRescaleNormal();
+
+			for (int i = 1; i < entityIn.heldBlock.length; i++) {
+				if (entityIn.heldBlock[i] != 0 && !entityIn.isClone()) {
+					GlStateManager.pushMatrix();
+					((MutantEndermanModel)this.getEntityModel()).postRenderArm(0.0625F, i);
+					GlStateManager.translatef(0.0F, 1.2F, 0.0F);
+					float tick = (float)entityIn.ticksExisted + (float)i * 2.0F * 3.1415927F + partialTicks;
+					GlStateManager.rotatef(tick * 10.0F, 1.0F, 0.0F, 0.0F);
+					GlStateManager.rotatef(tick * 8.0F, 0.0F, 1.0F, 0.0F);
+					GlStateManager.rotatef(tick * 6.0F, 0.0F, 0.0F, 1.0F);
+					float f = 0.75F;
+					GlStateManager.scalef(-f, -f, f);
+					int var4 = entityIn.getBrightnessForRender();
+					int var5 = var4 % 65536;
+					int var6 = var4 / 65536;
+					GLX.glMultiTexCoord2f(GLX.GL_TEXTURE1, (float)var5, (float)var6);
+					GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+					bindTexture(AtlasTexture.LOCATION_BLOCKS_TEXTURE);
+					Minecraft.getInstance().getBlockRendererDispatcher().renderBlockBrightness(Block.getStateById(entityIn.heldBlock[i]), 1.0F);
+					GlStateManager.popMatrix();
+				}
+			}
+
+			GlStateManager.disableRescaleNormal();
+		}
+
+		@Override
+		public boolean shouldCombineTextures() {
+			return false;
+		}
+	}
 }

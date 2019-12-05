@@ -10,20 +10,20 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 
 @OnlyIn(Dist.CLIENT)
 public class MutantSnowGolemModel extends EntityModel<MutantSnowGolemEntity> {
-	public RendererModel pelvis;
-	public RendererModel abdomen;
-	public RendererModel chest;
-	public JointRendererModel head;
-	public RendererModel headCore;
-	public JointRendererModel arm1;
-	public JointRendererModel arm2;
-	public JointRendererModel forearm1;
-	public JointRendererModel forearm2;
-	public JointRendererModel leg1;
-	public JointRendererModel leg2;
-	public JointRendererModel foreleg1;
-	public JointRendererModel foreleg2;
-	protected float animTick;
+	private final RendererModel pelvis;
+	private final RendererModel abdomen;
+	private final RendererModel chest;
+	private final JointRendererModel head;
+	private final RendererModel headCore;
+	private final JointRendererModel arm1;
+	private final JointRendererModel arm2;
+	private final JointRendererModel forearm1;
+	private final JointRendererModel forearm2;
+	private final JointRendererModel leg1;
+	private final JointRendererModel leg2;
+	private final JointRendererModel foreleg1;
+	private final JointRendererModel foreleg2;
+	private float partialTick;
 
 	public MutantSnowGolemModel() {
 		this.textureWidth = 128;
@@ -91,7 +91,7 @@ public class MutantSnowGolemModel extends EntityModel<MutantSnowGolemEntity> {
 		this.pelvis.render(scale);
 	}
 
-	public void setAngles() {
+	private void setAngles() {
 		this.pelvis.rotationPointY = 13.5F;
 		this.abdomen.rotateAngleX = 0.1308997F;
 		this.chest.rotateAngleX = 0.1308997F;
@@ -125,18 +125,18 @@ public class MutantSnowGolemModel extends EntityModel<MutantSnowGolemEntity> {
 		this.foreleg2.getModel().rotateAngleX = 0.69813174F;
 	}
 
-	public void animate(MutantSnowGolemEntity golem, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch, float scale) {
+	private void animate(MutantSnowGolemEntity golem, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch, float scale) {
 		float temp = 0.5F;
 		float walkAnim = MathHelper.sin(limbSwing * 0.45F) * limbSwingAmount;
 		float walkAnim1 = (MathHelper.cos((limbSwing - temp) * 0.45F) + temp) * limbSwingAmount;
 		float walkAnim2 = (MathHelper.cos((limbSwing - temp + 6.2831855F) * 0.45F) + temp) * limbSwingAmount;
 		float breatheAnim = MathHelper.sin(ageInTicks * 0.11F);
-		float faceYaw = netHeadYaw * 3.1415927F / 180.0F;
-		float facePitch = headPitch * 3.1415927F / 180.0F;
+		float faceYaw = netHeadYaw * (float)Math.PI / 180.0F;
+		float facePitch = headPitch * (float)Math.PI / 180.0F;
 
-		if (golem.isThrowing) {
-			this.animateThrow(golem.throwTick);
-			float scale1 = 1.0F - MathHelper.clamp((float)golem.throwTick / 4.0F, 0.0F, 1.0F);
+		if (golem.isThrowing()) {
+			this.animateThrow(golem.getThrowingTick());
+			float scale1 = 1.0F - MathHelper.clamp((float)golem.getThrowingTick() / 4.0F, 0.0F, 1.0F);
 			walkAnim *= scale1;
 		}
 
@@ -167,13 +167,13 @@ public class MutantSnowGolemModel extends EntityModel<MutantSnowGolemEntity> {
 		var10000.rotateAngleX -= walkAnim * 0.2F;
 	}
 
-	protected void animateThrow(int fullTick) {
+	private void animateThrow(int fullTick) {
 		float tick;
 		float f;
 
 		if (fullTick < 7) {
-			tick = ((float)fullTick + this.animTick) / 7.0F;
-			f = MathHelper.sin(tick * 3.1415927F / 2.0F);
+			tick = ((float)fullTick + this.partialTick) / 7.0F;
+			f = MathHelper.sin(tick * (float)Math.PI / 2.0F);
 			this.abdomen.rotateAngleX += -f * 0.2F;
 			this.chest.rotateAngleX += -f * 0.4F;
 			this.arm1.rotateAngleX += -f * 1.6F;
@@ -181,9 +181,8 @@ public class MutantSnowGolemModel extends EntityModel<MutantSnowGolemEntity> {
 			this.arm2.rotateAngleX += -f * 1.6F;
 			this.arm2.rotateAngleZ += -f * 0.8F;
 		} else if (fullTick < 10) {
-			tick = ((float)(fullTick - 7) + this.animTick) / 3.0F;
-			f = MathHelper.cos(tick * 3.1415927F / 2.0F);
-			// float f1 = MathHelper.sin(tick * 3.1415927F / 2.0F);
+			tick = ((float)(fullTick - 7) + this.partialTick) / 3.0F;
+			f = MathHelper.cos(tick * (float)Math.PI / 2.0F);
 			this.abdomen.rotateAngleX += -f * 0.4F + 0.2F;
 			this.chest.rotateAngleX += -f * 0.6F + 0.2F;
 			this.arm1.rotateAngleX += -f * 0.8F - 0.8F;
@@ -198,8 +197,8 @@ public class MutantSnowGolemModel extends EntityModel<MutantSnowGolemEntity> {
 			this.arm2.rotateAngleX += -0.8F;
 			this.arm2.rotateAngleZ += -0.8F;
 		} else if (fullTick < 20) {
-			tick = ((float)(fullTick - 14) + this.animTick) / 6.0F;
-			f = MathHelper.cos(tick * 3.1415927F / 2.0F);
+			tick = ((float)(fullTick - 14) + this.partialTick) / 6.0F;
+			f = MathHelper.cos(tick * (float)Math.PI / 2.0F);
 			this.abdomen.rotateAngleX += f * 0.2F;
 			this.chest.rotateAngleX += f * 0.2F;
 			this.arm1.rotateAngleX += -f * 0.8F;
@@ -221,6 +220,6 @@ public class MutantSnowGolemModel extends EntityModel<MutantSnowGolemEntity> {
 
 	@Override
 	public void setLivingAnimations(MutantSnowGolemEntity entityIn, float limbSwing, float limbSwingAmount, float partialTick) {
-		this.animTick = partialTick;
+		this.partialTick = partialTick;
 	}
 }
