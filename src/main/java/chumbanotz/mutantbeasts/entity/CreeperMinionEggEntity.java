@@ -21,6 +21,7 @@ import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.particles.ParticleTypes;
 import net.minecraft.util.DamageSource;
+import net.minecraft.util.EntityPredicates;
 import net.minecraft.util.Hand;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.AxisAlignedBB;
@@ -50,8 +51,9 @@ public class CreeperMinionEggEntity extends Entity {
 		this.preventEntitySpawning = true;
 	}
 
-	public CreeperMinionEggEntity(World world) {
+	public CreeperMinionEggEntity(World world, Entity owner) {
 		this(MBEntityType.CREEPER_MINION_EGG, world);
+		this.setOwnerUniqueId(owner.getUniqueID());
 	}
 
 	public CreeperMinionEggEntity(FMLPlayMessages.SpawnEntity packet, World world) {
@@ -122,22 +124,6 @@ public class CreeperMinionEggEntity extends Entity {
 		this.velocityZ = z;
 	}
 
-	private void move() {
-		if (!this.isPassenger()) {
-			this.prevPosX = this.posX;
-			this.prevPosY = this.posY;
-			this.prevPosZ = this.posZ;
-			if (!this.hasNoGravity())
-				this.setMotion(this.getMotion().subtract(0.0D, 0.04, 0.0D));
-			this.move(MoverType.SELF, this.getMotion());
-			this.setMotion(this.getMotion().scale(0.98D));
-
-			if (this.onGround) {
-				this.setMotion(this.getMotion().mul(0.7D, 0.0D, 0.7D));
-			}
-		}
-	}
-
 	private void hatch() {
 		CreeperMinionEntity minion = MBEntityType.CREEPER_MINION.create(this.world);
 		UUID uuid = this.getOwnerUniqueId();
@@ -161,7 +147,19 @@ public class CreeperMinionEggEntity extends Entity {
 	@Override
 	public void tick() {
 		super.tick();
-		this.move();
+		this.prevPosX = this.posX;
+		this.prevPosY = this.posY;
+		this.prevPosZ = this.posZ;
+		if (!this.hasNoGravity()) {
+			this.setMotion(this.getMotion().subtract(0.0D, 0.04, 0.0D));
+		}
+
+		this.move(MoverType.SELF, this.getMotion());
+		this.setMotion(this.getMotion().scale(0.98D));
+
+		if (this.onGround) {
+			this.setMotion(this.getMotion().mul(0.7D, 0.0D, 0.7D));
+		}
 
 		if (this.isPassenger() && (this.isEntityInsideOpaqueBlock() || this.getRidingEntity().getPose() != Pose.STANDING || this.getRidingEntity().isSpectator())) {
 			this.detach();
@@ -169,15 +167,17 @@ public class CreeperMinionEggEntity extends Entity {
 		}
 
 		if (!this.world.isRemote) {
-			--this.age;
-
 			if (this.health < this.getMaxHealth() && this.ticksExisted - this.recentlyHit > 80 && this.ticksExisted % 20 == 0) {
 				++this.health;
 			}
 
-			if (this.age <= 0 && !this.isPassenger()) {
+			if (--this.age <= 0 && !this.isPassenger()) {
 				this.hatch();
 			}
+		}
+
+		for (Entity entity : this.world.getEntitiesInAABBexcluding(this, this.getBoundingBox(), EntityPredicates.pushableBy(this))) {
+			entity.applyEntityCollision(this);
 		}
 	}
 
@@ -186,8 +186,6 @@ public class CreeperMinionEggEntity extends Entity {
 		if (player.getPose() == Pose.STANDING) {
 			if (!player.isBeingRidden()) {
 				return this.canMount(player);
-			} else if (!player.getPassengers().get(0).isBeingRidden()) {
-				return this.canMount(player.getPassengers().get(0));
 			}
 		}
 
@@ -231,7 +229,7 @@ public class CreeperMinionEggEntity extends Entity {
 					return false;
 				} else {
 					this.recentlyHit = this.ticksExisted;
-					this.setMotion(0.0D, 0.2D, 0.0D);
+					// this.setMotion(0.0D, 0.2D, 0.0D);
 					this.markVelocityChanged();
 
 					if (!this.world.isRemote) {

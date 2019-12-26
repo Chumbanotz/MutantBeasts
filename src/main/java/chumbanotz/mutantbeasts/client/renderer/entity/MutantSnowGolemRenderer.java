@@ -83,7 +83,7 @@ public class MutantSnowGolemRenderer extends MutantRenderer<MutantSnowGolemEntit
 				GLX.glMultiTexCoord2f(GLX.GL_TEXTURE1, (float)j, (float)k);
 				GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 				this.bindTexture(AtlasTexture.LOCATION_BLOCKS_TEXTURE);
-				Minecraft.getInstance().getBlockRendererDispatcher().renderBlockBrightness(entityIn.getIceBlock(), 1.0F);
+				Minecraft.getInstance().getBlockRendererDispatcher().renderBlockBrightness(entityIn.getThrownBlock(), 1.0F);
 				GlStateManager.popMatrix();
 				GlStateManager.disableRescaleNormal();
 			}

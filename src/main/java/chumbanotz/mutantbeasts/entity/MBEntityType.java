@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import chumbanotz.mutantbeasts.MutantBeasts;
+import chumbanotz.mutantbeasts.RegistryHandler;
 import chumbanotz.mutantbeasts.entity.mutant.MutantCreeperEntity;
 import chumbanotz.mutantbeasts.entity.mutant.MutantEndermanEntity;
 import chumbanotz.mutantbeasts.entity.mutant.MutantSkeletonEntity;
@@ -15,8 +16,6 @@ import chumbanotz.mutantbeasts.entity.projectile.MutantArrowEntity;
 import chumbanotz.mutantbeasts.entity.projectile.ThrowableBlockEntity;
 import chumbanotz.mutantbeasts.util.EntityUtil;
 import net.minecraft.block.DispenserBlock;
-import net.minecraft.dispenser.DefaultDispenseItemBehavior;
-import net.minecraft.dispenser.IBlockSource;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityClassification;
 import net.minecraft.entity.EntitySpawnPlacementRegistry;
@@ -24,7 +23,6 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.MobEntity;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
 import net.minecraft.item.SpawnEggItem;
 import net.minecraft.util.Direction;
 import net.minecraft.util.ResourceLocation;
@@ -70,8 +68,8 @@ public class MBEntityType {
 		build("creeper_minion_egg", EntityType.Builder.<CreeperMinionEggEntity>create(CreeperMinionEggEntity::new, EntityClassification.MISC).setCustomClientFactory(CreeperMinionEggEntity::new).size(0.5625F, 0.75F));
 		build("endersoul_fragment", EntityType.Builder.<EndersoulFragmentEntity>create(EndersoulFragmentEntity::new, EntityClassification.MISC).setCustomClientFactory(EndersoulFragmentEntity::new).setTrackingRange(64).setUpdateInterval(10).size(0.75F, 0.75F));
 		build("mutant_arrow", EntityType.Builder.<MutantArrowEntity>create(MutantArrowEntity::new, EntityClassification.MISC).setCustomClientFactory(MutantArrowEntity::new).setTrackingRange(80).setUpdateInterval(3));
-		build("mutant_creeper", EntityType.Builder.create(MutantCreeperEntity::new, EntityClassification.MONSTER).size(1.4F, 2.7F), 5349438, 11013646);
-		build("mutant_enderman", EntityType.Builder.create(MutantEndermanEntity::new, EntityClassification.MONSTER).size(0.9F, 4.2F), 1447446, 8860812);
+		build("mutant_creeper", EntityType.Builder.create(MutantCreeperEntity::new, EntityClassification.MONSTER).size(1.6F, 2.8F), 5349438, 11013646);
+		build("mutant_enderman", EntityType.Builder.create(MutantEndermanEntity::new, EntityClassification.MONSTER).size(1.2F, 4.2F), 1447446, 8860812);
 		build("mutant_skeleton", EntityType.Builder.create(MutantSkeletonEntity::new, EntityClassification.MONSTER).size(0.9F, 3.6F), 12698049, 6310217);
 		build("mutant_snow_golem", EntityType.Builder.create(MutantSnowGolemEntity::new, EntityClassification.MISC).size(0.9F, 2.2F), 15073279, 16753434);
 		build("mutant_zombie", EntityType.Builder.create(MutantZombieEntity::new, EntityClassification.MONSTER).size(1.8F, 3.2F), 7969893, 44975);
@@ -103,17 +101,14 @@ public class MBEntityType {
 
 	private static <T extends MobEntity> EntityType<T> build(String name, EntityType.Builder<T> builder, int eggPrimaryColor, int eggSecondaryColor) {
 		EntityType<T> entityType = build(name, builder);
-		Item item = new SpawnEggItem(entityType, eggPrimaryColor, eggSecondaryColor, new Item.Properties().group(MutantBeasts.ITEM_GROUP)).setRegistryName(entityType.getRegistryName().getPath() + "_spawn_egg");
+		Item item = RegistryHandler.setRegistryName(name + "_spawn_egg", new SpawnEggItem(entityType, eggPrimaryColor, eggSecondaryColor, RegistryHandler.defaultProperty()));
 		SPAWN_EGGS.add(item);
-		DispenserBlock.registerDispenseBehavior(item, new DefaultDispenseItemBehavior() {
-			@Override
-			public ItemStack dispenseStack(IBlockSource source, ItemStack stack) {
-				Direction direction = source.getBlockState().get(DispenserBlock.FACING);
-				EntityType<?> entitytype = ((SpawnEggItem)stack.getItem()).getType(stack.getTag());
-				entitytype.spawn(source.getWorld(), stack, null, source.getBlockPos().offset(direction), SpawnReason.DISPENSER, direction != Direction.UP, false);
-				stack.shrink(1);
-				return stack;
-			}
+		DispenserBlock.registerDispenseBehavior(item, (blockSource, stack) -> {
+			Direction direction = blockSource.getBlockState().get(DispenserBlock.FACING);
+			EntityType<?> entitytype = ((SpawnEggItem)stack.getItem()).getType(stack.getTag());
+			entitytype.spawn(blockSource.getWorld(), stack, null, blockSource.getBlockPos().offset(direction), SpawnReason.DISPENSER, direction != Direction.UP, false);
+			stack.shrink(1);
+			return stack;
 		});
 
 		return entityType;

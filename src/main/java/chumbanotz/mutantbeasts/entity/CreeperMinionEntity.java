@@ -60,7 +60,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
 public class CreeperMinionEntity extends ShoulderRidingEntity {
-	private static final DataParameter<Integer> STATE = EntityDataManager.createKey(CreeperMinionEntity.class, DataSerializers.VARINT);
+	private static final DataParameter<Integer> EXPLODE_STATE = EntityDataManager.createKey(CreeperMinionEntity.class, DataSerializers.VARINT);
 	private static final DataParameter<Byte> CREEPER_MINION_FLAGS = EntityDataManager.createKey(CreeperMinionEntity.class, DataSerializers.BYTE);
 	private static final DataParameter<Float> EXPLOSION_RADIUS = EntityDataManager.createKey(CreeperMinionEntity.class, DataSerializers.FLOAT);
 	private static final DataParameter<Integer> COLLAR_COLOR = EntityDataManager.createKey(CreeperMinionEntity.class, DataSerializers.VARINT);
@@ -113,7 +113,7 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 	@Override
 	protected void registerData() {
 		super.registerData();
-		this.dataManager.register(STATE, -1);
+		this.dataManager.register(EXPLODE_STATE, -1);
 		this.dataManager.register(CREEPER_MINION_FLAGS, (byte)0);
 		this.dataManager.register(EXPLOSION_RADIUS, 20.0F);
 		this.dataManager.register(COLLAR_COLOR, -1);
@@ -139,12 +139,12 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 		this.setOwnerId(player.getUniqueID());
 	}
 
-	public int getCreeperMinionState() {
-		return this.dataManager.get(STATE);
+	public int getExplodeState() {
+		return this.dataManager.get(EXPLODE_STATE);
 	}
 
-	private void setCreeperMinonState(int state) {
-		this.dataManager.set(STATE, state);
+	private void setExplodeState(int state) {
+		this.dataManager.set(EXPLODE_STATE, state);
 	}
 
 	public boolean getPowered() {
@@ -240,7 +240,7 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 
 	@Override
 	public boolean canSitOnShoulder() {
-		return super.canSitOnShoulder() && this.canRideOnShoulder() && this.getAttackTarget() == null && this.getCreeperMinionState() <= 0;
+		return super.canSitOnShoulder() && this.canRideOnShoulder() && this.getAttackTarget() == null && this.getExplodeState() <= 0;
 	}
 
 	@Override
@@ -276,10 +276,10 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 			this.lastActiveTime = this.timeSinceIgnited;
 
 			if (this.isIgnited()) {
-				this.setCreeperMinonState(1);
+				this.setExplodeState(1);
 			}
 
-			int i = this.getCreeperMinionState();
+			int i = this.getExplodeState();
 
 			if (i > 0 && this.timeSinceIgnited == 0) {
 				this.playSound(MBSoundEvents.ENTITY_CREEPER_MINION_PRIMED, 1.0F, this.getSoundPitch());
@@ -305,7 +305,7 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 					}
 				}
 
-				this.setCreeperMinonState(-30);
+				this.setExplodeState(-30);
 			}
 
 			if (!this.onGround && this.getMotion().lengthSquared() > 0.8F) {
@@ -539,7 +539,7 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 		@Override
 		public boolean shouldExecute() {
 			LivingEntity livingentity = getAttackTarget();
-			return !isSitting() && (getCreeperMinionState() > 0 || livingentity != null && getDistanceSq(livingentity) < 9.0D);
+			return !isSitting() && (getExplodeState() > 0 || livingentity != null && getDistanceSq(livingentity) < 9.0D);
 		}
 
 		@Override
@@ -550,7 +550,7 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 		@Override
 		public void tick() {
 			LivingEntity livingentity = getAttackTarget();
-			setCreeperMinonState(isSitting() || livingentity == null || getDistanceSq(livingentity) > 36.0D || !getEntitySenses().canSee(livingentity) ? -1 : 1);
+			setExplodeState(isSitting() || livingentity == null || getDistanceSq(livingentity) > 36.0D || !getEntitySenses().canSee(livingentity) ? -1 : 1);
 		}
 	}
 

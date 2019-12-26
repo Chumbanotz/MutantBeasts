@@ -27,7 +27,7 @@ public class MBWalkNodeProcessor extends WalkNodeProcessor {
 		}
 
 		if (nodeType == PathNodeType.LEAVES) {
-			nodeType = this.currentEntity.getPathPriority(PathNodeType.LEAVES) == 0.0F ? PathNodeType.OPEN : PathNodeType.BLOCKED;
+			nodeType = PathNodeType.BLOCKED;
 		}
 
 		return nodeType;
@@ -40,15 +40,16 @@ public class MBWalkNodeProcessor extends WalkNodeProcessor {
 				for (int i = -1; i <= 1; ++i) {
 					for (int j = -1; j <= 1; ++j) {
 						if (i != 0 || j != 0) {
-							BlockState state = blockaccessIn.getBlockState(pos.setPos(i + x, y, j + z));
-							PathNodeType pathNodeType = this.getPathNodeTypeRaw(blockaccessIn, pos.getX(), pos.getY(), pos.getZ());
+							BlockPos newPos = pos.setPos(i + x, y, j + z);
+							BlockState state = blockaccessIn.getBlockState(newPos);
+							PathNodeType pathNodeType = this.getPathNodeTypeRaw(blockaccessIn, newPos.getX(), newPos.getY(), newPos.getZ());
 							if (pathNodeType == PathNodeType.DAMAGE_CACTUS) {
 								nodeType = PathNodeType.DANGER_CACTUS;
 							} else if (pathNodeType == PathNodeType.DAMAGE_FIRE) {
 								nodeType = PathNodeType.DANGER_FIRE;
 							} else if (state.getFluidState().isTagged(FluidTags.LAVA)) {
 								nodeType = PathNodeType.LAVA;
-							} else if (pathNodeType == PathNodeType.DANGER_OTHER || state.getBlock() instanceof WebBlock) {
+							} else if (pathNodeType == PathNodeType.DANGER_OTHER) {
 								nodeType = PathNodeType.DANGER_OTHER;
 							}
 						}

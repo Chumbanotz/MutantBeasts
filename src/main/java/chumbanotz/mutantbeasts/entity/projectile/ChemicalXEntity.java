@@ -91,15 +91,15 @@ public class ChemicalXEntity extends ProjectileItemEntity {
 	@Override
 	protected void onImpact(RayTraceResult result) {
 		if (!this.world.isRemote) {
-			MobEntity mobEntity = null;
+			MobEntity target = null;
 			if (result.getType() == RayTraceResult.Type.ENTITY && ((EntityRayTraceResult)result).getEntity() instanceof MobEntity && IS_APPLICABLE.test((MobEntity)((EntityRayTraceResult)result).getEntity())) {
-				mobEntity = (MobEntity)((EntityRayTraceResult)result).getEntity();
+				target = (MobEntity)((EntityRayTraceResult)result).getEntity();
 			} else {
-				mobEntity = this.world.getClosestEntityWithinAABB(MobEntity.class, CAN_TARGET, this.getThrower(), this.posX, this.posY, this.posZ, this.getBoundingBox().grow(12.0D, 8.0D, 12.0D));
+				target = this.world.getClosestEntityWithinAABB(MobEntity.class, CAN_TARGET, this.getThrower(), this.posX, this.posY, this.posZ, this.getBoundingBox().grow(12.0D, 8.0D, 12.0D));
 			}
 
-			if (mobEntity != null) {
-				SkullSpiritEntity spirit = new SkullSpiritEntity(this.world, mobEntity);
+			if (target != null) {
+				SkullSpiritEntity spirit = new SkullSpiritEntity(this.world, target);
 				spirit.setPosition(this.posX, this.posY, this.posZ);
 				this.world.addEntity(spirit);
 			}

@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
-import java.util.function.Predicate;
+import java.util.function.Function;
 
 import chumbanotz.mutantbeasts.entity.mutant.MutantSnowGolemEntity;
 import chumbanotz.mutantbeasts.particles.MBParticleTypes;
@@ -42,7 +42,6 @@ import net.minecraft.network.play.server.SEntityVelocityPacket;
 import net.minecraft.particles.IParticleData;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.util.DamageSource;
-import net.minecraft.util.EntityPredicates;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -55,8 +54,6 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
 public final class EntityUtil {
-	public static final Predicate<Entity> CAN_AI_TARGET = EntityPredicates.CAN_AI_TARGET;
-
 	/** Copied exactly from {@link LivingEntity#canBlockDamageSource(DamageSource)}. */
 	public static boolean canBlockDamageSource(LivingEntity livingEntity, DamageSource damageSource) {
 		Entity entity = damageSource.getImmediateSource();
@@ -120,7 +117,7 @@ public final class EntityUtil {
 	}
 
 	public static boolean requireDarknessAndSky(EntityType<? extends MonsterEntity> entityType, IWorld world, SpawnReason spawnReason, BlockPos pos, Random random) {
-		return spawnReason != SpawnReason.SPAWNER && MonsterEntity.func_223325_c(entityType, world, spawnReason, pos, random) && world.isSkyLightMax(pos);
+		return spawnReason != SpawnReason.SPAWNER && (random.nextInt(50 / Math.min(20, Math.max(1, 10))) == 0) && MonsterEntity.func_223325_c(entityType, world, spawnReason, pos, random) && world.isSkyLightMax(pos);
 	}
 
 	public static boolean isMobFeline(LivingEntity livingEntity) {
@@ -146,7 +143,7 @@ public final class EntityUtil {
 		}
 	}
 
-	public static boolean isFacingEntity(LivingEntity livingEntity, double x, double z, float maxDifference) {
+	public static boolean isFacing(LivingEntity livingEntity, double x, double z, float maxDifference) {
 		float rot;
 
 		for (rot = (float)(Math.atan2(z, x) * 180.0D / Math.PI) + 90.0F; rot > livingEntity.rotationYawHead + 180.0F; rot -= 360.0F) {
@@ -161,9 +158,9 @@ public final class EntityUtil {
 	}
 
 	/** Returns true if the mob is able to drop experience, and then does so. Based off of {@link LivingEntity#onDeathUpdate()} */
-	public static boolean dropExperience(MobEntity mob, int recentlyHit, int experiencePoints, PlayerEntity attackingPlayer) {
+	public static boolean dropExperience(MobEntity mob, int recentlyHit, Function<PlayerEntity, Integer> experiencePoints, PlayerEntity attackingPlayer) {
 		if (!mob.world.isRemote && recentlyHit > 0 && mob.world.getGameRules().getBoolean(GameRules.DO_MOB_LOOT)) {
-			for (int i = net.minecraftforge.event.ForgeEventFactory.getExperienceDrop(mob, attackingPlayer, experiencePoints), j; i > 0; i -= j) {
+			for (int i = net.minecraftforge.event.ForgeEventFactory.getExperienceDrop(mob, attackingPlayer, experiencePoints.apply(attackingPlayer)), j; i > 0; i -= j) {
 				mob.world.addEntity(new ExperienceOrbEntity(mob.world, mob.posX, mob.posY, mob.posZ, j = ExperienceOrbEntity.getXPSplit(i)));
 			}
 
@@ -174,46 +171,43 @@ public final class EntityUtil {
 	}
 
 	/** Same as {@link LivingEntity#onDeath(DamageSource)} except no drops are spawned */
-	public static void onDeath(MobEntity mobEntity, DamageSource damageSource, boolean dead) {
+	public static void onDeath(MobEntity mobEntity, DamageSource damageSource) {
 		if (net.minecraftforge.common.ForgeHooks.onLivingDeath(mobEntity, damageSource)) return;
-		if (!dead) {
-			Entity entity = damageSource.getTrueSource();
-			LivingEntity livingentity = mobEntity.getAttackingEntity();
-			if (livingentity != null) {
-				livingentity.awardKillScore(mobEntity, 0, damageSource);
-			}
+		Entity entity = damageSource.getTrueSource();
+		LivingEntity livingentity = mobEntity.getAttackingEntity();
+		if (livingentity != null) {
+			livingentity.awardKillScore(mobEntity, 0, damageSource);
+		}
 
-			if (entity != null) {
-				entity.onKillEntity(mobEntity);
-			}
+		if (entity != null) {
+			entity.onKillEntity(mobEntity);
+		}
 
-			if (mobEntity.isSleeping()) {
-				mobEntity.wakeUp();
-			}
+		if (mobEntity.isSleeping()) {
+			mobEntity.wakeUp();
+		}
 
-			dead = true;
-			mobEntity.getCombatTracker().reset();
-			if (!mobEntity.world.isRemote) {
-				boolean flag = false;
-				if (livingentity instanceof WitherEntity) {
-					if (net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(mobEntity.world, mobEntity)) {
-						BlockPos blockpos = new BlockPos(mobEntity.posX, mobEntity.posY, mobEntity.posZ);
-						BlockState blockstate = Blocks.WITHER_ROSE.getDefaultState();
-						if (mobEntity.world.getBlockState(blockpos).isAir(mobEntity.world, blockpos) && blockstate.isValidPosition(mobEntity.world, blockpos)) {
-							mobEntity.world.setBlockState(blockpos, blockstate, 3);
-							flag = true;
-						}
-					}
-
-					if (!flag) {
-						ItemEntity itementity = new ItemEntity(mobEntity.world, mobEntity.posX, mobEntity.posY, mobEntity.posZ, new ItemStack(Items.WITHER_ROSE));
-						mobEntity.world.addEntity(itementity);
+		mobEntity.getCombatTracker().reset();
+		if (!mobEntity.world.isRemote) {
+			boolean flag = false;
+			if (livingentity instanceof WitherEntity) {
+				if (net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(mobEntity.world, mobEntity)) {
+					BlockPos blockpos = new BlockPos(mobEntity.posX, mobEntity.posY, mobEntity.posZ);
+					BlockState blockstate = Blocks.WITHER_ROSE.getDefaultState();
+					if (mobEntity.world.getBlockState(blockpos).isAir(mobEntity.world, blockpos) && blockstate.isValidPosition(mobEntity.world, blockpos)) {
+						mobEntity.world.setBlockState(blockpos, blockstate, 3);
+						flag = true;
 					}
 				}
-			}
 
-			mobEntity.world.setEntityState(mobEntity, (byte)3);
+				if (!flag) {
+					ItemEntity itementity = new ItemEntity(mobEntity.world, mobEntity.posX, mobEntity.posY, mobEntity.posZ, new ItemStack(Items.WITHER_ROSE));
+					mobEntity.world.addEntity(itementity);
+				}
+			}
 		}
+
+		mobEntity.world.setEntityState(mobEntity, (byte)3);
 	}
 
 	public static void shatterGlass(World world, AxisAlignedBB bb) {
@@ -291,26 +285,8 @@ public final class EntityUtil {
 		}
 	}
 
-	@OnlyIn(Dist.CLIENT)
-	public static void spawnEnderParticles(Entity entity) {
-		spawnEnderParticles(entity, 256, 1.8F);
-	}
-
-	@OnlyIn(Dist.CLIENT)
-	public static void spawnEnderParticles(Entity entity, int amount, float speed) {
-		for (int i = 0; i < amount; i++) {
-			float f = (entity.world.rand.nextFloat() - 0.5F) * speed;
-			float f1 = (entity.world.rand.nextFloat() - 0.5F) * speed;
-			float f2 = (entity.world.rand.nextFloat() - 0.5F) * speed;
-			double tempX = entity.posX + ((entity.world.rand.nextFloat() - 0.5F) * entity.getWidth());
-			double tempY = entity.posY + ((entity.world.rand.nextFloat() - 0.5F) * entity.getHeight()) + 0.5D;
-			double tempZ = entity.posZ + ((entity.world.rand.nextFloat() - 0.5F) * entity.getWidth());
-			entity.world.addParticle(MBParticleTypes.LARGE_PORTAL, tempX, tempY, tempZ, (double)f, (double)f1, (double)f2);
-		}
-	}
-
-	public static void spawnEnderParticlesOnServer(Entity entity, int amount, float speed) {
-		if (entity.world instanceof ServerWorld) {
+	public static void spawnLargePortalParticles(Entity entity, int amount, float speed, boolean serverSide) {
+		if (!serverSide || entity.world instanceof ServerWorld) {
 			for (int i = 0; i < amount; i++) {
 				float f = (entity.world.rand.nextFloat() - 0.5F) * speed;
 				float f1 = (entity.world.rand.nextFloat() - 0.5F) * speed;
@@ -318,37 +294,13 @@ public final class EntityUtil {
 				double tempX = entity.posX + ((entity.world.rand.nextFloat() - 0.5F) * entity.getWidth());
 				double tempY = entity.posY + ((entity.world.rand.nextFloat() - 0.5F) * entity.getHeight()) + 0.5D;
 				double tempZ = entity.posZ + ((entity.world.rand.nextFloat() - 0.5F) * entity.getWidth());
-				((ServerWorld)entity.world).spawnParticle(MBParticleTypes.LARGE_PORTAL, tempX, tempY, tempZ, 0, (double)f, (double)f1, (double)f2, 1.0D);
+				if (serverSide) {
+					((ServerWorld)entity.world).spawnParticle(MBParticleTypes.LARGE_PORTAL, tempX, tempY, tempZ, 0, (double)f, (double)f1, (double)f2, 1.0D);
+				} else {
+					entity.world.addParticle(MBParticleTypes.LARGE_PORTAL, tempX, tempY, tempZ, (double)f, (double)f1, (double)f2);
+				}
 			}
 		}
-	}
-
-	public static List<Entity> getCollidingEntities(Entity entity, World world, AxisAlignedBB box) {
-		List<Entity> list = new ArrayList<Entity>();
-
-		for (Entity entity1 : world.getEntitiesInAABBexcluding(entity, box.grow(4.0D), CAN_AI_TARGET)) {
-			AxisAlignedBB box1 = entity1.getBoundingBox();
-
-			if (box1 != null && box.intersects(box1)) {
-				list.add(entity1);
-			}
-		}
-
-		return list;
-	}
-
-	public static <T extends Entity> List<T> getCollidingEntities(Entity entity, Class<T> targetClass, AxisAlignedBB box) {
-		List<T> list = new ArrayList<>();
-
-		for (T entity1 : entity.world.getEntitiesWithinAABB(targetClass, box.grow(4.0D), CAN_AI_TARGET)) {
-			AxisAlignedBB box1 = entity1.getBoundingBox();
-
-			if (entity != entity1 && box1 != null && box.intersects(box1)) {
-				list.add(entity1);
-			}
-		}
-
-		return list;
 	}
 
 	public static Vec3d getDirVector(float rotation, float scale) {
@@ -357,10 +309,6 @@ public final class EntityUtil {
 	}
 
 	public static boolean teleportTo(LivingEntity living, double x, double y, double z) {
-		return teleportTo(living, x, y, z, true);
-	}
-
-	public static boolean teleportTo(LivingEntity living, double x, double y, double z, boolean changeY) {
 		double oldX = living.posX;
 		double oldY = living.posY;
 		double oldZ = living.posZ;
@@ -377,12 +325,12 @@ public final class EntityUtil {
 
 				if (block != Blocks.AIR && living.world.getBlockState(new BlockPos(teleX, teleY - 1, teleZ)).getMaterial().blocksMovement()) {
 					temp = true;
-				} else if (changeY) {
+				} else {
 					--teleY;
 				}
 			}
 
-			if (temp || !changeY) {
+			if (temp) {
 				living.setPosition(x, (double)teleY, z);
 
 				if (living.world.isCollisionBoxesEmpty(living, living.getBoundingBox()) && !living.world.containsAnyLiquid(living.getBoundingBox())) {

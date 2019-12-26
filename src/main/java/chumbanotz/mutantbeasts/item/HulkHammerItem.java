@@ -31,7 +31,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class HulkHammerItem extends Item {
-	public static final Map<UUID, List<SeismicWave>> SEISMIC_WAVES = new HashMap<>();
+	public static final Map<UUID, List<SeismicWave>> WAVES = new HashMap<>();
 
 	public HulkHammerItem(Item.Properties properties) {
 		super(properties.maxDamage(64));
@@ -40,6 +40,11 @@ public class HulkHammerItem extends Item {
 	@Override
 	public boolean canDisableShield(ItemStack stack, ItemStack shield, LivingEntity entity, LivingEntity attacker) {
 		return true;
+	}
+
+	@Override
+	public EquipmentSlotType getEquipmentSlot(ItemStack stack) {
+		return EquipmentSlotType.MAINHAND;
 	}
 
 	@Override
@@ -75,7 +80,7 @@ public class HulkHammerItem extends Item {
 				int x1 = MathHelper.floor(playerIn.posX + vec.x * 8.0D);
 				int z1 = MathHelper.floor(playerIn.posZ + vec.z * 8.0D);
 				SeismicWave.createWaves(worldIn, list, x, z, x1, z1, y);
-				addChunkAttack(playerIn.getUniqueID(), list);
+				addWave(playerIn.getUniqueID(), list);
 			}
 
 			worldIn.playSound(playerIn, playerIn.getPosition(), SoundEvents.ENTITY_GENERIC_EXPLODE, SoundCategory.BLOCKS, 0.8F, 0.8F + playerIn.getRNG().nextFloat() * 0.4F);
@@ -99,17 +104,17 @@ public class HulkHammerItem extends Item {
 		return multimap;
 	}
 
-	public static void addChunkAttack(UUID name, List<SeismicWave> list) {
-		List<SeismicWave> chunks = null;
-		for (List<SeismicWave> chunks1 : SEISMIC_WAVES.values()) {
-			chunks = chunks1;
+	public static void addWave(UUID name, List<SeismicWave> list) {
+		List<SeismicWave> waves = null;
+		for (List<SeismicWave> waves1 : WAVES.values()) {
+			waves = waves1;
 		}
 
-		if (chunks == null) {
-			SEISMIC_WAVES.put(name, list);
+		if (waves == null) {
+			WAVES.put(name, list);
 		} else {
-			chunks.addAll(list);
-			SEISMIC_WAVES.put(name, chunks);
+			waves.addAll(list);
+			WAVES.put(name, waves);
 		}
 	}
 }

@@ -27,17 +27,14 @@ public class AvoidDamageGoal extends PanicGoal {
 		if (this.creature.isBurning() || this.creature.getLastDamageSource() != null && this.creature.getLastDamageSource().isFireDamage() && this.creature.hurtResistantTime > 10) {
 			BlockPos blockpos = this.getRandPos(this.creature.world, this.creature, 25, 8);
 			vec3d = blockpos != null && !this.creature.isInWater() ? new Vec3d(blockpos) : RandomPositionGenerator.findRandomTarget(this.creature, 8, 4);
-//			System.out.println(creature.getName().getString() + (creature.isBurning() ? " is burning" : " was hurt by " + creature.getLastDamageSource().getDamageType()));
 		}
 
 		if (this.creature.getLastDamageSource() != null && this.shouldAvoidDamage(this.creature.getLastDamageSource()) && this.creature.hurtResistantTime > 10) {
 			vec3d = this.creature.getLastDamageSource() == DamageSource.DROWN && this.creature.isInWater() ? RandomPositionGenerator.getLandPos(this.creature, 15, 15) : RandomPositionGenerator.findRandomTarget(this.creature, 4, 4);
-//			System.out.println(this.creature.getName().getString() + " was hurt by " + creature.getLastDamageSource().getDamageType());
 		}
 
 		if (this.avoidsAttacker.getAsBoolean() && this.creature.getRevengeTarget() != null) {
 			vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this.creature, 10, 9, this.creature.getRevengeTarget().getPositionVector());
-//			System.out.println(this.creature.getName().getString() + " is fleeing revenge target");
 		}
 
 		if (vec3d == null) {
@@ -56,13 +53,6 @@ public class AvoidDamageGoal extends PanicGoal {
 			return super.shouldContinueExecuting();
 		} else {
 			return this.creature.getLastDamageSource() != null && this.creature.hurtResistantTime > 10;
-		}
-	}
-
-	@Override
-	public void tick() {
-		if (this.creature.isBurning() || this.creature.isInLava() || this.avoidsAttacker.getAsBoolean() && this.creature.getRevengeTarget() != null) {
-			this.creature.getNavigator().setSpeed(this.speed * 1.2D);
 		}
 	}
 

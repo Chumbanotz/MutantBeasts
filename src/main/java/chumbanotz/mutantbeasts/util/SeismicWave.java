@@ -57,10 +57,10 @@ public class SeismicWave extends Vec3i {
 		int z = z1;
 		int deltaX2 = deltaX * 2;
 		int deltaZ2 = deltaZ * 2;
-		SeismicWave chunk = addWave(world, list, x1, y, z1);
+		SeismicWave wave = addWave(world, list, x1, y, z1);
 
-		if (chunk != null) {
-			chunk.first = true;
+		if (wave != null) {
+			wave.first = true;
 		}
 
 		int error;

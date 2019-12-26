@@ -4,7 +4,7 @@ import com.google.common.collect.Multimap;
 
 import chumbanotz.mutantbeasts.client.MBItemStackTileEntityRenderer;
 import chumbanotz.mutantbeasts.entity.mutant.MutantEndermanEntity;
-import chumbanotz.mutantbeasts.util.EntityUtil;
+import chumbanotz.mutantbeasts.entity.projectile.ThrowableBlockEntity;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
@@ -28,10 +28,11 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RayTraceContext;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.text.StringTextComponent;
 import net.minecraft.world.World;
 
 public class EndersoulHandItem extends Item {
-	public EndersoulHandItem(Properties properties) {
+	public EndersoulHandItem(Item.Properties properties) {
 		super(properties.maxDamage(240).setTEISR(() -> MBItemStackTileEntityRenderer::new));
 	}
 
@@ -50,22 +51,18 @@ public class EndersoulHandItem extends Item {
 	public ActionResultType onItemUse(ItemUseContext context) {
 		if (context.isPlacerSneaking()) {
 			return ActionResultType.FAIL;
+		} else if (net.minecraft.tags.BlockTags.WITHER_IMMUNE.contains(context.getWorld().getBlockState(context.getPos()).getBlock())) {
+			return ActionResultType.FAIL;
+		} else if (!context.getWorld().canMineBlockBody(context.getPlayer(), context.getPos())) {
+			return ActionResultType.FAIL;
+		} else if (!context.getPlayer().canPlayerEdit(context.getPos(), context.getFace(), context.getItem())) {
+			return ActionResultType.FAIL;
+		} else if (context.getWorld().getBlockState(context.getPos()).hasTileEntity()) {
+			return ActionResultType.FAIL;
 		} else {
 			if (!context.getWorld().isRemote) {
-				if (!context.getWorld().canMineBlockBody(context.getPlayer(), context.getPos())) {
-					return ActionResultType.FAIL;
-				}
-
-				if (!context.getPlayer().canPlayerEdit(context.getPos(), context.getFace(), context.getItem())) {
-					return ActionResultType.FAIL;
-				}
-
-				if (context.getWorld().getBlockState(context.getPos()).hasTileEntity()) {
-					return ActionResultType.FAIL;
-				}
-
-//				context.getWorld().setBlockState(context.getPos(), Blocks.AIR.getDefaultState());
-//				context.getWorld().addEntity(new ThrowableBlockEntity(context.getWorld(), context.getPlayer(), context.getWorld().getBlockState(context.getPos()), Block.getStateId(context.getWorld().getBlockState(context.getPos()))));
+				context.getWorld().addEntity(new ThrowableBlockEntity(context.getWorld(), context.getPlayer(), context.getWorld().getBlockState(context.getPos()), context.getPos()));
+				context.getWorld().setBlockState(context.getPos(), Blocks.AIR.getDefaultState());
 			}
 
 			return ActionResultType.SUCCESS;
@@ -76,11 +73,12 @@ public class EndersoulHandItem extends Item {
 	public ActionResult<ItemStack> onItemRightClick(World worldIn, PlayerEntity playerIn, Hand handIn) {
 		ItemStack stack = playerIn.getHeldItem(handIn);
 		if (!playerIn.isSneaking()) {
-			return new ActionResult<ItemStack>(ActionResultType.PASS, stack);
+			return new ActionResult<>(ActionResultType.PASS, stack);
 		} else {
 			RayTraceResult result = getMOPFromPlayer(worldIn, playerIn, 128.0F);
 			if (result.getType() == RayTraceResult.Type.MISS) {
-				return new ActionResult<ItemStack>(ActionResultType.FAIL, stack);
+				playerIn.sendStatusMessage(new StringTextComponent("Unable to teleport to location"), true);
+				return new ActionResult<>(ActionResultType.FAIL, stack);
 			} else {
 				if (result.getType() == RayTraceResult.Type.BLOCK) {
 					BlockPos pos = ((BlockRayTraceResult)result).getPos();
@@ -114,7 +112,6 @@ public class EndersoulHandItem extends Item {
 					worldIn.playSound(null, playerIn.posX, playerIn.posY + (double)playerIn.getHeight() / 2.0D, playerIn.posZ, SoundEvents.ITEM_CHORUS_FRUIT_TELEPORT, playerIn.getSoundCategory(), 1.0F, 1.0F);
 					playerIn.setPositionAndUpdate((double)x + 0.5D, (double)y, (double)z + 0.5D);
 					playerIn.fallDistance = 0.0F;
-					EntityUtil.spawnEnderParticlesOnServer(playerIn, 64, 0.8F);
 
 					if (!worldIn.isRemote) {
 						MutantEndermanEntity.teleportAttack(playerIn);
@@ -125,7 +122,7 @@ public class EndersoulHandItem extends Item {
 					playerIn.swingArm(handIn);
 					playerIn.addStat(Stats.ITEM_USED.get(this));
 					stack.damageItem(4, playerIn, e -> e.sendBreakAnimation(handIn));
-					return new ActionResult<ItemStack>(ActionResultType.SUCCESS, stack);
+					return new ActionResult<>(ActionResultType.SUCCESS, stack);
 				}
 			}
 		}

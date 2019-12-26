@@ -2,8 +2,6 @@ package chumbanotz.mutantbeasts.item;
 
 import chumbanotz.mutantbeasts.entity.projectile.ChemicalXEntity;
 import net.minecraft.block.DispenserBlock;
-import net.minecraft.dispenser.IBlockSource;
-import net.minecraft.dispenser.IDispenseItemBehavior;
 import net.minecraft.dispenser.IPosition;
 import net.minecraft.dispenser.ProjectileDispenseBehavior;
 import net.minecraft.entity.IProjectile;
@@ -28,25 +26,23 @@ import net.minecraftforge.common.brewing.IBrewingRecipe;
 public class ChemicalXItem extends Item {
 	public ChemicalXItem(Item.Properties properties) {
 		super(properties.maxStackSize(1));
-		DispenserBlock.registerDispenseBehavior(this, new IDispenseItemBehavior() {
-			public ItemStack dispense(IBlockSource p_dispense_1_, ItemStack p_dispense_2_) {
-				return (new ProjectileDispenseBehavior() {
-					@Override
-					protected IProjectile getProjectileEntity(World worldIn, IPosition position, ItemStack stackIn) {
-						return Util.make(new ChemicalXEntity(position.getX(), position.getY(), position.getZ(), worldIn), (e) -> e.setItem(stackIn));
-					}
+		DispenserBlock.registerDispenseBehavior(this, (blockSource, itemStack) -> {
+			return new ProjectileDispenseBehavior() {
+				@Override
+				protected IProjectile getProjectileEntity(World worldIn, IPosition position, ItemStack stackIn) {
+					return Util.make(new ChemicalXEntity(position.getX(), position.getY(), position.getZ(), worldIn), (e) -> e.setItem(stackIn));
+				}
 
-					@Override
-					protected float getProjectileInaccuracy() {
-						return super.getProjectileInaccuracy() * 0.5F;
-					}
+				@Override
+				protected float getProjectileInaccuracy() {
+					return super.getProjectileInaccuracy() * 0.5F;
+				}
 
-					@Override
-					protected float getProjectileVelocity() {
-						return super.getProjectileVelocity() * 1.25F;
-					}
-				}).dispense(p_dispense_1_, p_dispense_2_);
-			}
+				@Override
+				protected float getProjectileVelocity() {
+					return super.getProjectileVelocity() * 1.25F;
+				}
+			}.dispense(blockSource, itemStack);
 		});
 	}
 

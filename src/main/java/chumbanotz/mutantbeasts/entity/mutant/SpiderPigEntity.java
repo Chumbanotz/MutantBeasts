@@ -56,6 +56,7 @@ import net.minecraft.pathfinding.PathNavigator;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
 import net.minecraft.util.DamageSource;
+import net.minecraft.util.EntityPredicates;
 import net.minecraft.util.Hand;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.SoundEvent;
@@ -106,8 +107,7 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 	@Override
 	protected void registerAttributes() {
 		super.registerAttributes();
-		this.getAttribute(SharedMonsterAttributes.MAX_HEALTH).setBaseValue(30.0D);
-		this.getAttribute(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(48.0D);
+		this.getAttribute(SharedMonsterAttributes.MAX_HEALTH).setBaseValue(40.0D);
 		this.getAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(0.25D);
 		this.getAttributes().registerAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).setBaseValue(3.0D);
 	}
@@ -178,12 +178,13 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 		}
 
 		this.exhaustAmount = Math.max(0, this.exhaustAmount - 1);
+
 		if (!this.world.isRemote) {
 			this.targetSelector.setFlag(Goal.Flag.TARGET, !this.isChild());
 			this.setBesideClimbableBlock(this.collidedHorizontally);
 			this.lastJumpTick = Math.max(0, this.lastJumpTick - 1);
 
-			if (this.jumpTick > 10 && this.onGround) {
+			if (this.jumpTick > 10 && (this.onGround || this.velocityChanged)) {
 				this.jumping = false;
 			}
 
@@ -240,8 +241,8 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 
 	private void updateChargeState() {
 		if (this.chargingTick > 0) {
-			for (LivingEntity livingEntity : this.world.getEntitiesWithinAABB(LivingEntity.class, this.getBoundingBox())) {
-				if (livingEntity != this && livingEntity != this.getControllingPassenger() && livingEntity != this.getOwner() && livingEntity.attackable()) {
+			for (LivingEntity livingEntity : this.world.getEntitiesWithinAABB(LivingEntity.class, this.getBoundingBox(), EntityPredicates.notRiding(this))) {
+				if (livingEntity != this && livingEntity != this.getOwner() && livingEntity.attackable()) {
 					this.attackEntityAsMob(livingEntity);
 				}
 			}
@@ -258,9 +259,9 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 				this.heal((float)itemstack.getItem().getFood().getHealing());
 				this.consumeItemFromStack(player, itemstack);
 				return true;
-			}
-
-			if (itemstack.getItem() == Items.SADDLE) {
+			} else if (super.processInteract(player, hand)) {
+				return true;
+			} else if (itemstack.getItem() == Items.SADDLE) {
 				if (!player.isSneaking() && !this.isSaddled() && !this.isChild()) {
 					this.setSaddled(true);
 					this.world.playSound(player, this.posX, this.posY, this.posZ, SoundEvents.ENTITY_PIG_SADDLE, SoundCategory.NEUTRAL, 0.5F, 1.0F);
@@ -272,6 +273,8 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 					if (!this.world.isRemote) {
 						player.startRiding(this);
 						this.navigator.clearPath();
+						this.setRevengeTarget(null);
+						this.setAttackTarget(null);
 					}
 
 					return true;
@@ -325,21 +328,19 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 
 	@Override
 	public boolean canJump() {
-		return this.isSaddled() && !chargeExhausted;
+		return this.isSaddled() && !this.chargeExhausted;
 	}
 
 	@Override
 	@OnlyIn(Dist.CLIENT)
 	public void setJumpPower(int jumpPowerIn) {
-		exhaustAmount += 50 * jumpPowerIn / 100;
-		System.out.println("exhaustAmount = " + exhaustAmount);
+		this.exhaustAmount += 50 * jumpPowerIn / 100;
 		this.jumpPower = 1.0F * (float)jumpPowerIn / 100.0F;
-		System.out.println("jumpPower = " + jumpPower);
 	}
 
 	@Override
 	public void handleStartJump(int jumpPowerIn) {
-		chargingTick = 8 * jumpPowerIn / 100;
+		this.chargingTick = 8 * jumpPowerIn / 100;
 	}
 
 	@Override
@@ -379,14 +380,14 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 				this.renderYawOffset += 360.0F;
 			}
 
-			if (!chargeExhausted && jumpPower > 0 && (this.onGround || this.world.containsAnyLiquid(getBoundingBox()))) {
-				float pitch = rotationPitch;
-				rotationPitch = 0.0F;
-				rotationPitch = pitch;
-				double power = 1.600000023841858D * (double)jumpPower;
-				setMotion(getLookVec().x * power, 0.30000001192092896D, getLookVec().z * power);
+			if (!this.chargeExhausted && this.jumpPower > 0 && (this.onGround || this.world.containsAnyLiquid(this.getBoundingBox()))) {
+				float pitch = this.rotationPitch;
+				this.rotationPitch = 0.0F;
+				this.rotationPitch = pitch;
+				double power = 1.600000023841858D * (double)this.jumpPower;
+				this.setMotion(this.getLookVec().x * power, 0.30000001192092896D, this.getLookVec().z * power);
 				this.isAirBorne = true;
-				jumpPower = 0;
+				this.jumpPower = 0;
 			}
 
 			this.jumpMovementFactor = this.getAIMoveSpeed() * 0.1F;
@@ -435,7 +436,7 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 
 	@Override
 	public boolean isOnLadder() {
-		return this.isBesideClimbableBlock();
+		return this.isBesideClimbableBlock() || this.isBeingRidden() && this.collidedHorizontally;
 	}
 
 	@Override
@@ -501,7 +502,7 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 	@Override
 	public void readAdditional(CompoundNBT compound) {
 		super.readAdditional(compound);
-		this.setSaddled(compound.getBoolean("Saddled"));
+		this.setSaddled(compound.getBoolean("Saddle") || compound.getBoolean("Saddled"));
 		ListNBT listnbt = compound.getList("Webs", 10);
 		for (int i = 0; i < listnbt.size(); i++) {
 			CompoundNBT compound1 = listnbt.getCompound(i);
@@ -530,7 +531,7 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 		this.playSound(SoundEvents.ENTITY_SPIDER_STEP, 0.15F, 1.0F);
 	}
 
-	private static boolean isPigOrSpider(LivingEntity livingEntity) {
+	public static boolean isPigOrSpider(LivingEntity livingEntity) {
 		return livingEntity.getType() == EntityType.PIG || livingEntity.getType() == EntityType.SPIDER;
 	}
 

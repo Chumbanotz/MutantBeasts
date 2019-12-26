@@ -29,6 +29,10 @@ public class MBHurtByTargetGoal extends TargetGoal {
 
 	@Override
 	public boolean shouldExecute() {
+		if (this.goalOwner.getAttackTarget() != null && !this.goalOwner.getAttackTarget().isAlive()) {
+			this.goalOwner.setAttackTarget(null);
+		}
+
 		LivingEntity revengeTarget = this.goalOwner.getRevengeTarget();
 
 		if (revengeTarget != null) {

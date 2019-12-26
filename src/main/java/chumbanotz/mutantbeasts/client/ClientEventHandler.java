@@ -16,6 +16,7 @@ import chumbanotz.mutantbeasts.client.renderer.entity.MutantZombieRenderer;
 import chumbanotz.mutantbeasts.client.renderer.entity.SpiderPigRenderer;
 import chumbanotz.mutantbeasts.client.renderer.entity.ThrowableBlockRenderer;
 import chumbanotz.mutantbeasts.client.renderer.entity.layers.CreeperMinionShoulderLayer;
+import chumbanotz.mutantbeasts.client.renderer.entity.model.EndersoulHandModel;
 import chumbanotz.mutantbeasts.entity.BodyPartEntity;
 import chumbanotz.mutantbeasts.entity.CreeperMinionEggEntity;
 import chumbanotz.mutantbeasts.entity.CreeperMinionEntity;
@@ -34,7 +35,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.PlayerRenderer;
 import net.minecraft.client.renderer.entity.SpriteRenderer;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.ModelRegistryEvent;
 import net.minecraftforge.client.event.ParticleFactoryRegisterEvent;
+import net.minecraftforge.client.model.ModelLoaderRegistry;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.client.registry.RenderingRegistry;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
@@ -42,6 +45,11 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 @EventBusSubscriber(modid = MutantBeasts.MOD_ID, value = Dist.CLIENT)
 public enum ClientEventHandler {
 	INSTANCE;
+
+	@SubscribeEvent
+	public static void onModelRegistry(ModelRegistryEvent event) {
+		ModelLoaderRegistry.registerLoader(new EndersoulHandModel.Loader());
+	}
 
 	public void openCreeperMinionTrackerScreen(CreeperMinionEntity creeperMinion) {
 		Minecraft.getInstance().displayGuiScreen(new CreeperMinionTrackerScreen(creeperMinion));

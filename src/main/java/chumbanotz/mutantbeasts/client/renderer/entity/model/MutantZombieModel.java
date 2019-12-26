@@ -126,11 +126,11 @@ public class MutantZombieModel extends EntityModel<MutantZombieEntity> {
 		float scale;
 
 		if (zombie.deathTime <= 0) {
-			if (zombie.getAttackId() == MutantZombieEntity.MELEE_ATTACK) {
+			if (zombie.getAttackID() == MutantZombieEntity.MELEE_ATTACK) {
 				this.animateMelee(zombie.getAttackTick());
 			}
 
-			if (zombie.getAttackId() == MutantZombieEntity.ROAR_ATTACK) {
+			if (zombie.getAttackID() == MutantZombieEntity.ROAR_ATTACK) {
 				this.animateRoar(zombie.getAttackTick());
 				scale = 1.0F - MathHelper.clamp((float)zombie.getAttackTick() / 6.0F, 0.0F, 1.0F);
 				walkAnim1 *= scale;
@@ -139,7 +139,7 @@ public class MutantZombieModel extends EntityModel<MutantZombieEntity> {
 				facePitch *= scale;
 			}
 
-			if (zombie.getAttackId() == MutantZombieEntity.THROW_ATTACK) {
+			if (zombie.getAttackID() == MutantZombieEntity.THROW_ATTACK) {
 				this.animateThrow(zombie);
 				scale = 1.0F - MathHelper.clamp((float)zombie.getAttackTick() / 3.0F, 0.0F, 1.0F);
 				walkAnim1 *= scale;

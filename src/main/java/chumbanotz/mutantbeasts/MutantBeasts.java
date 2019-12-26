@@ -59,7 +59,7 @@ public class MutantBeasts {
 		return new ResourceLocation(MOD_ID, name);
 	}
 
-	public static ResourceLocation getEntityTexture(String entityName) {
-		return prefix("textures/entity/" + entityName + ".png");
+	public static ResourceLocation getEntityTexture(String fileName) {
+		return prefix("textures/entity/" + fileName + ".png");
 	}
 }

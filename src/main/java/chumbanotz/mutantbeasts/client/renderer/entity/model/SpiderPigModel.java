@@ -29,13 +29,14 @@ public class SpiderPigModel extends EntityModel<SpiderPigEntity> {
 	private final JointRendererModel backLeg2;
 	private final JointRendererModel backLegF2;
 
-	public SpiderPigModel() {
+	public SpiderPigModel(float scale) {
 		this.textureWidth = 128;
 		this.textureHeight = 64;
 		this.base = new RendererModel(this);
 		this.base.setRotationPoint(0.0F, 14.5F, -2.0F);
 		this.body2 = new RendererModel(this, 32, 0);
 		this.body2.addBox(-3.0F, -3.0F, 0.0F, 6, 6, 10);
+		this.body2.setTextureOffset(44, 16).addBox(-5.0F, -5.0F, -4.0F, 10, 8, 12, scale);
 		this.base.addChild(this.body2);
 		this.body1 = new JointRendererModel(this, 64, 0);
 		this.body1.addBox(-3.5F, -3.5F, -9.0F, 7, 7, 9);
@@ -126,36 +127,28 @@ public class SpiderPigModel extends EntityModel<SpiderPigEntity> {
 		this.head.rotateAngleX += -0.3926991F;
 		this.frontLeg1.rotateAngleX += -(this.body1.rotateAngleX + this.body2.rotateAngleX);
 		this.frontLeg1.rotateAngleY += -1.0471976F;
-		RendererModel var10000 = this.frontLeg1.getModel();
-		var10000.rotateAngleZ += 2.0943952F;
+		this.frontLeg1.getModel().rotateAngleZ += 2.0943952F;
 		this.frontLegF1.rotateAngleZ += -1.6534699F;
 		this.frontLeg2.rotateAngleX += -(this.body1.rotateAngleX + this.body2.rotateAngleX);
 		++this.frontLeg2.rotateAngleY;
-		var10000 = this.frontLeg2.getModel();
-		var10000.rotateAngleZ += -2.0943952F;
+		this.frontLeg2.getModel().rotateAngleZ += -2.0943952F;
 		this.frontLegF2.rotateAngleZ += 1.6534699F; // Fixed?
 		this.middleLeg1.rotateAngleX += -(this.body1.rotateAngleX + this.body2.rotateAngleX);
 		this.middleLeg1.rotateAngleY += -0.31415927F;
-		var10000 = this.middleLeg1.getModel();
-		var10000.rotateAngleZ += 2.0399954F;
+		this.middleLeg1.getModel().rotateAngleZ += 2.0399954F;
 		this.middleLegF1.rotateAngleZ += -1.6534699F;
 		this.middleLeg2.rotateAngleX += -(this.body1.rotateAngleX + this.body2.rotateAngleX);
 		this.middleLeg2.rotateAngleY += 0.31415927F;
-		var10000 = this.middleLeg2.getModel();
-		var10000.rotateAngleZ += -2.0399954F;
+		this.middleLeg2.getModel().rotateAngleZ += -2.0399954F;
 		this.middleLegF2.rotateAngleZ += 1.6534699F; // Fixed?
 		this.backLeg1.rotateAngleX += -0.3926991F;
-		var10000 = this.backLeg1.getModel();
-		var10000.rotateAngleZ += 0.3926991F;
+		this.backLeg1.getModel().rotateAngleZ += 0.3926991F;
 		this.backLegF1.rotateAngleZ += -0.3926991F;
-		var10000 = this.backLegF1.getModel();
-		var10000.rotateAngleX += 0.5711987F;
+		this.backLegF1.getModel().rotateAngleX += 0.5711987F;
 		this.backLeg2.rotateAngleX += -0.3926991F;
-		var10000 = this.backLeg2.getModel();
-		var10000.rotateAngleZ += -0.3926991F;
+		this.backLeg2.getModel().rotateAngleZ += -0.3926991F;
 		this.backLegF2.rotateAngleZ += 0.3926991F;
-		var10000 = this.backLegF2.getModel();
-		var10000.rotateAngleX += 0.5711987F;
+		this.backLegF2.getModel().rotateAngleX += 0.5711987F;
 	}
 
 	private void animate(SpiderPigEntity entity, float f, float f1, float f2, float f3, float f4, float f5) {
@@ -174,29 +167,19 @@ public class SpiderPigModel extends EntityModel<SpiderPigEntity> {
 		this.head.rotateAngleX += breatheAnim * 0.02F;
 		this.body1.rotateAngleX += breatheAnim * 0.005F;
 		this.butt.rotateAngleX += -breatheAnim * 0.015F;
-		RendererModel var10000 = this.head.getModel();
-		var10000.rotateAngleX += facePitch;
-		var10000 = this.head.getModel();
-		var10000.rotateAngleY += faceYaw;
-		var10000 = this.frontLeg1.getModel();
-		var10000.rotateAngleZ += -moveAnim1 * 3.1415927F / 6.0F;
-		var10000 = this.frontLeg1.getModel();
-		var10000.rotateAngleX += -0.3926991F * f1;
+		this.head.getModel().rotateAngleX += facePitch;
+		this.head.getModel().rotateAngleY += faceYaw;
+		this.frontLeg1.getModel().rotateAngleZ += -moveAnim1 * 3.1415927F / 6.0F;
+		this.frontLeg1.getModel().rotateAngleX += -0.3926991F * f1;
 		this.frontLegF1.rotateAngleZ += moveAnim1d * 3.1415927F / 6.0F + 0.2617994F * f1;
-		var10000 = this.frontLeg2.getModel();
-		var10000.rotateAngleZ += moveAnim2 * 3.1415927F / 6.0F;
-		var10000 = this.frontLeg2.getModel();
-		var10000.rotateAngleX += -0.3926991F * f1;
+		this.frontLeg2.getModel().rotateAngleZ += moveAnim2 * 3.1415927F / 6.0F;
+		this.frontLeg2.getModel().rotateAngleX += -0.3926991F * f1;
 		this.frontLegF2.rotateAngleZ += -(moveAnim2d * 3.1415927F / 6.0F + 0.2617994F * f1);
-		var10000 = this.middleLeg1.getModel();
-		var10000.rotateAngleZ += -moveAnim3 * 3.1415927F / 6.0F;
-		var10000 = this.middleLeg1.getModel();
-		var10000.rotateAngleX += -0.8975979F * f1;
+		this.middleLeg1.getModel().rotateAngleZ += -moveAnim3 * 3.1415927F / 6.0F;
+		this.middleLeg1.getModel().rotateAngleX += -0.8975979F * f1;
 		this.middleLegF1.rotateAngleZ += moveAnim3d * 3.1415927F / 6.0F + 0.3926991F * f1;
-		var10000 = this.middleLeg2.getModel();
-		var10000.rotateAngleZ += moveAnim4 * 3.1415927F / 6.0F;
-		var10000 = this.middleLeg2.getModel();
-		var10000.rotateAngleX += -0.8975979F * f1;
+		this.middleLeg2.getModel().rotateAngleZ += moveAnim4 * 3.1415927F / 6.0F;
+		this.middleLeg2.getModel().rotateAngleX += -0.8975979F * f1;
 		this.middleLegF2.rotateAngleZ += -(moveAnim4d * 3.1415927F / 6.0F + 0.3926991F * f1);
 		this.backLeg1.rotateAngleX += -moveAnim4 * 3.1415927F / 5.0F + 0.2617994F * f1;
 		this.backLeg2.rotateAngleX += -moveAnim1 * 3.1415927F / 5.0F + 0.2617994F * f1;

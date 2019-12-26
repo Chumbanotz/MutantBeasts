@@ -18,6 +18,7 @@ import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.util.DamageSource;
+import net.minecraft.util.EntityPredicates;
 import net.minecraft.util.Hand;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.Vec3d;
@@ -29,9 +30,7 @@ import net.minecraftforge.fml.network.FMLPlayMessages;
 import net.minecraftforge.fml.network.NetworkHooks;
 
 public class EndersoulFragmentEntity extends Entity {
-	public static final Predicate<Entity> IS_VALID_TARGET = entity -> {
-		return EntityUtil.CAN_AI_TARGET.test(entity) && !(entity instanceof ItemEntity) && !(entity instanceof EndersoulFragmentEntity) && !(entity instanceof MutantEndermanEntity) && !(entity instanceof EndermanEntity);
-	};
+	public static final Predicate<Entity> IS_VALID_TARGET = entity -> EntityPredicates.CAN_AI_TARGET.test(entity) && !(entity instanceof ItemEntity) && !(entity instanceof EndersoulFragmentEntity) && !(entity instanceof MutantEndermanEntity) && !(entity instanceof EndermanEntity);
 	private static final DataParameter<Boolean> COLLECTED = EntityDataManager.createKey(EndersoulFragmentEntity.class, DataSerializers.BOOLEAN);
 	private int explodeTick;
 	public final float[][] stickRotations = new float[8][3];
@@ -98,22 +97,7 @@ public class EndersoulFragmentEntity extends Entity {
 	@OnlyIn(Dist.CLIENT)
 	public void handleStatusUpdate(byte id) {
 		if (id == 3) {
-			EntityUtil.spawnEnderParticles(this, 64, 0.8F);
-		}
-	}
-
-	private void move() {
-		if (this.getRidingEntity() == null) {
-			this.prevPosX = this.posX;
-			this.prevPosY = this.posY;
-			this.prevPosZ = this.posZ;
-			Vec3d vec3d = this.getMotion();
-			if (this.collector == null && vec3d.y > -0.05000000074505806D) {
-				this.setMotion(vec3d.x, Math.max(-0.05000000074505806D, vec3d.y - 0.10000000149011612D), vec3d.z);
-			}
-
-			this.move(MoverType.SELF, this.getMotion());
-			this.setMotion(this.getMotion().scale(0.9D));
+			EntityUtil.spawnLargePortalParticles(this, 64, 0.8F, false);
 		}
 	}
 
@@ -149,7 +133,18 @@ public class EndersoulFragmentEntity extends Entity {
 	@Override
 	public void tick() {
 		super.tick();
-		if (this.collector != null && !this.collector.isAlive()) {
+		this.prevPosX = this.posX;
+		this.prevPosY = this.posY;
+		this.prevPosZ = this.posZ;
+		Vec3d vec3d = this.getMotion();
+		if (this.collector == null && vec3d.y > -0.05000000074505806D) {
+			this.setMotion(vec3d.x, Math.max(-0.05000000074505806D, vec3d.y - 0.10000000149011612D), vec3d.z);
+		}
+
+		this.move(MoverType.SELF, this.getMotion());
+		this.setMotion(this.getMotion().scale(0.9D));
+
+		if (this.collector != null && (!this.collector.isAlive() || this.collector.isSpectator())) {
 			this.collector = null;
 		}
 
@@ -169,8 +164,6 @@ public class EndersoulFragmentEntity extends Entity {
 				this.addVelocity((this.collector.posX - this.posX) * (double)scale, (this.collector.posY + (double)(this.collector.getHeight() / 3.0F) - this.posY) * (double)scale, (this.collector.posZ - this.posZ) * (double)scale);
 			}
 		}
-
-		this.move();
 	}
 
 	@Override
@@ -226,6 +219,7 @@ public class EndersoulFragmentEntity extends Entity {
 		if (this.owner != null) {
 			compound.putUniqueId("OwnerUUID", this.owner.getUniqueID());
 		}
+
 		if (this.collector != null) {
 			compound.putUniqueId("CollectorUUID", this.collector.getUniqueID());
 		}
@@ -244,6 +238,7 @@ public class EndersoulFragmentEntity extends Entity {
 				this.owner = (MutantEndermanEntity)entity;
 			}
 		}
+
 		if (compound.hasUniqueId("CollectorUUID")) {
 			this.collector = this.world.getPlayerByUuid(compound.getUniqueId("CollectorUUID"));
 		}

@@ -16,7 +16,7 @@ public class MutantCreeperRenderer extends MutantRenderer<MutantCreeperEntity, M
 	private static final ResourceLocation TEXTURE = MutantBeasts.getEntityTexture("mutant_creeper");
 
 	public MutantCreeperRenderer(EntityRendererManager manager) {
-		super(manager, new MutantCreeperModel(), 1.2F);
+		super(manager, new MutantCreeperModel(), 1.5F);
 		this.addLayer(new CreeperChargeLayer<>(this, new MutantCreeperModel(2.0F), MutantCreeperEntity::getPowered));
 	}
 

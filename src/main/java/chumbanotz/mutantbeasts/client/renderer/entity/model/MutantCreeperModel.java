@@ -106,10 +106,10 @@ public class MutantCreeperModel extends EntityModel<MutantCreeperEntity> {
 		this.frforeleg.rotateAngleY = 0.3926991F;
 		this.flforeleg.rotateAngleX = -0.20943952F;
 		this.flforeleg.rotateAngleY = -0.3926991F;
-		this.brleg.rotateAngleX = 1.0471976F;
+		this.brleg.rotateAngleX = 0.9F; //Lowered back leg
 		this.brleg.rotateAngleY = 0.62831855F;
 		this.brleg.rotateAngleZ = 0.0F;
-		this.blleg.rotateAngleX = 1.0471976F;
+		this.blleg.rotateAngleX = 0.9F; //Lowered back leg
 		this.blleg.rotateAngleY = -0.62831855F;
 		this.blleg.rotateAngleZ = 0.0F;
 		this.brforeleg.rotateAngleX = 0.48332196F;

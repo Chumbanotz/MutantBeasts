@@ -9,7 +9,6 @@ import chumbanotz.mutantbeasts.item.MutantSkeletonArmorItem;
 import net.minecraft.entity.EntityType;
 import net.minecraft.inventory.EquipmentSlotType;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemGroup;
 import net.minecraft.item.Rarity;
 import net.minecraft.particles.BasicParticleType;
 import net.minecraft.particles.ParticleType;
@@ -25,25 +24,28 @@ public class RegistryHandler {
 
 	@SubscribeEvent
 	public static void onItemRegistry(RegistryEvent.Register<Item> event) {
-		ItemGroup main = MutantBeasts.ITEM_GROUP;
 		event.getRegistry().registerAll(
-				setRegistryName("chemical_x", new ChemicalXItem(new Item.Properties().rarity(Rarity.EPIC).group(main))),
-				setRegistryName("creeper_minion_tracker", new Item(new Item.Properties().maxStackSize(1).group(main))),
-				setRegistryName("creeper_shard", new CreeperShardItem(new Item.Properties().rarity(Rarity.UNCOMMON).group(main))),
-				setRegistryName("endersoul_hand", new EndersoulHandItem(new Item.Properties().rarity(Rarity.UNCOMMON).group(main))),
-				setRegistryName("hulk_hammer", new HulkHammerItem(new Item.Properties().rarity(Rarity.UNCOMMON).group(main))),
-				setRegistryName("mutant_skeleton_skull", new MutantSkeletonArmorItem(EquipmentSlotType.HEAD, new Item.Properties().rarity(Rarity.UNCOMMON).group(main))),
-				setRegistryName("mutant_skeleton_chestplate", new MutantSkeletonArmorItem(EquipmentSlotType.CHEST, new Item.Properties().group(main))),
-				setRegistryName("mutant_skeleton_leggings", new MutantSkeletonArmorItem(EquipmentSlotType.LEGS, new Item.Properties().group(main))),
-				setRegistryName("mutant_skeleton_boots", new MutantSkeletonArmorItem(EquipmentSlotType.FEET, new Item.Properties().group(main)))
+				setRegistryName("chemical_x", new ChemicalXItem(defaultProperty().rarity(Rarity.EPIC))),
+				setRegistryName("creeper_minion_tracker", new Item(defaultProperty().maxStackSize(1))),
+				setRegistryName("creeper_shard", new CreeperShardItem(defaultProperty().rarity(Rarity.UNCOMMON))),
+				setRegistryName("endersoul_hand", new EndersoulHandItem(defaultProperty().rarity(Rarity.EPIC))),
+				setRegistryName("hulk_hammer", new HulkHammerItem(defaultProperty().rarity(Rarity.UNCOMMON))),
+				setRegistryName("mutant_skeleton_skull", new MutantSkeletonArmorItem(EquipmentSlotType.HEAD, defaultProperty().rarity(Rarity.UNCOMMON))),
+				setRegistryName("mutant_skeleton_chestplate", new MutantSkeletonArmorItem(EquipmentSlotType.CHEST, defaultProperty())),
+				setRegistryName("mutant_skeleton_leggings", new MutantSkeletonArmorItem(EquipmentSlotType.LEGS, defaultProperty())),
+				setRegistryName("mutant_skeleton_boots", new MutantSkeletonArmorItem(EquipmentSlotType.FEET, defaultProperty()))
 				);
 
 		for (String partName : SKELETON_PART_NAMES) {
-			event.getRegistry().register(setRegistryName("mutant_skeleton_" + partName, new Item(new Item.Properties().group(main))));
+			event.getRegistry().register(setRegistryName("mutant_skeleton_" + partName, new Item(defaultProperty())));
 		}
 
 		MBEntityType.initialize();
 		MBEntityType.registerSpawnEggs(event);
+	}
+
+	public static Item.Properties defaultProperty() {
+		return new Item.Properties().group(MutantBeasts.ITEM_GROUP);
 	}
 
 	@SubscribeEvent
@@ -98,8 +100,7 @@ public class RegistryHandler {
 		return setRegistryName(name, new SoundEvent(MutantBeasts.prefix(name)));
 	}
 
-	public static <T extends IForgeRegistryEntry<?>> T setRegistryName(String name, T entry) {
-		entry.setRegistryName(MutantBeasts.prefix(name));
-		return entry;
+	public static <T extends IForgeRegistryEntry<T>> T setRegistryName(String name, T entry) {
+		return entry.setRegistryName(MutantBeasts.prefix(name));
 	}
 }

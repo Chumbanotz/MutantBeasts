@@ -6,6 +6,7 @@ import chumbanotz.mutantbeasts.MutantBeasts;
 import chumbanotz.mutantbeasts.client.renderer.entity.model.SpiderPigModel;
 import chumbanotz.mutantbeasts.entity.mutant.SpiderPigEntity;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
+import net.minecraft.client.renderer.entity.IEntityRenderer;
 import net.minecraft.client.renderer.entity.layers.LayerRenderer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
@@ -14,9 +15,11 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 @OnlyIn(Dist.CLIENT)
 public class SpiderPigRenderer extends MutantRenderer<SpiderPigEntity, SpiderPigModel> {
 	private static final ResourceLocation TEXTURE = MutantBeasts.getEntityTexture("spider_pig");
+	private static final ResourceLocation SADDLE_TEXTURE = MutantBeasts.getEntityTexture("spider_pig_saddle");
 
 	public SpiderPigRenderer(EntityRendererManager manager) {
-		super(manager, new SpiderPigModel(), 0.6F);
+		super(manager, new SpiderPigModel(0.0F), 0.8F);
+		this.addLayer(new SpiderPigRenderer.SaddleLayer(this));
 	}
 
 	@Override
@@ -26,12 +29,7 @@ public class SpiderPigRenderer extends MutantRenderer<SpiderPigEntity, SpiderPig
 
 	@Override
 	protected void preRenderCallback(SpiderPigEntity entitylivingbaseIn, float partialTickTime) {
-		float scale = 1.2F;
-
-		if (entitylivingbaseIn.isChild()) {
-			scale *= 0.5F;
-		}
-
+		float scale = 1.2F * entitylivingbaseIn.getRenderScale();
 		GlStateManager.scalef(scale, scale, scale);
 	}
 
@@ -41,16 +39,18 @@ public class SpiderPigRenderer extends MutantRenderer<SpiderPigEntity, SpiderPig
 	}
 
 	@OnlyIn(Dist.CLIENT)
-	class SaddleLayer extends LayerRenderer<SpiderPigEntity, SpiderPigModel> {
-		public SaddleLayer() {
-			super(SpiderPigRenderer.this);
+	static class SaddleLayer extends LayerRenderer<SpiderPigEntity, SpiderPigModel> {
+		private final SpiderPigModel spiderPigModel = new SpiderPigModel(-0.6F);
+		public SaddleLayer(IEntityRenderer<SpiderPigEntity, SpiderPigModel> entityRendererIn) {
+			super(entityRendererIn);
 		}
 
 		@Override
-		public void render(SpiderPigEntity entityIn, float p_212842_2_, float p_212842_3_, float p_212842_4_, float p_212842_5_, float p_212842_6_, float p_212842_7_, float p_212842_8_) {
+		public void render(SpiderPigEntity entityIn, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch, float scale) {
 			if (entityIn.isSaddled()) {
-				//this.bindTexture(TEXTURE);
-				//this.getEntityModel().setModelAttributes(this.pigModel);
+				this.bindTexture(SADDLE_TEXTURE);
+				this.getEntityModel().setModelAttributes(this.spiderPigModel);
+				this.spiderPigModel.render(entityIn, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scale);
 			}
 		}
 

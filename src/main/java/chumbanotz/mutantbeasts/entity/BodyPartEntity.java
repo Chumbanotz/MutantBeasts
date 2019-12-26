@@ -8,7 +8,6 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MobEntity;
 import net.minecraft.entity.MoverType;
-import net.minecraft.entity.item.ItemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
@@ -18,8 +17,8 @@ import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.Hand;
+import net.minecraft.util.StringUtils;
 import net.minecraft.util.math.RayTraceResult;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
@@ -40,7 +39,6 @@ public class BodyPartEntity extends Entity {
 	private double velocityY;
 	@OnlyIn(Dist.CLIENT)
 	private double velocityZ;
-	private boolean hurtsEntities = true;
 
 	public BodyPartEntity(EntityType<? extends BodyPartEntity> type, World world) {
 		super(type, world);
@@ -50,12 +48,15 @@ public class BodyPartEntity extends Entity {
 		this.pitchPositive = this.rand.nextBoolean();
 	}
 
-	public BodyPartEntity(World world, MobEntity owner, int bodyPart) {
+	public BodyPartEntity(World world, MobEntity owner, int part) {
 		this(MBEntityType.BODY_PART, world);
 		this.owner = owner;
 		this.setOwnerType(owner.getType().getRegistryName().getPath());
 		this.setPosition(owner.posX, owner.posY + (double)(3.2F * (0.25F + this.rand.nextFloat() * 0.5F)), owner.posZ);
-		this.setPart(bodyPart);
+		this.setPart(part);
+		if (owner.isBurning()) {
+			this.setFireTimer(owner.getFireTimer());
+		}
 	}
 
 	public BodyPartEntity(FMLPlayMessages.SpawnEntity packet, World world) {
@@ -73,19 +74,15 @@ public class BodyPartEntity extends Entity {
 	}
 
 	private void setOwnerType(String ownerType) {
-		if (ownerType.isEmpty()) {
-			ownerType = "mutant_skeleton";
-		}
-
-		this.dataManager.set(OWNER_TYPE, ownerType);
+		this.dataManager.set(OWNER_TYPE, StringUtils.isNullOrEmpty(ownerType) ? "mutant_skeleton" : ownerType);
 	}
 
 	public int getPart() {
 		return this.dataManager.get(PART);
 	}
 
-	private void setPart(int partId) {
-		this.dataManager.set(PART, (byte)partId);
+	private void setPart(int id) {
+		this.dataManager.set(PART, (byte)id);
 	}
 
 	@Override
@@ -119,48 +116,31 @@ public class BodyPartEntity extends Entity {
 		this.setMotion(this.velocityX, this.velocityY, this.velocityZ);
 	}
 
-	protected void move() {
-		if (this.getRidingEntity() == null) {
-			this.setMotion(this.getMotion().subtract(0.0D, 0.045D, 0.0D));
-			this.move(MoverType.SELF, this.getMotion());
-			Vec3d vec3d = this.getMotion();
-			this.setMotion(vec3d.scale(0.96D));
-
-			if (this.onGround) {
-				this.setMotion(vec3d.scale(0.7D));
-			}
-		}
-	}
-
 	@Override
 	public void tick() {
 		super.tick();
-		this.move();
+		if (!this.hasNoGravity()) {
+			this.setMotion(this.getMotion().subtract(0.0D, 0.045D, 0.0D));
+		}
+
+		this.move(MoverType.SELF, this.getMotion());
+		this.setMotion(this.getMotion().scale(0.96D));
+
+		if (this.onGround) {
+			this.setMotion(this.getMotion().scale(0.7D));
+		}
 
 		if (!this.onGround && this.motionMultiplier.length() == 0.0D) {
 			this.markVelocityChanged();
 			this.rotationYaw += 10.0F * (float)(this.yawPositive ? 1 : -1);
 			this.rotationPitch += 15.0F * (float)(this.pitchPositive ? 1 : -1);
+			for (LivingEntity entity : this.world.getEntitiesWithinAABB(LivingEntity.class, this.getBoundingBox().grow(4.0D), this::isNotOwnerType)) {
+				if (this.isBurning()) {
+					entity.setFireTimer(this.getFireTimer());
+				}
 
-			if (this.hurtsEntities) {
-				this.damageEntities();
+				entity.attackEntityFrom(DamageSource.causeThrownDamage(this, this.owner).setProjectile(), 4.0F + (float)this.rand.nextInt(4));
 			}
-		}
-	}
-
-	private void damageEntities() {
-		for (LivingEntity entity : this.world.getEntitiesWithinAABB(LivingEntity.class, this.getBoundingBox().grow(4.0D), entity -> entity.getEntityString() != this.getOwnerType())) {
-			DamageSource source = DamageSource.DRYOUT;
-
-			if (this.owner != null) {
-				source = DamageSource.causeMobDamage(this.owner);
-			}
-
-			if (this.isBurning()) {
-				entity.setFireTimer(this.getFireTimer());
-			}
-
-			entity.attackEntityFrom(source.setDifficultyScaled(), 4.0F + (float)this.rand.nextInt(4));
 		}
 	}
 
@@ -169,9 +149,7 @@ public class BodyPartEntity extends Entity {
 		if (!this.getItemStackByPart().isEmpty()) {
 			player.swingArm(hand);
 			if (!this.world.isRemote && this.world.getGameRules().getBoolean(GameRules.DO_ENTITY_DROPS)) {
-				ItemEntity item = new ItemEntity(this.world, this.posX, this.posY, this.posZ, this.getItemStackByPart());
-				item.setNoPickupDelay();
-				this.world.addEntity(item);
+				this.entityDropItem(this.getItemStackByPart()).setNoPickupDelay();
 			}
 
 			this.remove();
@@ -182,8 +160,12 @@ public class BodyPartEntity extends Entity {
 	}
 
 	@Override
-	public boolean hitByEntity(Entity entityIn) {
-		return true;
+	public boolean canBeAttackedWithItem() {
+		return false;
+	}
+
+	private boolean isNotOwnerType(Entity entity) {
+		return !entity.getType().getRegistryName().getPath().equals(this.getOwnerType());
 	}
 
 	private ItemStack getItemStackByPart() {
@@ -216,7 +198,10 @@ public class BodyPartEntity extends Entity {
 
 	@Override
 	protected void writeAdditional(CompoundNBT compound) {
-		compound.putString("OwnerType", this.getOwnerType());
+		if (!StringUtils.isNullOrEmpty(this.getOwnerType())) {
+			compound.putString("OwnerType", this.getOwnerType());
+		}
+
 		compound.putByte("Part", (byte)this.getPart());
 	}
 

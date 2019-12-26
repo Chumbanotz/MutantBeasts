@@ -39,6 +39,7 @@ import net.minecraft.particles.ParticleTypes;
 import net.minecraft.pathfinding.PathNavigator;
 import net.minecraft.tags.Tag;
 import net.minecraft.util.DamageSource;
+import net.minecraft.util.EntityPredicates;
 import net.minecraft.util.Hand;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.util.math.BlockPos;
@@ -271,7 +272,6 @@ public class MutantCreeperEntity extends CreeperEntity {
 
 	@Override
 	public void onDeath(DamageSource cause) {
-		EntityUtil.onDeath(this, cause, this.dead);
 		if (!this.world.isRemote) {
 			this.deathCause = cause;
 			this.setCharging(false);
@@ -292,7 +292,7 @@ public class MutantCreeperEntity extends CreeperEntity {
 		float f = this.getPowered() ? 12.0F : 8.0F;
 		float f1 = f * 1.5F;
 
-		for (Entity entity : this.world.getEntitiesInAABBexcluding(this, this.getBoundingBox().grow((double)f1), EntityUtil.CAN_AI_TARGET)) {
+		for (Entity entity : this.world.getEntitiesInAABBexcluding(this, this.getBoundingBox().grow((double)f1), EntityPredicates.CAN_AI_TARGET)) {
 			double x = this.posX - entity.posX;
 			double y = this.posY - entity.posY;
 			double z = this.posZ - entity.posZ;
@@ -307,16 +307,15 @@ public class MutantCreeperEntity extends CreeperEntity {
 			this.pushOutOfBlocks(this.posX, (this.getBoundingBox().minY + this.getBoundingBox().maxY) / 2.0D, this.posZ);
 		}
 
-		if (++this.deathTime >= MAX_DEATH_TIME) {
+		if (++this.deathTime == MAX_DEATH_TIME) {
 			if (!this.world.isRemote) {
 				MutatedExplosion.Mode mode = net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this.world, this) ? MutatedExplosion.Mode.DESTROY : MutatedExplosion.Mode.NONE;
 				MutatedExplosion.explode(this.world, this, this.posX, this.posY, this.posZ, f, this.isBurning(), mode);
 				EntityUtil.spawnLingeringCloud(this);
-				this.spawnDrops(this.deathCause);
+				super.onDeath(this.deathCause);
 
-				if (EntityUtil.dropExperience(this, this.recentlyHit, this.getExperiencePoints(this.attackingPlayer), this.attackingPlayer)) {
-					CreeperMinionEggEntity egg = new CreeperMinionEggEntity(this.world);
-					egg.setOwnerUniqueId(this.attackingPlayer.getUniqueID());
+				if (EntityUtil.dropExperience(this, this.recentlyHit, this::getExperiencePoints, this.attackingPlayer)) {
+					CreeperMinionEggEntity egg = new CreeperMinionEggEntity(this.world, this.attackingPlayer);
 					egg.setPosition(this.posX, this.posY, this.posZ);
 					this.world.addEntity(egg);
 				}
@@ -419,7 +418,7 @@ public class MutantCreeperEntity extends CreeperEntity {
 		@Override
 		public boolean shouldExecute() {
 			float chance = !hasPath() || getLastDamageSource() != null && getLastDamageSource().isProjectile() ? 2.5F : 0.6F;
-			return getAttackTarget() != null && getDistanceSq(getAttackTarget()) <= 1024.0D && !isCharging() && !isJumpAttacking() ? rand.nextFloat() * 100.0F < chance : false;
+			return getAttackTarget() != null && getDistanceSq(getAttackTarget()) <= 1024.0D && !isCharging() && !isJumpAttacking() && rand.nextFloat() * 100.0F < chance;
 		}
 
 		@Override

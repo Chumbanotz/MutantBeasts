@@ -43,6 +43,7 @@ import net.minecraft.particles.ParticleTypes;
 import net.minecraft.pathfinding.PathNavigator;
 import net.minecraft.pathfinding.PathNodeType;
 import net.minecraft.potion.Effects;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.Hand;
 import net.minecraft.util.SoundEvent;
@@ -54,8 +55,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
 public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackMob {
-	private static final DataParameter<Optional<BlockState>> ICE_BLOCK = EntityDataManager.createKey(MutantSnowGolemEntity.class, DataSerializers.OPTIONAL_BLOCK_STATE);
-	private static final Block[] THROWABLE_BLOCKS = {Blocks.ICE, Blocks.PACKED_ICE, Blocks.BLUE_ICE};
+	private static final DataParameter<Optional<BlockState>> THROWN_BLOCK = EntityDataManager.createKey(MutantSnowGolemEntity.class, DataSerializers.OPTIONAL_BLOCK_STATE);
 	private boolean isThrowing;
 	private int throwingTick;
 
@@ -76,7 +76,7 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 		this.goalSelector.addGoal(8, new LookAtGoal(this, MobEntity.class, 6.0F));
 		this.goalSelector.addGoal(9, new LookRandomlyGoal(this));
 		this.targetSelector.addGoal(1, new MBHurtByTargetGoal(this));
-		this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, MobEntity.class, 10, true, false, (entity) -> {
+		this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, MobEntity.class, 10, true, false, entity -> {
 			return entity instanceof IMob && (!(entity instanceof CreeperEntity) || ((CreeperEntity)entity).getAttackTarget() == this);
 		}));
 	}
@@ -91,11 +91,11 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 	@Override
 	protected void registerData() {
 		super.registerData();
-		this.dataManager.register(ICE_BLOCK, Optional.of(Blocks.ICE.getDefaultState()));
+		this.dataManager.register(THROWN_BLOCK, Optional.of(Blocks.ICE.getDefaultState()));
 	}
 
-	public BlockState getIceBlock() {
-		return this.dataManager.get(ICE_BLOCK).orElse(Blocks.ICE.getDefaultState());
+	public BlockState getThrownBlock() {
+		return this.dataManager.get(THROWN_BLOCK).orElse(Blocks.ICE.getDefaultState());
 	}
 
 	@Override
@@ -206,11 +206,11 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 		} else if (id == 4) {
 			this.world.addParticle(ParticleTypes.FALLING_WATER, this.posX + (double)(this.rand.nextFloat() * this.getWidth() * 1.5F) - (double)this.getWidth(), this.posY - 0.15D + (double)(this.rand.nextFloat() * this.getHeight()), this.posZ + (double)(this.rand.nextFloat() * this.getWidth() * 1.5F) - (double)this.getWidth(), 0.0D, 0.0D, 0.0D);
 		} else if (id == 5 || id == 6 || id == 7) {
-			for (int i = 0; i < (id == 5 ? 10 : id == 6 ? 30 : 1); ++i) {
+			for (int i = 0; i < (id == 5 ? 1 : id == 6 ? 10 : 30); ++i) {
 				double d0 = this.rand.nextGaussian() * 0.02D;
 				double d1 = this.rand.nextGaussian() * 0.02D;
 				double d2 = this.rand.nextGaussian() * 0.02D;
-				this.world.addParticle(id == 7 ? ParticleTypes.HEART : new BlockParticleData(ParticleTypes.BLOCK, Blocks.SNOW.getDefaultState()), this.posX + (double)(this.rand.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(), this.posY + 0.5D + (double)(this.rand.nextFloat() * this.getHeight()), this.posZ + (double)(this.rand.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(), d0, d1, d2);
+				this.world.addParticle(id == 5 ? ParticleTypes.HEART : new BlockParticleData(ParticleTypes.BLOCK, Blocks.SNOW.getDefaultState()), this.posX + (double)(this.rand.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(), this.posY + 0.5D + (double)(this.rand.nextFloat() * this.getHeight()), this.posZ + (double)(this.rand.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(), d0, d1, d2);
 			}
 		} else {
 			super.handleStatusUpdate(id);
@@ -242,14 +242,15 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 	@Override
 	protected boolean processInteract(PlayerEntity player, Hand hand) {
 		ItemStack stack = player.getHeldItem(hand);
-		if (!stack.isEmpty())
-			for (Block block : THROWABLE_BLOCKS) {
-				if (stack.getItem() == block.asItem() && this.getIceBlock() != block.getDefaultState()) {
-					this.dataManager.set(ICE_BLOCK, Optional.of(block.getDefaultState()));
+		if (!stack.isEmpty()) {
+			for (Block block : BlockTags.ICE.getAllElements()) {
+				if (stack.getItem() == block.asItem() && this.getThrownBlock() != block.getDefaultState()) {
+					this.dataManager.set(THROWN_BLOCK, Optional.of(block.getDefaultState()));
 					stack.shrink(1);
 					return true;
 				}
 			}
+		}
 
 		return false;
 	}
@@ -259,15 +260,17 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 		if (source.getImmediateSource() instanceof SnowballEntity) {
 			if (this.getHealth() < this.getMaxHealth()) {
 				this.heal(1.0F);
-				this.world.setEntityState(this, (byte)7);
 				this.world.setEntityState(this, (byte)5);
+				this.world.setEntityState(this, (byte)6);
 			}
 
 			return false;
 		} else {
 			boolean flag = super.attackEntityFrom(source, amount);
-			if (flag && amount > 0.0F)
-				this.world.setEntityState(this, (byte)6);
+			if (flag && amount > 0.0F) {
+				this.world.setEntityState(this, (byte)7);
+			}
+
 			return flag;
 		}
 	}

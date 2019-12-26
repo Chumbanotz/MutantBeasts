@@ -27,8 +27,7 @@ public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity,
 	private static final Field RENDER_POS_Y = ObfuscationReflectionHelper.findField(EntityRendererManager.class, "field_78726_c");
 	private static final Field RENDER_POS_Z = ObfuscationReflectionHelper.findField(EntityRendererManager.class, "field_78723_d");
 	private static final ResourceLocation TEXTURE = MutantBeasts.getEntityTexture("mutant_enderman");
-	private static final ResourceLocation BLANK_TEXTURE = MutantBeasts.prefix("textures/blank.png");
-	private static final ResourceLocation CLONE_TEXTURE = MutantBeasts.getEntityTexture("mutant_enderman_clone");
+	private static final ResourceLocation GLOW_TEXTURE = MutantBeasts.getEntityTexture("mutant_enderman_glow");
 	private static final ResourceLocation EYES_TEXTURE = MutantBeasts.getEntityTexture("mutant_enderman_eyes");
 	private static final ResourceLocation SHUFFLE_TEXTURE = MutantBeasts.getEntityTexture("mutant_enderman_shuffle");
 	private final MutantEndermanModel endermanModel;
@@ -114,7 +113,7 @@ public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity,
 
 	@Override
 	protected ResourceLocation getEntityTexture(MutantEndermanEntity entity) {
-		return entity.isClone() ? BLANK_TEXTURE : TEXTURE;
+		return entity.isClone() ? null : TEXTURE;
 	}
 
 	@OnlyIn(Dist.CLIENT)
@@ -155,7 +154,7 @@ public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity,
 
 			if (teleport || scream || clone) {
 				GlStateManager.disableLighting();
-				this.bindTexture(CLONE_TEXTURE);
+				this.bindTexture(GLOW_TEXTURE);
 				GlStateManager.matrixMode(5890);
 				GlStateManager.loadIdentity();
 				float f = ((float)entityIn.ticksExisted + partialTicks) * 0.008F;

@@ -140,31 +140,24 @@ public class MutantSnowGolemModel extends EntityModel<MutantSnowGolemEntity> {
 			walkAnim *= scale1;
 		}
 
-		RendererModel var10000 = this.head.getModel();
-		var10000.rotateAngleX -= breatheAnim * 0.01F;
+		this.head.getModel().rotateAngleX -= breatheAnim * 0.01F;
 		this.chest.rotateAngleX -= breatheAnim * 0.01F;
 		this.arm1.rotateAngleZ += breatheAnim * 0.03F;
 		this.arm2.rotateAngleZ -= breatheAnim * 0.03F;
-		var10000 = this.head.getModel();
-		var10000.rotateAngleX += facePitch;
-		var10000 = this.head.getModel();
-		var10000.rotateAngleY += faceYaw;
+		this.head.getModel().rotateAngleX += facePitch;
+		this.head.getModel().rotateAngleY += faceYaw;
 		this.pelvis.rotationPointY += Math.abs(walkAnim) * 1.5F;
 		this.abdomen.rotateAngleX += limbSwingAmount * 0.2F;
 		this.chest.rotateAngleY -= walkAnim * 0.1F;
 		this.head.rotateAngleX -= limbSwingAmount * 0.2F;
 		this.arm1.rotateAngleX -= walkAnim * 0.6F;
 		this.arm2.rotateAngleX += walkAnim * 0.6F;
-		var10000 = this.forearm1.getModel();
-		var10000.rotateAngleX -= walkAnim * 0.2F;
-		var10000 = this.forearm2.getModel();
-		var10000.rotateAngleX += walkAnim * 0.2F;
+		this.forearm1.getModel().rotateAngleX -= walkAnim * 0.2F;
+		this.forearm2.getModel().rotateAngleX += walkAnim * 0.2F;
 		this.leg1.rotateAngleX += walkAnim1 * 1.1F;
 		this.leg2.rotateAngleX += walkAnim2 * 1.1F;
-		var10000 = this.foreleg1.getModel();
-		var10000.rotateAngleX += walkAnim * 0.2F;
-		var10000 = this.foreleg2.getModel();
-		var10000.rotateAngleX -= walkAnim * 0.2F;
+		this.foreleg1.getModel().rotateAngleX += walkAnim * 0.2F;
+		this.foreleg2.getModel().rotateAngleX -= walkAnim * 0.2F;
 	}
 
 	private void animateThrow(int fullTick) {
