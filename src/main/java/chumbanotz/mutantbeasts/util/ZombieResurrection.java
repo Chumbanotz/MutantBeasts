@@ -69,7 +69,7 @@ public class ZombieResurrection {
 				zombie.stopRiding();
 			}
 			this.world.playEvent(2001, pos, Block.getStateId(this.world.getBlockState(pos.down())));
-			if (world.getBlockState(pos).getBlockHardness(world, pos) <= 1.0F && !net.minecraft.tags.BlockTags.WITHER_IMMUNE.contains(world.getBlockState(pos).getBlock())) {
+			if (world.getBlockState(pos).getBlockHardness(world, pos) <= 1.0F && !net.minecraft.tags.BlockTags.WITHER_IMMUNE.contains(world.getBlockState(pos).getBlock()) && net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(world, zombie)) {
 				world.destroyBlock(pos, false);
 			}
 

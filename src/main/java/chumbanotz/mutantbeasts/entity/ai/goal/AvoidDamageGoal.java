@@ -29,7 +29,7 @@ public class AvoidDamageGoal extends PanicGoal {
 			vec3d = blockpos != null && !this.creature.isInWater() ? new Vec3d(blockpos) : RandomPositionGenerator.findRandomTarget(this.creature, 8, 4);
 		}
 
-		if (this.creature.getLastDamageSource() != null && this.shouldAvoidDamage(this.creature.getLastDamageSource()) && this.creature.hurtResistantTime > 10) {
+		if (this.shouldAvoidDamage(this.creature.getLastDamageSource()) && this.creature.hurtResistantTime > 10) {
 			vec3d = this.creature.getLastDamageSource() == DamageSource.DROWN && this.creature.isInWater() ? RandomPositionGenerator.getLandPos(this.creature, 15, 15) : RandomPositionGenerator.findRandomTarget(this.creature, 4, 4);
 		}
 
@@ -62,7 +62,9 @@ public class AvoidDamageGoal extends PanicGoal {
 	}
 
 	protected boolean shouldAvoidDamage(DamageSource source) {
-		if (source.getImmediateSource() != null && (source.getTrueSource() == null || !this.creature.canEntityBeSeen(source.getTrueSource()))) {
+		if (source == null) {
+			return false;
+		} else if (source.getImmediateSource() != null && (source.getTrueSource() == null || !this.creature.canEntityBeSeen(source.getTrueSource()))) {
 			return true;
 		} else {
 			return source.getTrueSource() == null && !source.isFireDamage() && source != DamageSource.FALL && source != DamageSource.STARVE && source != DamageSource.OUT_OF_WORLD;

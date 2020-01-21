@@ -12,11 +12,13 @@ import chumbanotz.mutantbeasts.entity.ai.goal.TrackSummonerGoal;
 import chumbanotz.mutantbeasts.entity.mutant.MutantCreeperEntity;
 import chumbanotz.mutantbeasts.entity.mutant.MutantZombieEntity;
 import chumbanotz.mutantbeasts.entity.mutant.SpiderPigEntity;
+import chumbanotz.mutantbeasts.item.ArmorBlockItem;
 import chumbanotz.mutantbeasts.item.HulkHammerItem;
 import chumbanotz.mutantbeasts.item.MBItems;
 import chumbanotz.mutantbeasts.util.EntityUtil;
 import chumbanotz.mutantbeasts.util.MBSoundEvents;
 import chumbanotz.mutantbeasts.util.SeismicWave;
+import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.entity.CreatureEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -26,6 +28,7 @@ import net.minecraft.entity.ai.goal.MoveTowardsRestrictionGoal;
 import net.minecraft.entity.ai.goal.TemptGoal;
 import net.minecraft.entity.merchant.villager.VillagerEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.inventory.EquipmentSlotType;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.item.crafting.Ingredient;
@@ -34,7 +37,6 @@ import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
 import net.minecraft.util.ActionResultType;
 import net.minecraft.util.DamageSource;
-import net.minecraft.util.EntityPredicates;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.world.World;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
@@ -44,6 +46,7 @@ import net.minecraftforge.event.entity.item.ItemTossEvent;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingDropsEvent;
+import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
@@ -63,7 +66,7 @@ public class EventHandler {
 		if (event.getEntity() instanceof CreatureEntity) {
 			CreatureEntity creature = (CreatureEntity)event.getEntity();
 
-			if (EntityUtil.isMobFeline(creature)) {
+			if (EntityUtil.isFeline(creature)) {
 				creature.goalSelector.addGoal(2, new AvoidEntityGoal<>(creature, MutantCreeperEntity.class, 16.0F, 1.33D, 1.33D));
 			}
 
@@ -86,13 +89,33 @@ public class EventHandler {
 	@SubscribeEvent
 	public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
 		ItemStack stack = event.getPlayer().getHeldItem(event.getHand());
-		if (event.getTarget().getType() == EntityType.PIG && stack.getItem() == Items.FERMENTED_SPIDER_EYE) {
+		if (event.getTarget().getType() == EntityType.PIG && !event.getEntityLiving().isPotionActive(Effects.NAUSEA) && stack.getItem() == Items.FERMENTED_SPIDER_EYE) {
 			if (!event.getPlayer().isCreative()) {
 				stack.shrink(1);
 			}
 
 			((CreatureEntity)event.getTarget()).addPotionEffect(new EffectInstance(Effects.NAUSEA, 600, 99));
 			event.setCancellationResult(ActionResultType.SUCCESS);
+		}
+	}
+
+	@SubscribeEvent
+	public static void onLivingHurt(LivingHurtEvent event) {
+		LivingEntity livingEntity = event.getEntityLiving();
+		if (livingEntity instanceof PlayerEntity && !(livingEntity instanceof ClientPlayerEntity)) {
+			PlayerEntity playerEntity = (PlayerEntity)livingEntity;
+			ItemStack stack = playerEntity.getItemStackFromSlot(EquipmentSlotType.HEAD);
+			if (stack.getItem() instanceof ArmorBlockItem && !event.getSource().isUnblockable()) {
+				float damage = event.getAmount();
+				if (!(damage <= 0.0F)) {
+					damage /= 4.0F;
+					if (damage < 1.0F) {
+						damage = 1.0F;
+					}
+
+					stack.damageItem((int)damage, playerEntity, e -> e.sendBreakAnimation(EquipmentSlotType.HEAD));
+				}
+			}
 		}
 	}
 
@@ -121,9 +144,9 @@ public class EventHandler {
 
 	@SubscribeEvent
 	public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-		playShoulderCreeperMinionAmbientSound(event.player, event.player.getLeftShoulderEntity());
-		playShoulderCreeperMinionAmbientSound(event.player, event.player.getRightShoulderEntity());
-		if (!event.player.world.isRemote && event.phase == TickEvent.Phase.END && HulkHammerItem.WAVES.keySet().contains(event.player.getUniqueID())) {
+		playShoulderEntitySound(event.player, event.player.getLeftShoulderEntity());
+		playShoulderEntitySound(event.player, event.player.getRightShoulderEntity());
+		if (!event.player.world.isRemote && HulkHammerItem.WAVES.keySet().contains(event.player.getUniqueID())) {
 			PlayerEntity player = event.player;
 			List<SeismicWave> waveList = HulkHammerItem.WAVES.get(player.getUniqueID());
 
@@ -135,9 +158,9 @@ public class EventHandler {
 			wave.affectBlocks(player.world, player);
 			AxisAlignedBB box = new AxisAlignedBB((double)wave.getX(), (double)(wave.getY() + 1), (double)wave.getZ(), (double)(wave.getX() + 1), (double)(wave.getY() + 2), (double)(wave.getZ() + 1));
 
-			for (Entity entity : player.world.getEntitiesInAABBexcluding(player, box, EntityPredicates.notRiding(player).and(EntityPredicates.CAN_AI_TARGET))) {
-				if (entity instanceof LivingEntity) {
-					entity.attackEntityFrom(DamageSource.causePlayerDamage(player), (float)(6 + player.getRNG().nextInt(3)));
+			for (Entity entity : player.world.getEntitiesWithinAABBExcludingEntity(player, box)) {
+				if (entity instanceof LivingEntity && player.getRidingEntity() != entity) {
+					entity.attackEntityFrom(DamageSource.causePlayerDamage(player).setDamageIsAbsolute(), (float)(6 + player.getRNG().nextInt(3)));
 				}
 			}
 
@@ -148,17 +171,17 @@ public class EventHandler {
 	}
 
 	@SubscribeEvent
-	public static void onPlayerToss(ItemTossEvent event) {
+	public static void onItemToss(ItemTossEvent event) {
 		World world = event.getPlayer().world;
 		PlayerEntity player = event.getPlayer();
 
 		if (!world.isRemote) {
 			ItemStack stack = event.getEntityItem().getItem();
-			boolean isHand = (stack.getItem() == MBItems.ENDERSOUL_HAND);
+			boolean isHand = stack.getItem() == MBItems.ENDERSOUL_HAND && stack.isDamaged();
 			if (stack.getItem() == Items.ENDER_EYE || isHand) {
 				int count = 0;
-				for (EndersoulFragmentEntity orb : world.getEntitiesWithinAABB(EndersoulFragmentEntity.class, player.getBoundingBox().grow(8.0D))) {
-					if (orb.isAlive() && orb.getCollector() == player) {
+				for (EndersoulFragmentEntity orb : world.getEntitiesWithinAABB(EndersoulFragmentEntity.class, player.getBoundingBox().grow(8.0D), EndersoulFragmentEntity::isCollected)) {
+					if (orb.getCollector() == player) {
 						count++;
 						orb.remove();
 					}
@@ -188,13 +211,11 @@ public class EventHandler {
 		}
 	}
 
-	private static void playShoulderCreeperMinionAmbientSound(PlayerEntity player, @Nullable CompoundNBT compoundNBT) {
+	private static void playShoulderEntitySound(PlayerEntity player, @Nullable CompoundNBT compoundNBT) {
 		if (compoundNBT != null && !compoundNBT.contains("Silent") || !compoundNBT.getBoolean("Silent")) {
-			EntityType.byKey(compoundNBT.getString("id"))
-			.filter(MBEntityType.CREEPER_MINION::equals)
-			.ifPresent(entityType -> {
+			EntityType.byKey(compoundNBT.getString("id")).filter(MBEntityType.CREEPER_MINION::equals).ifPresent(entityType -> {
 				if (player.world.rand.nextInt(500) == 0) {
-					player.world.playSound(null, player.posX, player.posY, player.posZ, MBSoundEvents.ENTITY_CREEPER_MINION_AMBIENT, player.getSoundCategory(), 1.0F, (player.world.rand.nextFloat() - player.world.rand.nextFloat()) * 0.2F + 1.5F);	
+					player.world.playSound(null, player.posX, player.posY, player.posZ, MBSoundEvents.ENTITY_CREEPER_MINION_AMBIENT, player.getSoundCategory(), 1.0F, (player.world.rand.nextFloat() - player.world.rand.nextFloat()) * 0.2F + 1.5F);
 				}
 			});
 		}

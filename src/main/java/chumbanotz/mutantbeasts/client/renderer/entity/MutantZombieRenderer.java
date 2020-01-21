@@ -25,8 +25,8 @@ public class MutantZombieRenderer extends MutantRenderer<MutantZombieEntity, Mut
 		if (living.vanishTime > 0) {
 			GlStateManager.enableNormalize();
 			GlStateManager.enableBlend();
-			GlStateManager.blendFunc(770, 771);
-			GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F - (float)living.vanishTime + this.entityModel.getPartialTick() / (float)MutantZombieEntity.MAX_DEATH_TIME * 0.6F);
+			GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
+			GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F - ((float)living.vanishTime + this.entityModel.getPartialTick()) / (float)MutantZombieEntity.MAX_DEATH_TIME * 0.6F);
 		}
 
 		super.renderModel(living, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scaleFactor);
@@ -69,7 +69,7 @@ public class MutantZombieRenderer extends MutantRenderer<MutantZombieEntity, Mut
 			GlStateManager.rotatef(f * this.getDeathMaxRotation(entityLiving), -1.0F, 0.0F, 0.0F);
 		}
 
-		if (entityLiving.hasCustomName()) {
+		if (entityLiving.deathTime > 0 && entityLiving.hasCustomName()) {
 			String s = TextFormatting.getTextWithoutFormattingCodes(entityLiving.getName().getString());
 			if (s != null && ("Dinnerbone".equals(s) || "Grumm".equals(s))) {
 				GlStateManager.translatef(0.0F, entityLiving.getHeight() + 0.1F, 0.0F);

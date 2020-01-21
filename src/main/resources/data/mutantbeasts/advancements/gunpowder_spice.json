@@ -1,0 +1,33 @@
+{
+	"parent": "mutantbeasts:root",
+	"display": {
+		"icon": {
+			"item": "mutantbeasts:chemical_x"
+		},
+		"title": {
+			"translate": "advancements.mutantbeasts.gunpowder_spice.title"
+		},
+		"description": {
+			"translate": "advancements.mutantbeasts.gunpowder_spice.description"
+		},
+		"frame": "task",
+		"show_toast": true,
+		"announce_to_chat": true,
+		"hidden": false
+	},
+	"criteria": {
+		"brewed_chemical_x": {
+			"trigger": "minecraft:brewed_potion",
+			"conditions": {
+				"item": {
+					"item": "mutantbeasts:chemical_x"
+				}
+			}
+		}
+	},
+	"requirements": [
+		[
+			"brewed_chemical_x"
+		]
+	]
+}

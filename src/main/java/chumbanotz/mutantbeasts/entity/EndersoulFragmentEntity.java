@@ -1,17 +1,18 @@
 package chumbanotz.mutantbeasts.entity;
 
+import java.lang.ref.WeakReference;
 import java.util.function.Predicate;
 
 import chumbanotz.mutantbeasts.entity.mutant.MutantEndermanEntity;
 import chumbanotz.mutantbeasts.item.MBItems;
 import chumbanotz.mutantbeasts.util.EntityUtil;
+import chumbanotz.mutantbeasts.util.MBSoundEvents;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MoverType;
-import net.minecraft.entity.item.ItemEntity;
 import net.minecraft.entity.monster.EndermanEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.IPacket;
 import net.minecraft.network.datasync.DataParameter;
@@ -20,26 +21,25 @@ import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.EntityPredicates;
 import net.minecraft.util.Hand;
+import net.minecraft.util.SoundCategory;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
-import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.network.FMLPlayMessages;
 import net.minecraftforge.fml.network.NetworkHooks;
 
 public class EndersoulFragmentEntity extends Entity {
-	public static final Predicate<Entity> IS_VALID_TARGET = entity -> EntityPredicates.CAN_AI_TARGET.test(entity) && !(entity instanceof ItemEntity) && !(entity instanceof EndersoulFragmentEntity) && !(entity instanceof MutantEndermanEntity) && !(entity instanceof EndermanEntity);
+	public static final Predicate<Entity> IS_VALID_TARGET = entity -> EntityPredicates.CAN_AI_TARGET.test(entity) && entity.canBeCollidedWith() && !(entity instanceof EndersoulFragmentEntity) && !(entity instanceof MutantEndermanEntity) && !(entity instanceof EndermanEntity);
 	private static final DataParameter<Boolean> COLLECTED = EntityDataManager.createKey(EndersoulFragmentEntity.class, DataSerializers.BOOLEAN);
-	private int explodeTick;
+	private int explodeTick = 20 + this.rand.nextInt(20);
 	public final float[][] stickRotations = new float[8][3];
-	private MutantEndermanEntity owner;
+	private WeakReference<MutantEndermanEntity> owner;
 	private PlayerEntity collector;
 
 	public EndersoulFragmentEntity(EntityType<? extends EndersoulFragmentEntity> type, World world) {
 		super(type, world);
-		this.explodeTick = 20 + this.rand.nextInt(20);
 		for (int i = 0; i < this.stickRotations.length; ++i) {
 			for (int j = 0; j < this.stickRotations[i].length; ++j) {
 				this.stickRotations[i][j] = this.rand.nextFloat() * 2.0F * 3.1415927F;
@@ -49,7 +49,7 @@ public class EndersoulFragmentEntity extends Entity {
 
 	public EndersoulFragmentEntity(World world, MutantEndermanEntity owner) {
 		this(MBEntityType.ENDERSOUL_FRAGMENT, world);
-		this.owner = owner;
+		this.owner = new WeakReference<>(owner);
 	}
 
 	public EndersoulFragmentEntity(FMLPlayMessages.SpawnEntity packet, World world) {
@@ -65,8 +65,8 @@ public class EndersoulFragmentEntity extends Entity {
 		return this.dataManager.get(COLLECTED);
 	}
 
-	public void collect() {
-		this.dataManager.set(COLLECTED, true);
+	public void setCollected(boolean collected) {
+		this.dataManager.set(COLLECTED, collected);
 	}
 
 	public PlayerEntity getCollector() {
@@ -101,35 +101,6 @@ public class EndersoulFragmentEntity extends Entity {
 		}
 	}
 
-	private void explode() {
-		if (!this.world.isRemote) {
-			if (this.explodeTick == 0) {
-				this.playSound(SoundEvents.ENTITY_SHULKER_BULLET_HIT, 1.0F, 1.0F);
-				this.world.setEntityState(this, (byte)3);
-				for (Entity entity : this.world.getEntitiesInAABBexcluding(this, this.getBoundingBox().grow(5.0D), IS_VALID_TARGET)) {
-					if (this.getDistanceSq(entity) <= 25.0D) {
-						boolean hitChance = this.rand.nextInt(3) != 0;
-						if (isProtectedPlayer(entity)) {
-							hitChance = this.rand.nextInt(3) == 0;
-						} else {
-							double x = entity.posX - this.posX;
-							double z = entity.posZ - this.posZ;
-							double d = Math.sqrt(x * x + z * z);
-							entity.setMotion(0.800000011920929D * x / d, (double)(this.rand.nextFloat() * 0.6F - 0.1F), 0.800000011920929D * z / d);
-							EntityUtil.sendPlayerVelocityPacket(entity);
-						}
-
-						if (hitChance) {
-							entity.attackEntityFrom(DamageSource.causeIndirectDamage(this, this.owner).setDamageBypassesArmor(), 1.0F);
-						}
-					}
-				}
-			} else if (this.explodeTick <= -1) {
-				this.remove();
-			}
-		}
-	}
-
 	@Override
 	public void tick() {
 		super.tick();
@@ -144,25 +115,19 @@ public class EndersoulFragmentEntity extends Entity {
 		this.move(MoverType.SELF, this.getMotion());
 		this.setMotion(this.getMotion().scale(0.9D));
 
-		if (this.collector != null && (!this.collector.isAlive() || this.collector.isSpectator())) {
-			this.collector = null;
-		}
-
-		if (this.owner != null && !this.owner.isAddedToWorld()) {
-			this.owner = null;
-		}
-
-		if (!this.world.isRemote) {
-			if (!this.isCollected()) {
-				if (--this.explodeTick <= 0) {
-					this.explode();
-				}
+		if (this.collector != null) {
+			if (!this.collector.isAlive() || !this.collector.isAddedToWorld() || this.collector.isSpectator()) {
+				this.collector = null;
 			}
 
-			if (this.collector != null && this.getDistanceSq(this.collector) > 9.0D) {
+			if (!this.world.isRemote && this.getDistanceSq(this.collector) > 9.0D) {
 				float scale = 0.05F;
 				this.addVelocity((this.collector.posX - this.posX) * (double)scale, (this.collector.posY + (double)(this.collector.getHeight() / 3.0F) - this.posY) * (double)scale, (this.collector.posZ - this.posZ) * (double)scale);
 			}
+		}
+
+		if (!this.world.isRemote && !this.isCollected() && --this.explodeTick == 0) {
+			this.explode();
 		}
 	}
 
@@ -184,7 +149,7 @@ public class EndersoulFragmentEntity extends Entity {
 			return false;
 		} else {
 			if (!this.world.isRemote) {
-				this.collect();
+				this.setCollected(true);
 			}
 
 			this.collector = player;
@@ -195,53 +160,65 @@ public class EndersoulFragmentEntity extends Entity {
 
 	@Override
 	public boolean attackEntityFrom(DamageSource source, float amount) {
-		if (!this.world.isRemote && this.explodeTick > 0) {
-			this.explodeTick = 0;
-		}
-
-		return true;
-	}
-
-	public static boolean isProtectedPlayer(Entity entity) {
-		if (!(entity instanceof PlayerEntity)) {
+		if (this.isInvulnerableTo(source)) {
 			return false;
 		} else {
-			PlayerEntity player = (PlayerEntity)entity;
-			ItemStack stack = player.inventory.getCurrentItem();
-			return !stack.isEmpty() && stack.getItem() == MBItems.ENDERSOUL_HAND;
+			if (!this.world.isRemote && this.isAlive()) {
+				this.explode();
+			}
+
+			return true;
 		}
+	}
+
+	private void explode() {
+		this.playSound(MBSoundEvents.ENTITY_ENDERSOUL_FRAGMENT_EXPLODE, 1.0F, (this.rand.nextFloat() - this.rand.nextFloat()) * 0.2F + 1.0F);
+		this.world.setEntityState(this, (byte)3);
+		for (Entity entity : this.world.getEntitiesInAABBexcluding(this, this.getBoundingBox().grow(5.0D), IS_VALID_TARGET)) {
+			if (this.getDistanceSq(entity) <= 25.0D) {
+				boolean hitChance = this.rand.nextInt(3) != 0;
+				if (isProtected(entity)) {
+					hitChance = this.rand.nextInt(3) == 0;
+				} else {
+					double x = entity.posX - this.posX;
+					double z = entity.posZ - this.posZ;
+					double d = Math.sqrt(x * x + z * z);
+					entity.setMotion(0.800000011920929D * x / d, (double)(this.rand.nextFloat() * 0.6F - 0.1F), 0.800000011920929D * z / d);
+					EntityUtil.sendPlayerVelocityPacket(entity);
+				}
+
+				if (hitChance) {
+					entity.attackEntityFrom(DamageSource.causeThrownDamage(this, this.owner == null ? this : this.owner.get()).setDamageBypassesArmor(), 1.0F);
+				}
+			}
+		}
+
+		this.remove();
+	}
+
+	public static boolean isProtected(Entity entity) {
+		if (!(entity instanceof LivingEntity)) {
+			return false;
+		} else {
+			return EntityUtil.isHolding((LivingEntity)entity, MBItems.ENDERSOUL_HAND);
+		}
+	}
+
+	@Override
+	public SoundCategory getSoundCategory() {
+		return this.isCollected() ? SoundCategory.NEUTRAL : SoundCategory.HOSTILE;
 	}
 
 	@Override
 	protected void writeAdditional(CompoundNBT compound) {
 		compound.putBoolean("Collected", this.isCollected());
 		compound.putInt("ExplodeTick", this.explodeTick);
-		if (this.owner != null) {
-			compound.putUniqueId("OwnerUUID", this.owner.getUniqueID());
-		}
-
-		if (this.collector != null) {
-			compound.putUniqueId("CollectorUUID", this.collector.getUniqueID());
-		}
 	}
 
 	@Override
 	protected void readAdditional(CompoundNBT compound) {
-		if (compound.getBoolean("Collected")) {
-			this.collect();
-		}
+		this.setCollected(compound.getBoolean("Collected"));
 		this.explodeTick = compound.getInt("ExplodeTick");
-
-		if (compound.hasUniqueId("OwnerUUID") && this.world instanceof ServerWorld) {
-			Entity entity = ((ServerWorld)this.world).getEntityByUuid(compound.getUniqueId("CollectorUUID"));
-			if (entity instanceof MutantEndermanEntity) {
-				this.owner = (MutantEndermanEntity)entity;
-			}
-		}
-
-		if (compound.hasUniqueId("CollectorUUID")) {
-			this.collector = this.world.getPlayerByUuid(compound.getUniqueId("CollectorUUID"));
-		}
 	}
 
 	@Override

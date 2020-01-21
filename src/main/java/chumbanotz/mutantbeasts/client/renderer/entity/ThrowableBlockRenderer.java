@@ -17,6 +17,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 public class ThrowableBlockRenderer extends EntityRenderer<ThrowableBlockEntity> {
 	public ThrowableBlockRenderer(EntityRendererManager renderManager) {
 		super(renderManager);
+		this.shadowSize = 0.6F;
 	}
 
 	@Override
@@ -24,23 +25,18 @@ public class ThrowableBlockRenderer extends EntityRenderer<ThrowableBlockEntity>
 		super.doRender(entity, x, y, z, entityYaw, partialTicks);
 		if (entity.getThrowerByID() instanceof MutantSnowGolemEntity) {
 			GlStateManager.pushMatrix();
-			GlStateManager.translatef((float)x, (float)y, (float)z);
+			GlStateManager.translatef((float)x, (float)y + 0.5F, (float)z);
 			GlStateManager.rotatef(entity.rotationYaw, 0.0F, 1.0F, 0.0F);
 			GlStateManager.rotatef(45.0F, 0.0F, 1.0F, 0.0F);
 			GlStateManager.rotatef(((float)entity.ticksExisted + partialTicks) * 20.0F, 1.0F, 0.0F, 0.0F);
 			GlStateManager.rotatef(((float)entity.ticksExisted + partialTicks) * 12.0F, 0.0F, 0.0F, -1.0F);
 			this.bindEntityTexture(entity);
+			GlStateManager.translatef(-0.5F, -0.5F, 0.5F);
 			Minecraft.getInstance().getBlockRendererDispatcher().renderBlockBrightness(entity.getBlockState(), 1.0F);
 			GlStateManager.popMatrix();
 		} else {
 			GlStateManager.enableRescaleNormal();
 			GlStateManager.pushMatrix();
-			GlStateManager.translatef((float)x, (float)y, (float)z);
-			GlStateManager.rotatef(45.0F, 0.0F, 1.0F, 0.0F);
-			GlStateManager.rotatef((entity.ticksExisted + partialTicks) * 20.0F, 1.0F, 0.0F, 0.0F);
-			GlStateManager.rotatef((entity.ticksExisted + partialTicks) * 12.0F, 0.0F, 0.0F, -1.0F);
-			float scale = 0.75F;
-			GlStateManager.scalef(-scale, -scale, scale);
 			this.bindEntityTexture(entity);
 			int var4 = entity.getBrightnessForRender();
 			int var5 = var4 % 65536;
@@ -48,7 +44,13 @@ public class ThrowableBlockRenderer extends EntityRenderer<ThrowableBlockEntity>
 			GLX.glMultiTexCoord2f(GLX.GL_TEXTURE1, (float)var5, (float)var6);
 			GlStateManager.enableNormalize();
 			GlStateManager.enableBlend();
-			GlStateManager.blendFunc(770, 771);
+			GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
+			GlStateManager.translatef((float)x, (float)y + 0.5F, (float)z);
+			GlStateManager.scalef(-0.75F, -0.75F, 0.75F);
+			GlStateManager.rotatef(45.0F, 0.0F, 1.0F, 0.0F);
+			GlStateManager.rotatef(((float)entity.ticksExisted + partialTicks) * 20.0F, 1.0F, 0.0F, 0.0F);
+			GlStateManager.rotatef(((float)entity.ticksExisted + partialTicks) * 12.0F, 0.0F, 0.0F, -1.0F);
+			GlStateManager.translatef(-0.5F, -0.5F, 0.5F);
 			Minecraft.getInstance().getBlockRendererDispatcher().renderBlockBrightness(entity.getBlockState(), 1.0F);
 			GlStateManager.disableBlend();
 			GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);

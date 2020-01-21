@@ -43,6 +43,7 @@ public class MutantSnowGolemModel extends EntityModel<MutantSnowGolemEntity> {
 		this.chest.addChild(this.head);
 		this.headCore = new RendererModel(this, 64, 0);
 		this.headCore.addBox(-4.0F, -8.0F, -4.0F, 8, 8, 8);
+		this.headCore.setTextureOffset(80, 46).addBox(-4.0F, -8.0F, -4.0F, 8, 8, 8, -0.5F);
 		this.headCore.setRotationPoint(0.0F, 0.0F, 0.0F);
 		this.head.addChild(this.headCore);
 		this.abdomen.addChild(this.chest);
@@ -86,12 +87,11 @@ public class MutantSnowGolemModel extends EntityModel<MutantSnowGolemEntity> {
 
 	@Override
 	public void render(MutantSnowGolemEntity entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch, float scale) {
-		this.setAngles();
-		this.animate(entity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scale);
 		this.pelvis.render(scale);
 	}
 
-	private void setAngles() {
+	@Override
+	public void setRotationAngles(MutantSnowGolemEntity entityIn, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch, float scaleFactor) {
 		this.pelvis.rotationPointY = 13.5F;
 		this.abdomen.rotateAngleX = 0.1308997F;
 		this.chest.rotateAngleX = 0.1308997F;
@@ -123,6 +123,7 @@ public class MutantSnowGolemModel extends EntityModel<MutantSnowGolemEntity> {
 		this.leg2.getModel().rotateAngleZ = -0.5235988F;
 		this.foreleg2.rotateAngleZ = 0.5235988F;
 		this.foreleg2.getModel().rotateAngleX = 0.69813174F;
+		this.animate(entityIn, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scaleFactor);
 	}
 
 	private void animate(MutantSnowGolemEntity golem, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch, float scale) {

@@ -8,6 +8,7 @@ import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.client.renderer.entity.model.RendererModel;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.MathHelper;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
@@ -30,29 +31,29 @@ public class BodyPartRenderer extends EntityRenderer<BodyPartEntity> {
 		super.doRender(entity, x, y, z, entityYaw, partialTicks);
 		GlStateManager.pushMatrix();
 		GlStateManager.translatef((float)x, (float)y, (float)z);
-		float yaw = entity.prevRotationYaw + (entity.rotationYaw - entity.prevRotationYaw) * partialTicks;
-		float pitch = entity.prevRotationPitch + (entity.rotationPitch - entity.prevRotationPitch) * partialTicks;
-		GlStateManager.rotatef(yaw, 0.2F, 0.9F, -0.1F);
-		GlStateManager.rotatef(pitch, 0.9F, 0.1F, 0.2F);
+		GlStateManager.rotatef(MathHelper.lerp(partialTicks, entity.prevRotationYaw, entity.rotationYaw), 0.2F, 0.9F, -0.1F);
+		GlStateManager.rotatef(MathHelper.lerp(partialTicks, entity.prevRotationPitch, entity.rotationPitch), 0.9F, 0.1F, 0.2F);
 		GlStateManager.enableRescaleNormal();
 		GlStateManager.scalef(1.2F, -1.2F, -1.2F);
 		this.bindEntityTexture(entity);
-		int bodyPart = entity.getPart();
+		if (this.renderOutlines) {
+			GlStateManager.enableColorMaterial();
+			GlStateManager.setupSolidRenderingTextureCombine(this.getTeamColor(entity));
+		}
+
 		this.modelSkelePart.setAngles();
-		this.modelSkelePart.getSkeletonPart(bodyPart).render(0.0625F);
+		this.modelSkelePart.getSkeletonPart(entity.getPart()).render(0.0625F);
+		if (this.renderOutlines) {
+			GlStateManager.tearDownSolidRenderingTextureCombine();
+			GlStateManager.disableColorMaterial();
+		}
+
 		GlStateManager.disableRescaleNormal();
 		GlStateManager.popMatrix();
 	}
 
 	@Override
 	protected ResourceLocation getEntityTexture(BodyPartEntity entity) {
-		switch (entity.getOwnerType()) {
-		case "mutant_skeleton":
-			return MutantSkeletonRenderer.TEXTURE;
-		case "mutant_snow_golem":
-			return MutantSnowGolemRenderer.TEXTURE;
-		default:
-			return MutantSkeletonRenderer.TEXTURE;
-		}
+		return MutantSkeletonRenderer.TEXTURE;
 	}
 }

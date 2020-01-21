@@ -1,0 +1,24 @@
+{
+	"replace": false,
+	"values": [
+		"#minecraft:dirt_like",
+		"#minecraft:ice",
+		"#minecraft:leaves",
+		"#minecraft:logs",
+		"#minecraft:planks",
+		"#minecraft:sand",
+		"#minecraft:wool",
+		"#forge:end_stones",
+		"#forge:glass",
+		"#forge:gravel",
+		"#forge:netherrack",
+		"#forge:sand",
+		"#forge:stone",
+		"minecraft:tnt",
+		"minecraft:cactus",
+		"minecraft:clay",
+		"minecraft:pumpkin",
+		"minecraft:carved_pumpkin",
+		"minecraft:melon"
+	]
+}

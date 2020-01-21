@@ -31,8 +31,7 @@
 		"sounds": [
 			{
 				"name": "entity.creeper.primed",
-				"type": "event",
-				"pitch": 0.9
+				"type": "event"
 			}
 		],
 		"subtitle": "subtitles.mutantbeasts.entity.creeper_minion.primed"
@@ -42,6 +41,15 @@
 			"mutantbeasts:entity/creeper_minion_egg_hatch"
 		],
 		"subtitle": "subtitles.mutantbeasts.entity.creeper_minion_egg.hatch"
+	},
+	"entity.endersoul_fragment.explode": {
+		"sounds": [
+			{
+				"name": "entity.shulker_bullet.hit",
+				"type": "event"
+			}
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.endersoul_fragment.explode"
 	},
 	"entity.mutant_creeper.ambient": {
 		"sounds": [
@@ -234,12 +242,6 @@
 			}
 		],
 		"subtitle": "subtitles.mutantbeasts.entity.spider_pig.ambient"
-	},
-	"entity.spider_pig.charge": {
-		"sounds": [
-			"mutantbeasts:entity/spider_pig/charge"
-		],
-		"subtitle": "subtitles.mutantbeasts.entity.spider_pig.charge"
 	},
 	"entity.spider_pig.death": {
 		"sounds": [

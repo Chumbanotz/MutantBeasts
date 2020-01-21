@@ -29,7 +29,7 @@ public class MBGroundPathNavigator extends GroundPathNavigator {
 		return super.canNavigate() || this.entity.hasNoGravity(); //https://bugs.mojang.com/browse/MC-102965
 	}
 
-	@Override // Copy of super
+	@Override
 	protected void pathFollow() {
 		Vec3d vec3d = this.getEntityPosition();
 		this.maxDistanceToWaypoint = this.entity.getWidth() > 0.75F ? this.entity.getWidth() / 2.0F : 0.75F - this.entity.getWidth() / 2.0F;

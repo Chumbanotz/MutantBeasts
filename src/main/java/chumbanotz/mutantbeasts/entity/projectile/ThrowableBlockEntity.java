@@ -1,6 +1,5 @@
 package chumbanotz.mutantbeasts.entity.projectile;
 
-import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.UUID;
 
@@ -20,19 +19,20 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MobEntity;
 import net.minecraft.entity.MoverType;
-import net.minecraft.entity.monster.IMob;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ProjectileHelper;
 import net.minecraft.entity.projectile.ThrowableEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.NBTUtil;
 import net.minecraft.network.IPacket;
+import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.particles.BlockParticleData;
 import net.minecraft.particles.ParticleTypes;
 import net.minecraft.util.DamageSource;
+import net.minecraft.util.EntityPredicates;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.EntityRayTraceResult;
@@ -45,13 +45,14 @@ import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.fml.common.registry.IEntityAdditionalSpawnData;
 import net.minecraftforge.fml.network.FMLPlayMessages;
 import net.minecraftforge.fml.network.NetworkHooks;
 
-public class ThrowableBlockEntity extends ThrowableEntity {
-	private static final DataParameter<Optional<BlockState>> BLOCK_STATE = EntityDataManager.createKey(ThrowableBlockEntity.class, DataSerializers.OPTIONAL_BLOCK_STATE);
+public class ThrowableBlockEntity extends ThrowableEntity implements IEntityAdditionalSpawnData {
 	private static final DataParameter<OptionalInt> THROWER_ENTITY_ID = EntityDataManager.createKey(ThrowableBlockEntity.class, DataSerializers.OPTIONAL_VARINT);
 	private static final DataParameter<Boolean> HELD = EntityDataManager.createKey(ThrowableBlockEntity.class, DataSerializers.BOOLEAN);
+	private BlockState blockState = Blocks.GRASS_BLOCK.getDefaultState();
 	private UUID ownerUUID;
 
 	public ThrowableBlockEntity(EntityType<? extends ThrowableBlockEntity> type, World worldIn) {
@@ -60,36 +61,36 @@ public class ThrowableBlockEntity extends ThrowableEntity {
 
 	public ThrowableBlockEntity(EntityType<? extends ThrowableBlockEntity> type, LivingEntity livingEntityIn, World worldIn) {
 		super(MBEntityType.THROWABLE_BLOCK, livingEntityIn.posX, livingEntityIn.posY + (double)livingEntityIn.getEyeHeight() - (double)0.1F, livingEntityIn.posZ, worldIn);
-		this.owner = livingEntityIn;
-		this.ownerUUID = livingEntityIn.getUniqueID();
-		this.setThrowerByID(livingEntityIn);
+		this.setThrower(livingEntityIn);
 	}
 
 	public ThrowableBlockEntity(World world, MutantEndermanEntity enderman, int id) {
 		this(MBEntityType.THROWABLE_BLOCK, enderman, world);
-		this.setBlockState(Block.getStateById(enderman.heldBlock[id]));
+		this.blockState = Block.getStateById(enderman.heldBlock[id]);
 		boolean outer = (id <= 2);
 		boolean right = (id & 1) == 1;
 		LivingEntity attackTarget = enderman.getAttackTarget();
 		Vec3d forward = EntityUtil.getDirVector(this.rotationYaw, outer ? 2.7F : 1.4F);
 		Vec3d strafe = EntityUtil.getDirVector(this.rotationYaw + (right ? 90.0F : -90.0F), outer ? 2.2F : 2.0F);
 		this.posX += forward.x + strafe.x;
-		this.posY += (outer ? 2.8F : 1.1F) - enderman.getEyeHeight();
+		this.posY += (outer ? 2.8F : 1.1F) - 4.8D;
 		this.posZ += forward.z + strafe.z;
 		if (attackTarget != null) {
 			this.shoot(attackTarget.posX - this.posX, attackTarget.posY - this.posY, attackTarget.posZ - this.posZ, 1.4F, 1.0F);
+		} else {
+			this.shoot(enderman, enderman.rotationPitch, enderman.rotationYaw, 0.0F, 1.0F, 0.8F);
 		}
 	}
 
 	public ThrowableBlockEntity(MutantSnowGolemEntity mutantSnowGolem, World worldIn) {
 		this(MBEntityType.THROWABLE_BLOCK, mutantSnowGolem, worldIn);
 		this.rotationYaw = mutantSnowGolem.rotationYaw;
-		this.setBlockState(mutantSnowGolem.getThrownBlock());
+		this.blockState = Blocks.ICE.getDefaultState();
 	}
 
 	public ThrowableBlockEntity(World world, PlayerEntity player, BlockState blockState, BlockPos pos) {
 		this(MBEntityType.THROWABLE_BLOCK, player, world);
-		this.setBlockState(blockState);
+		this.blockState = blockState;
 		this.setPosition((double)pos.getX() + 0.5D, (double)pos.getY(), (double)pos.getZ() + 0.5D);
 		this.setHeld(true);
 	}
@@ -100,25 +101,45 @@ public class ThrowableBlockEntity extends ThrowableEntity {
 
 	@Override
 	protected void registerData() {
-		this.dataManager.register(BLOCK_STATE, Optional.of(Blocks.GRASS_BLOCK.getDefaultState()));
 		this.dataManager.register(THROWER_ENTITY_ID, OptionalInt.empty());
 		this.dataManager.register(HELD, false);
 	}
 
 	public BlockState getBlockState() {
-		return this.dataManager.get(BLOCK_STATE).orElse(Blocks.GRASS_BLOCK.getDefaultState());
+		return this.blockState;
 	}
 
-	public void setBlockState(BlockState state) {
-		this.dataManager.set(BLOCK_STATE, Optional.of(state));
+	@Override
+	@Nullable
+	public LivingEntity getThrower() {
+		if (this.owner == null && this.ownerUUID != null && this.world instanceof ServerWorld) {
+			Entity entity = ((ServerWorld)this.world).getEntityByUuid(this.ownerUUID);
+			if (entity instanceof LivingEntity) {
+				this.setThrower((LivingEntity)entity);
+			} else {
+				this.ownerUUID = null;
+			}
+		}
+
+		return this.owner;
+	}
+
+	private void setThrower(LivingEntity thrower) {
+		this.owner = thrower;
+		this.ownerUUID = thrower.getUniqueID();
+		this.dataManager.set(THROWER_ENTITY_ID, OptionalInt.of(thrower.getEntityId()));
 	}
 
 	public LivingEntity getThrowerByID() {
-		return (LivingEntity)this.world.getEntityByID(this.dataManager.get(THROWER_ENTITY_ID).orElse(-1));
-	}
+		OptionalInt optionalInt = this.dataManager.get(THROWER_ENTITY_ID);
+		if (optionalInt.isPresent()) {
+			Entity entity = this.world.getEntityByID(optionalInt.getAsInt());
+			if (entity instanceof LivingEntity) {
+				return (LivingEntity)entity;
+			}
+		}
 
-	private void setThrowerByID(LivingEntity thrower) {
-		this.dataManager.set(THROWER_ENTITY_ID, OptionalInt.of(thrower.getEntityId()));
+		return null;
 	}
 
 	public boolean isHeld() {
@@ -131,17 +152,13 @@ public class ThrowableBlockEntity extends ThrowableEntity {
 
 	@Override
 	protected float getGravityVelocity() {
-		if (this.getThrowerByID() != null) {
-			if (this.getThrowerByID() instanceof PlayerEntity) {
-				return 0.04F;
-			}
-
-			if (this.getThrowerByID() instanceof MutantSnowGolemEntity) {
-				return 0.06F;
-			}
+		if (this.getThrowerByID() instanceof PlayerEntity) {
+			return 0.04F;
+		} else if (this.getThrowerByID() instanceof MutantSnowGolemEntity) {
+			return 0.06F;
+		} else {
+			return 0.01F;
 		}
-
-		return 0.01F;
 	}
 
 	@Override
@@ -151,7 +168,7 @@ public class ThrowableBlockEntity extends ThrowableEntity {
 
 	@Override
 	public boolean canBeCollidedWith() {
-		return this.isHeld() && this.isAlive();
+		return this.isAlive();
 	}
 
 	@Override
@@ -160,13 +177,15 @@ public class ThrowableBlockEntity extends ThrowableEntity {
 	}
 
 	@Override
-	public boolean canBeAttackedWithItem() {
-		return false;
+	public float getCollisionBorderSize() {
+		return 0.5F;
 	}
 
 	@Override
-	public float getCollisionBorderSize() {
-		return 1.0F;
+	public void applyEntityCollision(Entity entityIn) {
+		if (entityIn != this.getThrower()) {
+			super.applyEntityCollision(entityIn);
+		}
 	}
 
 	@Override
@@ -214,10 +233,8 @@ public class ThrowableBlockEntity extends ThrowableEntity {
 				float offset = 0.6F;
 				this.setMotion(x * offset, y * offset, z * offset);
 				this.move(MoverType.SELF, this.getMotion());
-				if (!this.world.isRemote && thrower instanceof PlayerEntity) {
-					if (!thrower.isAlive() || thrower.isSpectator() || thrower.getHeldItemMainhand().getItem() != MBItems.ENDERSOUL_HAND && thrower.getHeldItemOffhand().getItem() != MBItems.ENDERSOUL_HAND) {
-						this.setHeld(false);
-					}
+				if (!this.world.isRemote && (thrower == null || !thrower.isAlive() || thrower.isSpectator() || !thrower.canEntityBeSeen(this) || !EntityUtil.isHolding(thrower, MBItems.ENDERSOUL_HAND))) {
+					this.setHeld(false);
 				}
 			}
 		} else {
@@ -257,10 +274,12 @@ public class ThrowableBlockEntity extends ThrowableEntity {
 
 	@Override
 	public boolean processInitialInteract(PlayerEntity player, Hand hand) {
-		if (this.isHeld() && this.getThrower() == player && player.getHeldItem(hand).getItem() == MBItems.ENDERSOUL_HAND && !player.getCooldownTracker().hasCooldown(MBItems.ENDERSOUL_HAND)) {
-			if (player.isSneaking()) {
-				return false;
-			} else {
+		if (player.isSneaking()) {
+			return false;
+		} else if (player.getHeldItem(hand).getItem() != MBItems.ENDERSOUL_HAND || player.getCooldownTracker().hasCooldown(MBItems.ENDERSOUL_HAND)) {
+			return false;
+		} else if (this.isHeld()) {
+			if (this.getThrower() == player) {
 				if (!this.world.isRemote) {
 					this.setHeld(false);
 					this.throwBlock(player);
@@ -271,9 +290,13 @@ public class ThrowableBlockEntity extends ThrowableEntity {
 				player.getCooldownTracker().setCooldown(MBItems.ENDERSOUL_HAND, 20);
 				return true;
 			}
-		}
 
-		return false;
+			return false;
+		} else {
+			this.setHeld(true);
+			this.setThrower(player);
+			return true;
+		}
 	}
 
 	private void throwBlock(LivingEntity thrower) {
@@ -286,34 +309,19 @@ public class ThrowableBlockEntity extends ThrowableEntity {
 	}
 
 	@Override
-	@Nullable
-	public LivingEntity getThrower() {
-		if (this.owner == null && this.ownerUUID != null && this.world instanceof ServerWorld) {
-			Entity entity = ((ServerWorld)this.world).getEntityByUuid(this.ownerUUID);
-			if (entity instanceof LivingEntity) {
-				this.owner = (LivingEntity)entity;
-				this.setThrowerByID(this.owner);
-			} else {
-				this.ownerUUID = null;
-			}
-		}
-
-		return this.owner;
-	}
-
-	@Override
 	protected void onImpact(RayTraceResult result) {
+		LivingEntity thrower = this.getThrower();
 		if (this.getThrowerByID() instanceof MutantSnowGolemEntity) {
-			for (MobEntity mob : this.world.getEntitiesWithinAABB(MobEntity.class, this.getBoundingBox().grow(2.5D, 2.0D, 2.5D), IMob.class::isInstance)) {
-				if (this.getDistanceSq(mob) <= 6.25D) {
-					mob.attackEntityFrom(DamageSource.causeIndirectDamage(this, this.getThrower()), this.getDamageByBlock() + (float)(this.rand.nextInt(3)));
+			for (LivingEntity livingEntity : this.world.getEntitiesWithinAABB(LivingEntity.class, this.getBoundingBox().grow(2.5D, 2.0D, 2.5D), entity -> MutantSnowGolemEntity.canHarm(thrower, entity))) {
+				if (this.getDistanceSq(livingEntity) <= 6.25D) {
+					livingEntity.attackEntityFrom(DamageSource.causeIndirectDamage(this, thrower), 4.0F + (float)(this.rand.nextInt(3)));
 				}
 			}
 
 			if (result.getType() == RayTraceResult.Type.ENTITY) {
 				Entity entity = ((EntityRayTraceResult)result).getEntity();
-				if (entity instanceof IMob) {
-					entity.attackEntityFrom(DamageSource.causeThrownDamage(this, this.getThrower()), this.getDamageByBlock());
+				if (MutantSnowGolemEntity.canHarm(thrower, entity)) {
+					entity.attackEntityFrom(DamageSource.causeThrownDamage(this, thrower), 4.0F);
 				}
 			}
 
@@ -324,29 +332,27 @@ public class ThrowableBlockEntity extends ThrowableEntity {
 
 			this.playSound(this.getBlockState().getSoundType().getBreakSound(), 0.8F, (this.rand.nextFloat() - this.rand.nextFloat()) * 0.2F + 0.8F);
 		} else {
-			LivingEntity thrower = this.getThrower();
+			BlockState blockState = this.getBlockState();
+			BlockPos pos = this.getPosition();
 			if (result.getType() == RayTraceResult.Type.BLOCK) {
 				if (!this.world.isRemote) {
-					BlockPos pos = this.getPosition();
-					Block block = this.getBlockState().getBlock();
-					SoundType soundType = block.getSoundType(this.getBlockState(), this.world, pos, thrower);
-					if (this.canPlaceBlock(pos)) {
-						this.playSound(soundType.getPlaceSound(), soundType.getVolume(), soundType.getPitch());
+					if (canPlaceBlock(this.world, blockState, pos, thrower)) {
+						SoundType soundType = blockState.getSoundType(this.world, pos, thrower);
+						this.playSound(soundType.getPlaceSound(), (soundType.getVolume() + 1.0F) / 2.0F, soundType.getPitch() * 0.8F);
 					} else {
-						this.world.playEvent(2001, pos, Block.getStateId(this.getBlockState()));
+						this.world.playEvent(2001, pos, Block.getStateId(blockState));
 						if (this.world.getGameRules().getBoolean(GameRules.DO_ENTITY_DROPS)) {
-							Block.spawnDrops(this.getBlockState(), this.world, pos);
+							Block.spawnDrops(blockState, this.world, pos);
 						}
 					}
-
-					this.remove();
 				}
-			} else if (result.getType() == RayTraceResult.Type.ENTITY) {
+			} else if (result.getType() == RayTraceResult.Type.ENTITY && !this.world.isRemote) {
+				this.world.playEvent(2001, pos, Block.getStateId(blockState));
 				((EntityRayTraceResult)result).getEntity().attackEntityFrom(DamageSource.causeThrownDamage(this, thrower), 4.0F);
 			}
 
-			for (LivingEntity entity : this.world.getEntitiesWithinAABB(LivingEntity.class, this.getBoundingBox().grow(2.0D))) {
-				if (this.getDistanceSq(entity) <= 4.0D && entity != thrower) {
+			for (Entity entity : this.world.getEntitiesInAABBexcluding(thrower, this.getBoundingBox().grow(2.0D), EntityPredicates.CAN_AI_TARGET.and(Entity::canBeCollidedWith))) {
+				if (this.getDistanceSq(entity) <= 4.0D && entity.getType() != this.getType()) {
 					double x = entity.posX - this.posX;
 					double z = entity.posZ - this.posZ;
 					double d = Math.sqrt(x * x + z * z);
@@ -354,21 +360,21 @@ public class ThrowableBlockEntity extends ThrowableEntity {
 					entity.attackEntityFrom(DamageSource.causeIndirectDamage(this, thrower), (float)(6 + this.rand.nextInt(3)));
 				}
 			}
+
+			if (!this.world.isRemote) {
+				this.remove();
+			}
 		}
 	}
 
-	private boolean canPlaceBlock(BlockPos pos) {
-		if (this.getThrower() != null && this.getThrower() instanceof MobEntity) {
-			return net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this.world, this.getThrower());
+	private static boolean canPlaceBlock(World world, BlockState blockState, BlockPos pos, LivingEntity thrower) {
+		if (thrower instanceof PlayerEntity && !((PlayerEntity)thrower).isAllowEdit()) {
+			return false;
+		} else if (thrower instanceof MobEntity && !net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(world, thrower)) {
+			return false;
+		} else {
+			return blockState.isValidPosition(world, pos) && world.setBlockState(pos, blockState);
 		}
-
-		BlockState state = this.getBlockState();
-		return state.isValidPosition(this.world, pos) && this.world.setBlockState(pos, state);
-	}
-
-	private float getDamageByBlock() {
-		Block block = this.getBlockState().getBlock();
-		return block == Blocks.PACKED_ICE ? 5.0F : block == Blocks.BLUE_ICE ? 6.0F : 4.0F;
 	}
 
 	@Override
@@ -382,11 +388,24 @@ public class ThrowableBlockEntity extends ThrowableEntity {
 
 	@Override
 	public void readAdditional(CompoundNBT compound) {
-		this.setBlockState(NBTUtil.readBlockState(compound.getCompound("BlockState")));
+		if (compound.contains("BlockState", 10)) {
+			this.blockState = NBTUtil.readBlockState(compound.getCompound("BlockState"));
+		}
+
 		this.setHeld(compound.getBoolean("Held"));
 		if (compound.hasUniqueId("OwnerUUID")) {
 			this.ownerUUID = compound.getUniqueId("OwnerUUID");
 		}
+	}
+
+	@Override
+	public void writeSpawnData(PacketBuffer buffer) {
+		buffer.writeInt(Block.getStateId(this.blockState));
+	}
+
+	@Override
+	public void readSpawnData(PacketBuffer additionalData) {
+		this.blockState = Block.getStateById(additionalData.readInt());
 	}
 
 	@Override

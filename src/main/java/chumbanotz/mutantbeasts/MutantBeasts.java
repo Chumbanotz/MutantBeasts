@@ -12,15 +12,21 @@ import chumbanotz.mutantbeasts.entity.mutant.MutantEndermanEntity;
 import chumbanotz.mutantbeasts.item.ChemicalXItem;
 import chumbanotz.mutantbeasts.item.MBItems;
 import chumbanotz.mutantbeasts.packet.PacketHandler;
+import chumbanotz.mutantbeasts.tileentity.MBSkullTileEntity;
+import net.minecraft.block.Block;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
+import net.minecraft.tags.BlockTags;
+import net.minecraft.tags.Tag;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.brewing.BrewingRecipeRegistry;
 import net.minecraftforge.common.capabilities.CapabilityManager;
+import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -29,6 +35,7 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 public class MutantBeasts {
 	public static final String MOD_ID = "mutantbeasts";
 	public static final Logger LOGGER = LogManager.getLogger(MOD_ID);
+	public static final Tag<Block> THROWABLE_BLOCKS = new BlockTags.Wrapper(prefix("throwable_blocks"));
 	public static final ItemGroup ITEM_GROUP = new ItemGroup(MOD_ID) {
 		@Override
 		@OnlyIn(Dist.CLIENT)
@@ -40,6 +47,8 @@ public class MutantBeasts {
 	public MutantBeasts() {
 		FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onCommonSetup);
 		FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onClientSetup);
+//      ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, Config.CLIENT_SPEC);
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.COMMON_SPEC);
 	}
 
 	private void onCommonSetup(FMLCommonSetupEvent event) {
@@ -50,6 +59,7 @@ public class MutantBeasts {
 	}
 
 	private void onClientSetup(FMLClientSetupEvent event) {
+		MBSkullTileEntity.addModelsAndSkins();
 		ClientEventHandler.registerEntityRenderers(event.getMinecraftSupplier().get());
 		ClientRegistry.registerEntityShader(CreeperMinionEntity.class, new ResourceLocation("shaders/post/creeper.json"));
 		ClientRegistry.registerEntityShader(MutantEndermanEntity.class, new ResourceLocation("shaders/post/invert.json"));

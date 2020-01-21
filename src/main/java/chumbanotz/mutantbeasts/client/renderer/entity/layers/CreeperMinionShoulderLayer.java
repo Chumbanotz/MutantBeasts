@@ -29,14 +29,9 @@ public class CreeperMinionShoulderLayer<T extends PlayerEntity> extends LayerRen
 	@Override
 	public void render(T entityIn, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch, float scale) {
 		GlStateManager.enableRescaleNormal();
-		GlStateManager.pushMatrix();
 		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 		this.renderOnShoulder(entityIn, limbSwing, limbSwingAmount, partialTicks, ageInTicks, netHeadYaw, headPitch, scale, true);
-		GlStateManager.popMatrix();
-		GlStateManager.pushMatrix();
-		GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 		this.renderOnShoulder(entityIn, limbSwing, limbSwingAmount, partialTicks, ageInTicks, netHeadYaw, headPitch, scale, false);
-		GlStateManager.popMatrix();
 		GlStateManager.disableRescaleNormal();
 	}
 
@@ -45,6 +40,7 @@ public class CreeperMinionShoulderLayer<T extends PlayerEntity> extends LayerRen
 		EntityType.byKey(compoundnbt.getString("id"))
 		.filter(MBEntityType.CREEPER_MINION::equals)
 		.ifPresent(entityType -> {
+			GlStateManager.pushMatrix();
 			GlStateManager.translatef(leftShoulder ? 0.42F : -0.42F, player.shouldRenderSneaking() ? -0.55F : -0.75F, 0.0F);
 			this.bindTexture(CreeperMinionRenderer.TEXTURE);
 			GlStateManager.scalef(0.5F, 0.5F, 0.5F);
@@ -55,6 +51,7 @@ public class CreeperMinionShoulderLayer<T extends PlayerEntity> extends LayerRen
 				float[] afloat = DyeColor.byId(compoundnbt.getByte("CollarColor")).getColorComponentValues();
 				GlStateManager.color3f(afloat[0], afloat[1], afloat[2]);
 				this.collarModel.render(null, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scale);
+				GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 			}
 
 			if (compoundnbt.getBoolean("Powered")) {
@@ -71,6 +68,7 @@ public class CreeperMinionShoulderLayer<T extends PlayerEntity> extends LayerRen
 				Minecraft.getInstance().gameRenderer.setupFogColor(true);
 				this.chargedModel.render(null, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scale);
 				Minecraft.getInstance().gameRenderer.setupFogColor(false);
+				GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
 				GlStateManager.matrixMode(5890);
 				GlStateManager.loadIdentity();
 				GlStateManager.matrixMode(5888);
@@ -78,6 +76,8 @@ public class CreeperMinionShoulderLayer<T extends PlayerEntity> extends LayerRen
 				GlStateManager.disableBlend();
 				GlStateManager.depthMask(true);
 			}
+
+			GlStateManager.popMatrix();
 		});
 	}
 

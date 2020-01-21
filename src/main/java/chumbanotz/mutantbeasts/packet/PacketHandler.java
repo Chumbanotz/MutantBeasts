@@ -17,11 +17,8 @@ public final class PacketHandler {
 				PROTOCOL_VERSION::equals,
 				PROTOCOL_VERSION::equals);
 
-		int id = 0;
-		channel.registerMessage(++id, CreeperMinionTrackerPacket.class, CreeperMinionTrackerPacket::encode, CreeperMinionTrackerPacket::new, CreeperMinionTrackerPacket::handle);
-		channel.registerMessage(++id, TeleportPacket.class, TeleportPacket::encode, TeleportPacket::new, TeleportPacket::handle);
-		channel.registerMessage(++id, HeldBlockPacket.class, HeldBlockPacket::encode, HeldBlockPacket::new, HeldBlockPacket::handle);
-		channel.registerMessage(++id, EndersoulHandPacket.class, EndersoulHandPacket::encode, EndersoulHandPacket::new, EndersoulHandPacket::handle);
+		channel.registerMessage(0, CreeperMinionTrackerPacket.class, CreeperMinionTrackerPacket::encode, CreeperMinionTrackerPacket::new, CreeperMinionTrackerPacket::handle);
+		channel.registerMessage(1, HeldBlockPacket.class, HeldBlockPacket::encode, HeldBlockPacket::new, HeldBlockPacket::handle);
 	}
 
 	/** <p>{@link SimpleChannel#send(PacketDistributor.PacketTarget, Object)}</p> {@link PacketDistributor#TRACKING_ENTITY} */

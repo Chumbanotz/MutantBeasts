@@ -19,10 +19,12 @@ import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.util.DamageSource;
+import net.minecraft.util.EntityPredicates;
 import net.minecraft.util.IndirectEntityDamageSource;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.fml.network.FMLPlayMessages;
@@ -192,14 +194,18 @@ public class MutantArrowEntity extends Entity {
 			double y = this.posY + dy * (double)i * 0.5D;
 			double z = this.posZ + dz * (double)i * 0.5D;
 			AxisAlignedBB box = new AxisAlignedBB(x, y, z, x, y, z).grow(0.3D);
-			this.pointedEntities.addAll(this.world.getEntitiesWithinAABBExcludingEntity(this.getShooter(), box));
+			this.pointedEntities.addAll(this.world.getEntitiesInAABBexcluding(this.getShooter(), box, EntityPredicates.CAN_AI_TARGET.and(Entity::canBeCollidedWith)));
 		}
 	}
 
 	protected void handleEntities() {
-		this.pointedEntities.remove(this);
 		for (Entity entity : this.pointedEntities) {
-			DamageSource damageSource = new IndirectEntityDamageSource("arrow", this, this.getShooter());
+			DamageSource damageSource = new IndirectEntityDamageSource("arrow", this, this.getShooter()) {
+				@Override
+				public Vec3d getDamageLocation() {
+					return null;
+				}
+			}.setProjectile();
 
 			if (entity instanceof net.minecraft.entity.boss.dragon.EnderDragonPartEntity) {
 				damageSource.setExplosion();

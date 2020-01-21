@@ -41,13 +41,12 @@ public class MBWalkNodeProcessor extends WalkNodeProcessor {
 					for (int j = -1; j <= 1; ++j) {
 						if (i != 0 || j != 0) {
 							BlockPos newPos = pos.setPos(i + x, y, j + z);
-							BlockState state = blockaccessIn.getBlockState(newPos);
 							PathNodeType pathNodeType = this.getPathNodeTypeRaw(blockaccessIn, newPos.getX(), newPos.getY(), newPos.getZ());
 							if (pathNodeType == PathNodeType.DAMAGE_CACTUS) {
 								nodeType = PathNodeType.DANGER_CACTUS;
 							} else if (pathNodeType == PathNodeType.DAMAGE_FIRE) {
 								nodeType = PathNodeType.DANGER_FIRE;
-							} else if (state.getFluidState().isTagged(FluidTags.LAVA)) {
+							} else if (pathNodeType == PathNodeType.LAVA) {
 								nodeType = PathNodeType.LAVA;
 							} else if (pathNodeType == PathNodeType.DANGER_OTHER) {
 								nodeType = PathNodeType.DANGER_OTHER;
@@ -63,36 +62,36 @@ public class MBWalkNodeProcessor extends WalkNodeProcessor {
 
 	@Override
 	public PathNodeType getPathNodeType(IBlockReader blockaccessIn, int x, int y, int z) {
-		PathNodeType pathNodeAbove = this.getPathNodeTypeRaw(blockaccessIn, x, y, z);
-		if (pathNodeAbove == PathNodeType.OPEN && y >= 1) {
+		PathNodeType pathNode = this.getPathNodeTypeRaw(blockaccessIn, x, y, z);
+		if (pathNode == PathNodeType.OPEN && y >= 1) {
 			BlockState blockStateBelow = blockaccessIn.getBlockState(new BlockPos(x, y - 1, z));
 			Block blockBelow = blockStateBelow.getBlock();
 			PathNodeType pathNodeBelow = this.getPathNodeTypeRaw(blockaccessIn, x, y - 1, z);
-			pathNodeAbove = pathNodeBelow != PathNodeType.WALKABLE && pathNodeBelow != PathNodeType.OPEN && pathNodeBelow != PathNodeType.WATER && pathNodeBelow != PathNodeType.LAVA ? PathNodeType.WALKABLE : PathNodeType.OPEN;
+			pathNode = pathNodeBelow != PathNodeType.WALKABLE && pathNodeBelow != PathNodeType.OPEN && pathNodeBelow != PathNodeType.WATER && pathNodeBelow != PathNodeType.LAVA ? PathNodeType.WALKABLE : PathNodeType.OPEN;
 
 			if (pathNodeBelow == PathNodeType.DAMAGE_FIRE) {
-				pathNodeAbove = PathNodeType.DAMAGE_FIRE;
+				pathNode = PathNodeType.DAMAGE_FIRE;
 			}
 
 			if (pathNodeBelow == PathNodeType.DAMAGE_CACTUS) {
-				pathNodeAbove = PathNodeType.DAMAGE_CACTUS;
+				pathNode = PathNodeType.DAMAGE_CACTUS;
 			}
 
 			if (pathNodeBelow == PathNodeType.DAMAGE_OTHER) {
-				pathNodeAbove = PathNodeType.DAMAGE_OTHER;
+				pathNode = PathNodeType.DAMAGE_OTHER;
 			}
 
 			if (pathNodeBelow == PathNodeType.DANGER_OTHER) {
-				pathNodeAbove = PathNodeType.DANGER_OTHER;
+				pathNode = PathNodeType.DANGER_OTHER;
 			}
 
 			if (blockBelow instanceof TrapDoorBlock && blockStateBelow.get(TrapDoorBlock.OPEN) || blockBelow instanceof FenceGateBlock && blockStateBelow.get(FenceGateBlock.OPEN)) {
-				pathNodeAbove = PathNodeType.BLOCKED;
+				pathNode = PathNodeType.BLOCKED;
 			}
 		}
 
-		pathNodeAbove = this.checkNeighborBlocks(blockaccessIn, x, y, z, pathNodeAbove);
-		return pathNodeAbove;
+		pathNode = this.checkNeighborBlocks(blockaccessIn, x, y, z, pathNode);
+		return pathNode;
 	}
 
 	@Override

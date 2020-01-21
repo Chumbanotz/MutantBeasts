@@ -1,18 +1,14 @@
 package chumbanotz.mutantbeasts.util;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Random;
 import java.util.function.Function;
 
-import chumbanotz.mutantbeasts.entity.mutant.MutantSnowGolemEntity;
+import chumbanotz.mutantbeasts.Config;
 import chumbanotz.mutantbeasts.particles.MBParticleTypes;
-import net.minecraft.block.AbstractGlassBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.entity.AgeableEntity;
 import net.minecraft.entity.AreaEffectCloudEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -24,16 +20,17 @@ import net.minecraft.entity.boss.WitherEntity;
 import net.minecraft.entity.item.ExperienceOrbEntity;
 import net.minecraft.entity.item.ItemEntity;
 import net.minecraft.entity.monster.CreeperEntity;
+import net.minecraft.entity.monster.IMob;
 import net.minecraft.entity.monster.MonsterEntity;
 import net.minecraft.entity.passive.CatEntity;
-import net.minecraft.entity.passive.IronGolemEntity;
+import net.minecraft.entity.passive.GolemEntity;
 import net.minecraft.entity.passive.OcelotEntity;
-import net.minecraft.entity.passive.SnowGolemEntity;
 import net.minecraft.entity.passive.TameableEntity;
 import net.minecraft.entity.passive.horse.AbstractHorseEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.entity.projectile.AbstractArrowEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundNBT;
@@ -42,13 +39,11 @@ import net.minecraft.network.play.server.SEntityVelocityPacket;
 import net.minecraft.particles.IParticleData;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.util.DamageSource;
-import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.IWorld;
-import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -100,6 +95,10 @@ public final class EntityUtil {
 		}
 	}
 
+	public static boolean isHolding(LivingEntity livingEntity, Item item) {
+		return livingEntity.getHeldItemMainhand().getItem() == item || livingEntity.getHeldItemOffhand().getItem() == item;
+	}
+
 	public static void disableShield(LivingEntity livingEntity, DamageSource damageSource, int ticks) {
 		if (livingEntity instanceof PlayerEntity && canBlockDamageSource(livingEntity, damageSource)) {
 			((PlayerEntity)livingEntity).getCooldownTracker().setCooldown(livingEntity.getActiveItemStack().getItem(), ticks);
@@ -108,19 +107,17 @@ public final class EntityUtil {
 		}
 	}
 
-	/** Adjusted from {@link PlayerEntity#attackTargetEntityWithCurrentItem(Entity)} */
 	public static void sendPlayerVelocityPacket(Entity entity) {
 		if (entity instanceof ServerPlayerEntity) {
 			((ServerPlayerEntity)entity).connection.sendPacket(new SEntityVelocityPacket(entity));
-			entity.velocityChanged = false;
 		}
 	}
 
 	public static boolean requireDarknessAndSky(EntityType<? extends MonsterEntity> entityType, IWorld world, SpawnReason spawnReason, BlockPos pos, Random random) {
-		return spawnReason != SpawnReason.SPAWNER && (random.nextInt(50 / Math.min(20, Math.max(1, 10))) == 0) && MonsterEntity.func_223325_c(entityType, world, spawnReason, pos, random) && world.isSkyLightMax(pos);
+		return spawnReason != SpawnReason.SPAWNER && random.nextInt(50 / Math.min(20, Math.max(1, Config.globalSpawnRate))) == 0 && MonsterEntity.func_223325_c(entityType, world, spawnReason, pos, random) && world.isSkyLightMax(pos);
 	}
 
-	public static boolean isMobFeline(LivingEntity livingEntity) {
+	public static boolean isFeline(LivingEntity livingEntity) {
 		return livingEntity instanceof OcelotEntity || livingEntity instanceof CatEntity;
 	}
 
@@ -131,7 +128,7 @@ public final class EntityUtil {
 				return canTargetCreepers;
 			} else if (target instanceof PlayerEntity && owner instanceof PlayerEntity && !((PlayerEntity)owner).canAttackPlayer((PlayerEntity)target)) {
 				return false;
-			} else if (target instanceof IronGolemEntity || target instanceof SnowGolemEntity || target instanceof MutantSnowGolemEntity) {
+			} else if (target instanceof GolemEntity && !(target instanceof IMob)) {
 				return false;
 			} else if (target instanceof TameableEntity && ((TameableEntity)target).getOwner() == owner) {
 				return false;
@@ -210,68 +207,39 @@ public final class EntityUtil {
 		mobEntity.world.setEntityState(mobEntity, (byte)3);
 	}
 
-	public static void shatterGlass(World world, AxisAlignedBB bb) {
-		for (BlockPos blockPos : BlockPos.getAllInBoxMutable(MathHelper.floor(bb.minX), MathHelper.floor(bb.minY), MathHelper.floor(bb.minZ), MathHelper.floor(bb.maxX), MathHelper.floor(bb.maxY), MathHelper.floor(bb.maxZ))) {
-			if ((world.getBlockState(blockPos).getBlock() instanceof AbstractGlassBlock || world.getBlockState(blockPos).isIn(net.minecraftforge.common.Tags.Blocks.GLASS))) {
-				world.destroyBlock(blockPos, false);
-			}
-		}
-	}
-
-	public static void copyNBT(LivingEntity oldEntity, LivingEntity newEntity) {
+	public static void copyNBT(Entity oldEntity, Entity newEntity, boolean resetHealth) {
 		if (oldEntity == newEntity) {
 			throw new IllegalArgumentException("Old entity is the same as the new entity");
 		}
 
 		final CompoundNBT copiedNBT = oldEntity.writeWithoutTypeId(new CompoundNBT());
 		copiedNBT.putUniqueId("UUID", newEntity.getUniqueID());
-		copiedNBT.put("Attributes", SharedMonsterAttributes.writeAttributes(newEntity.getAttributes()));
-		copiedNBT.putFloat("Health", newEntity.getHealth());
 
-		if (copiedNBT.contains("ActiveEffects", 9)) {
-			ListNBT listnbt = copiedNBT.getList("ActiveEffects", 10);
+		if (oldEntity instanceof LivingEntity && newEntity instanceof LivingEntity) {
+			LivingEntity newLiving = (LivingEntity)newEntity;
+			if (resetHealth) {
+				copiedNBT.put("Attributes", SharedMonsterAttributes.writeAttributes(newLiving.getAttributes()));
+				copiedNBT.putFloat("Health", newLiving.getHealth());
+			}
 
-			for (int i = 0; i < listnbt.size(); ++i) {
-				CompoundNBT compoundnbt = listnbt.getCompound(i);
-				EffectInstance effectinstance = EffectInstance.read(compoundnbt);
+			if (copiedNBT.contains("ActiveEffects", 9)) {
+				ListNBT listnbt = copiedNBT.getList("ActiveEffects", 10);
 
-				if (!newEntity.isPotionApplicable(effectinstance)) {
-					listnbt.remove(i);
+				for (int i = 0; i < listnbt.size(); ++i) {
+					CompoundNBT compoundnbt = listnbt.getCompound(i);
+					EffectInstance effectinstance = EffectInstance.read(compoundnbt);
+
+					if (!newLiving.isPotionApplicable(effectinstance)) {
+						listnbt.remove(i);
+					}
 				}
 			}
 		}
 
-		if (oldEntity instanceof MobEntity && newEntity instanceof MobEntity) {
-			MobEntity oldMob = (MobEntity)oldEntity;
-			MobEntity newMob = (MobEntity)newEntity;
-			copiedNBT.putBoolean("CanPickUpLoot", false);
-
-			if (oldMob.detachHome()) {
-				newMob.setHomePosAndDistance(oldMob.getHomePosition(), (int)oldMob.getMaximumHomeDistance());
-			}
-
-			if (copiedNBT.contains("ArmorItems", 9) && !copiedNBT.getList("ArmorItems", 10).isEmpty()) {
-				copiedNBT.getList("ArmorItems", 10).clear();
-			}
-
-			if (copiedNBT.contains("HandItems", 9) && !copiedNBT.getList("HandItems", 10).isEmpty()) {
-				copiedNBT.getList("HandItems", 10).clear();
-			}
-		}
-
-		if (oldEntity instanceof AgeableEntity && newEntity instanceof AgeableEntity) {
-			AgeableEntity oldAgeable = (AgeableEntity)oldEntity;
-			AgeableEntity newAgeable = (AgeableEntity)newEntity;
-
-			if (oldAgeable.isChild() && newAgeable.createChild(newAgeable) == null) {
-				copiedNBT.putInt("Age", 0);
-			}
-		}
-
+		copiedNBT.putString("id", newEntity.getEntityString());
 		newEntity.deserializeNBT(copiedNBT);
 	}
 
-	// From here on is from Mutant Creatures
 	@OnlyIn(Dist.CLIENT)
 	public static void spawnParticlesAtEntity(Entity entity, IParticleData particleData, int amount) {
 		for (int i = 0; i < amount; ++i) {
@@ -308,22 +276,23 @@ public final class EntityUtil {
 		return new Vec3d((double)(-MathHelper.sin(rad) * scale), 0.0D, (double)(MathHelper.cos(rad) * scale));
 	}
 
-	public static boolean teleportTo(LivingEntity living, double x, double y, double z) {
-		double oldX = living.posX;
-		double oldY = living.posY;
-		double oldZ = living.posZ;
+	/** Similar to {@link LivingEntity#attemptTeleport(double, double, double, boolean)} */
+	public static boolean teleportTo(MobEntity mob, double x, double y, double z) {
+		double oldX = mob.posX;
+		double oldY = mob.posY;
+		double oldZ = mob.posZ;
 		int teleX = MathHelper.floor(x);
 		int teleY = MathHelper.floor(y);
 		int teleZ = MathHelper.floor(z);
 		boolean success = false;
 
-		if (living.world.isBlockPresent(new BlockPos(teleX, teleY, teleZ))) {
+		if (mob.world.isBlockPresent(new BlockPos(teleX, teleY, teleZ))) {
 			boolean temp = false;
 
 			while (!temp && teleY > 0) {
-				Block block = living.world.getBlockState(new BlockPos(teleX, teleY - 1, teleZ)).getBlock();
+				Block block = mob.world.getBlockState(new BlockPos(teleX, teleY - 1, teleZ)).getBlock();
 
-				if (block != Blocks.AIR && living.world.getBlockState(new BlockPos(teleX, teleY - 1, teleZ)).getMaterial().blocksMovement()) {
+				if (block != Blocks.AIR && mob.world.getBlockState(new BlockPos(teleX, teleY - 1, teleZ)).getMaterial().blocksMovement()) {
 					temp = true;
 				} else {
 					--teleY;
@@ -331,40 +300,21 @@ public final class EntityUtil {
 			}
 
 			if (temp) {
-				living.setPosition(x, (double)teleY, z);
+				mob.setPosition(x, (double)teleY, z);
 
-				if (living.world.isCollisionBoxesEmpty(living, living.getBoundingBox()) && !living.world.containsAnyLiquid(living.getBoundingBox())) {
+				if (mob.world.isCollisionBoxesEmpty(mob, mob.getBoundingBox()) && !mob.world.containsAnyLiquid(mob.getBoundingBox())) {
 					success = true;
 				}
 			}
 		}
 
 		if (!success) {
-			living.setPosition(oldX, oldY, oldZ);
+			mob.setPosition(oldX, oldY, oldZ);
 			return false;
 		} else {
+			mob.getNavigator().clearPath();
 			return true;
 		}
-	}
-
-	public static List<LivingEntity> getAttackers(MobEntity mobEntity, AxisAlignedBB box) {
-		List<LivingEntity> list = new ArrayList<LivingEntity>();
-
-		for (LivingEntity attacker : mobEntity.world.getEntitiesWithinAABB(LivingEntity.class, box, entity -> entity != mobEntity)) {
-			if (attacker.getRevengeTarget() == mobEntity) {
-				list.add(attacker);
-			}
-
-			if (attacker.getLastAttackedEntity() == mobEntity) {
-				list.add(attacker);
-			}
-
-			if (attacker instanceof MobEntity && ((MobEntity)attacker).getAttackTarget() == mobEntity) {
-				list.add(attacker);
-			}
-		}
-
-		return list;
 	}
 
 	public static void divertAttackers(MobEntity targetedMob, LivingEntity newTarget) {
@@ -372,7 +322,7 @@ public final class EntityUtil {
 			return;
 		}
 
-		for (LivingEntity attacker : targetedMob.world.getEntitiesWithinAABB(LivingEntity.class, targetedMob.getBoundingBox().grow(16.0D, 10.0D, 16.0D))) {
+		for (LivingEntity attacker : targetedMob.world.getEntitiesWithinAABB(LivingEntity.class, targetedMob.getBoundingBox().grow(16.0D, 10.0D, 16.0D), e -> e != targetedMob && e.attackable())) {
 			if (attacker.getRevengeTarget() == targetedMob) {
 				attacker.setRevengeTarget(newTarget);
 			}

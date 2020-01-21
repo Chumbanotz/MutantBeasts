@@ -13,7 +13,7 @@ public class MutantZombieModel extends EntityModel<MutantZombieEntity> {
 	private final RendererModel waist;
 	private final RendererModel chest;
 	private final RendererModel head;
-//	private final RendererModel villagerHead;
+	private final RendererModel villagerHead;
 	private final RendererModel arm1;
 	private final RendererModel arm2;
 	private final RendererModel forearm1;
@@ -40,11 +40,11 @@ public class MutantZombieModel extends EntityModel<MutantZombieEntity> {
 		this.head.addBox(-4.0F, -8.0F, -4.0F, 8, 8, 8);
 		this.head.setRotationPoint(0.0F, -11.0F, -4.0F);
 		this.chest.addChild(this.head);
-//		this.villagerHead = new RendererModel(this);
-//		this.villagerHead.setTextureOffset(0, 72).addBox(-4.0F, -10.0F, -4.0F, 8, 10, 8);
-//		this.villagerHead.setTextureOffset(24, 72).addBox(-1.0F, -3.0F, -6.0F, 2, 4, 2);
-//		this.villagerHead.setRotationPoint(0.0F, -11.0F, -4.0F);
-//		this.chest.addChild(this.villagerHead);
+		this.villagerHead = new RendererModel(this);
+		this.villagerHead.setTextureOffset(0, 72).addBox(-4.0F, -10.0F, -4.0F, 8, 10, 8);
+		this.villagerHead.setTextureOffset(24, 72).addBox(-1.0F, -3.0F, -6.0F, 2, 4, 2);
+		this.villagerHead.setRotationPoint(0.0F, -11.0F, -4.0F);
+		this.chest.addChild(this.villagerHead);
 		this.arm1 = new RendererModel(this, 104, 0);
 		this.arm1.addBox(-3.0F, 0.0F, -3.0F, 6, 16, 6);
 		this.arm1.setRotationPoint(-11.0F, -8.0F, 2.0F);
@@ -88,6 +88,7 @@ public class MutantZombieModel extends EntityModel<MutantZombieEntity> {
 		this.setAngles();
 		this.animate(entity, f, f1, f2, f3, f4, f5);
 		this.pelvis.render(f5);
+		this.villagerHead.showModel = false;
 	}
 
 	public void setAngles() {
@@ -172,9 +173,7 @@ public class MutantZombieModel extends EntityModel<MutantZombieEntity> {
 		this.arm2.rotateAngleX += walkAnim * 0.6F;
 		this.leg1.rotateAngleX += walkAnim1 * 0.9F;
 		this.leg2.rotateAngleX += walkAnim2 * 0.9F;
-//		this.villagerHead.rotateAngleX = this.head.rotateAngleX;
-//		this.villagerHead.rotateAngleY = this.head.rotateAngleY;
-//		this.villagerHead.rotateAngleZ = this.head.rotateAngleZ;
+		this.villagerHead.copyModelAngles(this.head);
 	}
 
 	protected void animateMelee(int fullTick) {

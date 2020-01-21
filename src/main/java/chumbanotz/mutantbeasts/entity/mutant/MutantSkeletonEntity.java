@@ -62,7 +62,7 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 		this.goalSelector.addGoal(0, new MutantSkeletonEntity.ShootGoal());
 		this.goalSelector.addGoal(0, new MutantSkeletonEntity.MultiShotGoal());
 		this.goalSelector.addGoal(0, new MutantSkeletonEntity.ConstrictRibsAttackGoal());
-		this.goalSelector.addGoal(2, new MBMeleeAttackGoal(this, 1.1D).setMaxAttackTick(10));
+		this.goalSelector.addGoal(2, new MBMeleeAttackGoal(this, 1.1D).setMaxAttackTick(6));
 		this.goalSelector.addGoal(3, new AvoidDamageGoal(this, 1.1D));
 		this.goalSelector.addGoal(4, new WaterAvoidingRandomWalkingGoal(this, 1.0D));
 		this.goalSelector.addGoal(5, new LookAtGoal(this, PlayerEntity.class, 8.0F));
@@ -151,8 +151,8 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 	}
 
 	@Override
-	public boolean isInvulnerableTo(DamageSource source) {
-		return super.isInvulnerableTo(source) || source.getTrueSource() instanceof MutantSkeletonEntity;
+	public boolean attackEntityFrom(DamageSource source, float amount) {
+		return !(source.getTrueSource() instanceof MutantSkeletonEntity) && super.attackEntityFrom(source, amount);
 	}
 
 	@Override
@@ -175,10 +175,8 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 
 	@Override
 	protected void constructKnockBackVector(LivingEntity livingEntity) {
-		if (this.attackID == MELEE_ATTACK || this.attackID == CONSTRICT_RIBS_ATTACK) {
-			livingEntity.applyEntityCollision(this);
-			livingEntity.velocityChanged = true;
-		}
+		livingEntity.applyEntityCollision(this);
+		livingEntity.velocityChanged = true;
 	}
 
 	@Override
@@ -297,7 +295,7 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 
 	class MeleeGoal extends Goal {
 		public MeleeGoal() {
-			setMutexFlags(EnumSet.of(Goal.Flag.JUMP, Goal.Flag.LOOK, Goal.Flag.MOVE));
+			this.setMutexFlags(EnumSet.of(Goal.Flag.JUMP, Goal.Flag.LOOK, Goal.Flag.MOVE));
 		}
 
 		@Override
@@ -322,7 +320,8 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 			}
 
 			if (attackTick == 3) {
-				for (Entity entity : world.getEntitiesInAABBexcluding(MutantSkeletonEntity.this, getBoundingBox().grow((double)(2.3F + rand.nextFloat() * 0.3F)), EntityPredicates.CAN_AI_TARGET)) {
+				double reach = (double)(2.3F + rand.nextFloat() * 0.3F);
+				for (Entity entity : world.getEntitiesInAABBexcluding(MutantSkeletonEntity.this, getBoundingBox().grow(reach, 0.0D, reach), EntityPredicates.CAN_AI_TARGET)) {
 					double dist = (double)getDistance(entity);
 					double x = posX - entity.posX;
 					double z = posZ - entity.posZ;
@@ -349,7 +348,7 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 	class ConstrictRibsAttackGoal extends Goal {
 		private LivingEntity attackTarget;
 		public ConstrictRibsAttackGoal() {
-			setMutexFlags(EnumSet.of(Goal.Flag.JUMP, Goal.Flag.LOOK, Goal.Flag.MOVE));
+			this.setMutexFlags(EnumSet.of(Goal.Flag.JUMP, Goal.Flag.LOOK, Goal.Flag.MOVE));
 		}
 
 		@Override
@@ -384,6 +383,7 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 		@Override
 		public void resetTask() {
 			setAttackID(0);
+			this.attackTarget = null;
 		}
 	}
 
@@ -391,7 +391,7 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 		private LivingEntity attackTarget;
 
 		public ShootGoal() {
-			setMutexFlags(EnumSet.of(Goal.Flag.JUMP, Goal.Flag.LOOK, Goal.Flag.MOVE));
+			this.setMutexFlags(EnumSet.of(Goal.Flag.JUMP, Goal.Flag.LOOK, Goal.Flag.MOVE));
 		}
 
 		@Override
@@ -452,6 +452,7 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 		@Override
 		public void resetTask() {
 			setAttackID(0);
+			this.attackTarget = null;
 		}
 	}
 
@@ -460,7 +461,7 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 		private LivingEntity attackTarget;
 
 		public MultiShotGoal() {
-			setMutexFlags(EnumSet.of(Goal.Flag.JUMP, Goal.Flag.LOOK, Goal.Flag.MOVE));
+			this.setMutexFlags(EnumSet.of(Goal.Flag.JUMP, Goal.Flag.LOOK, Goal.Flag.MOVE));
 		}
 
 		@Override
@@ -533,6 +534,7 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 		public void resetTask() {
 			setAttackID(0);
 			this.shots.clear();
+			this.attackTarget = null;
 		}
 	}
 }

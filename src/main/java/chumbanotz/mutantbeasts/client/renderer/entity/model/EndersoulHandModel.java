@@ -1,37 +1,18 @@
 package chumbanotz.mutantbeasts.client.renderer.entity.model;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.function.Function;
-
 import javax.vecmath.Matrix4f;
 
 import org.apache.commons.lang3.tuple.Pair;
 
-import chumbanotz.mutantbeasts.MutantBeasts;
 import net.minecraft.client.renderer.entity.model.RendererModel;
 import net.minecraft.client.renderer.model.IBakedModel;
-import net.minecraft.client.renderer.model.IUnbakedModel;
 import net.minecraft.client.renderer.model.Model;
-import net.minecraft.client.renderer.model.ModelBakery;
-import net.minecraft.client.renderer.texture.ISprite;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
-import net.minecraft.client.renderer.vertex.VertexFormat;
-import net.minecraft.resources.IResourceManager;
-import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.model.BakedModelWrapper;
-import net.minecraftforge.client.model.ICustomModelLoader;
-import net.minecraftforge.client.model.ModelLoaderRegistry;
 
 @OnlyIn(Dist.CLIENT)
 public class EndersoulHandModel extends Model {
-	public static final ResourceLocation DEFAULT_LOCATION = MutantBeasts.prefix("item/endersoul_hand");
-	public static final ResourceLocation MODEL_LOCATION = MutantBeasts.prefix("item/endersoul_hand_model");
 	private final RendererModel hand;
 	private final RendererModel[] finger = new RendererModel[3];
 	private final RendererModel[] foreFinger = new RendererModel[3];
@@ -101,50 +82,47 @@ public class EndersoulHandModel extends Model {
 		this.hand.render(0.0625F);
 	}
 
-	public static class Loader implements ICustomModelLoader {
-		@Override
-		public void onResourceManagerReload(IResourceManager resourceManager) {
-		}
-
-		@Override
-		public boolean accepts(ResourceLocation modelLocation) {
-			return MODEL_LOCATION.equals(modelLocation);
-		}
-
-		@Override
-		public IUnbakedModel loadModel(ResourceLocation modelLocation) throws Exception {
-			return new EndersoulHandModel.Unbaked();
-		}
-	}
-
-	@OnlyIn(Dist.CLIENT)
-	static class Unbaked implements IUnbakedModel {
-		private static final List<ResourceLocation> DEPENDENCIES = Arrays.asList(DEFAULT_LOCATION, MODEL_LOCATION);
-		@Override
-		public IBakedModel bake(ModelBakery bakery, Function<ResourceLocation, TextureAtlasSprite> spriteGetter, ISprite sprite, VertexFormat format) {
-			try {
-				IBakedModel originalModel = ModelLoaderRegistry.getModel(DEFAULT_LOCATION).bake(bakery, spriteGetter, sprite, format);
-				IBakedModel bakedModel = ModelLoaderRegistry.getModel(MODEL_LOCATION).bake(bakery, spriteGetter, sprite, format);
-				return new EndersoulHandModel.Baked(originalModel, bakedModel);
-			} catch (Exception e) {
-				e.printStackTrace();
-				return null;
-			}
-		}
-
-		@Override
-		public Collection<ResourceLocation> getDependencies() {
-			return DEPENDENCIES;
-		}
-
-		@Override
-		public Collection<ResourceLocation> getTextures(Function<ResourceLocation, IUnbakedModel> modelGetter, Set<String> missingTextureErrors) {
-			return Collections.emptyList();
-		}
-	}
+//	public static enum Loader implements ICustomModelLoader {
+//		INSTANCE;
+//
+//		@Override
+//		public void onResourceManagerReload(IResourceManager resourceManager) {
+//			System.out.println("Reloading model loader");
+//		}
+//
+//		@Override
+//		public boolean accepts(ResourceLocation modelLocation) {
+//			return modelLocation.equals(new ModelResourceLocation(MutantBeasts.prefix("endersoul_hand"), "inventory"));
+//		}
+//
+//		@Override
+//		public IUnbakedModel loadModel(ResourceLocation modelLocation) throws Exception {
+//			return new EndersoulHandModel.Unbaked();
+//		}
+//	}
+//
+//	@OnlyIn(Dist.CLIENT)
+//	static class Unbaked implements IUnbakedModel {
+//		@Override
+//		public IBakedModel bake(ModelBakery bakery, Function<ResourceLocation, TextureAtlasSprite> spriteGetter, ISprite sprite, VertexFormat format) {
+//			IBakedModel original = bakery.getUnbakedModel(new ModelResourceLocation(new ResourceLocation(MutantBeasts.MOD_ID, "endersoul_hand_gui"), "inventory")).bake(bakery, spriteGetter, sprite, format);
+//			IBakedModel model = bakery.getUnbakedModel(new ModelResourceLocation(new ResourceLocation(MutantBeasts.MOD_ID, "endersoul_hand_model"), "inventory")).bake(bakery, spriteGetter, sprite, format);
+//			return new EndersoulHandModel.Baked(original, model);
+//		}
+//
+//		@Override
+//		public Collection<ResourceLocation> getDependencies() {
+//			return Arrays.asList(MutantBeasts.prefix("item/endersoul_hand_gui"), MutantBeasts.prefix("item/endersoul_hand_model"));
+//		}
+//
+//		@Override
+//		public Collection<ResourceLocation> getTextures(Function<ResourceLocation, IUnbakedModel> modelGetter, Set<String> missingTextureErrors) {
+//			return Arrays.asList(MutantBeasts.prefix("item/endersoul_hand_gui"), MutantBeasts.prefix("item/endersoul_hand_model"));
+//		}
+//	}
 
 	@OnlyIn(Dist.CLIENT)
-	static class Baked extends BakedModelWrapper<IBakedModel> {
+	public static class Baked extends BakedModelWrapper<IBakedModel> {
 		private final IBakedModel bakedModel;
 
 		public Baked(IBakedModel originalModel, IBakedModel bakedModel) {

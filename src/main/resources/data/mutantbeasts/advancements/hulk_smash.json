@@ -1,0 +1,60 @@
+{
+	"parent": "mutantbeasts:root",
+	"display": {
+		"icon": {
+			"item": "mutantbeasts:hulk_hammer"
+		},
+		"title": {
+			"translate": "advancements.mutantbeasts.hulk_smash.title"
+		},
+		"description": {
+			"translate": "advancements.mutantbeasts.hulk_smash.description"
+		},
+		"frame": "goal",
+		"show_toast": true,
+		"announce_to_chat": true,
+		"hidden": false
+	},
+	"criteria": {
+		"hammer_in_mainhand": {
+			"trigger": "minecraft:player_killed_entity",
+			"conditions": {
+				"entity": {
+					"type": "mutantbeasts:mutant_zombie"
+				},
+				"killing_blow": {
+					"direct_entity": {
+						"equipment": {
+							"mainhand": {
+								"item": "mutantbeasts:hulk_hammer"
+							}
+						}
+					}
+				}
+			}
+		},
+		"hammer_in_offhand": {
+			"trigger": "minecraft:player_killed_entity",
+			"conditions": {
+				"entity": {
+					"type": "mutantbeasts:mutant_zombie"
+				},
+				"killing_blow": {
+					"direct_entity": {
+						"equipment": {
+							"offhand": {
+								"item": "mutantbeasts:hulk_hammer"
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	"requirements": [
+		[
+			"hammer_in_mainhand",
+			"hammer_in_offhand"
+		]
+	]
+}

@@ -130,7 +130,7 @@ public class SpiderPigModel extends EntityModel<SpiderPigEntity> {
 		this.frontLeg1.getModel().rotateAngleZ += 2.0943952F;
 		this.frontLegF1.rotateAngleZ += -1.6534699F;
 		this.frontLeg2.rotateAngleX += -(this.body1.rotateAngleX + this.body2.rotateAngleX);
-		++this.frontLeg2.rotateAngleY;
+		this.frontLeg2.rotateAngleY += 1.0471976F; //Fixed?
 		this.frontLeg2.getModel().rotateAngleZ += -2.0943952F;
 		this.frontLegF2.rotateAngleZ += 1.6534699F; // Fixed?
 		this.middleLeg1.rotateAngleX += -(this.body1.rotateAngleX + this.body2.rotateAngleX);

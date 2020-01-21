@@ -26,31 +26,28 @@ public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity,
 	private static final Field RENDER_POS_X = ObfuscationReflectionHelper.findField(EntityRendererManager.class, "field_78725_b");
 	private static final Field RENDER_POS_Y = ObfuscationReflectionHelper.findField(EntityRendererManager.class, "field_78726_c");
 	private static final Field RENDER_POS_Z = ObfuscationReflectionHelper.findField(EntityRendererManager.class, "field_78723_d");
-	private static final ResourceLocation TEXTURE = MutantBeasts.getEntityTexture("mutant_enderman");
-	private static final ResourceLocation GLOW_TEXTURE = MutantBeasts.getEntityTexture("mutant_enderman_glow");
-	private static final ResourceLocation EYES_TEXTURE = MutantBeasts.getEntityTexture("mutant_enderman_eyes");
-	private static final ResourceLocation SHUFFLE_TEXTURE = MutantBeasts.getEntityTexture("mutant_enderman_shuffle");
-	private final MutantEndermanModel endermanModel;
-	private final EndermanModel<MutantEndermanEntity> cloneModel;
+	private static final ResourceLocation TEXTURE = MutantBeasts.getEntityTexture("mutant_enderman/mutant_enderman");
+	private static final ResourceLocation GLOW_TEXTURE = MutantBeasts.getEntityTexture("mutant_enderman/glow");
+	private static final ResourceLocation EYES_TEXTURE = MutantBeasts.getEntityTexture("mutant_enderman/eyes");
+	private static final ResourceLocation DEATH_TEXTURE = MutantBeasts.getEntityTexture("mutant_enderman/death");
+	private final MutantEndermanModel endermanModel = (MutantEndermanModel)this.entityModel;
+	private final EndermanModel<MutantEndermanEntity> cloneModel = new EndermanModel<>(0.0F);
 	private boolean teleportAttack;
 
 	public MutantEndermanRenderer(EntityRendererManager manager) {
 		super(manager, new MutantEndermanModel(), 0.8F);
-		this.endermanModel = (MutantEndermanModel)this.entityModel;
-		this.cloneModel = new EndermanModel<>(0.0F);
 		this.addLayer(new MutantEndermanRenderer.EyesLayer(this));
 		this.addLayer(new MutantEndermanRenderer.GlowLayer(this));
-		this.addLayer(new MutantEndermanRenderer.CarriedBlocksLayer(this));
+		this.addLayer(new MutantEndermanRenderer.HeldBlocksLayer(this));
 	}
 
 	@Override
 	protected void renderModel(MutantEndermanEntity livingEntity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch, float scaleFactor) {
 		if (livingEntity.deathTime > 80) {
-			float blendFactor = (float)(livingEntity.deathTime - 80) / (float)(MutantEndermanEntity.MAX_DEATH_TIME - 80);
 			GlStateManager.depthFunc(515);
 			GlStateManager.enableAlphaTest();
-			GlStateManager.alphaFunc(516, blendFactor);
-			this.bindTexture(SHUFFLE_TEXTURE);
+			GlStateManager.alphaFunc(516, (float)(livingEntity.deathTime - 80) / (float)(MutantEndermanEntity.MAX_DEATH_TIME - 80));
+			this.bindTexture(DEATH_TEXTURE);
 			this.entityModel.render(livingEntity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scaleFactor);
 			GlStateManager.alphaFunc(516, 0.1F);
 			GlStateManager.depthFunc(514);
@@ -69,6 +66,7 @@ public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity,
 		double addZ = 0.0D;
 		this.entityModel = entity.isClone() ? this.cloneModel : this.endermanModel;
 		this.cloneModel.isAttacking = entity.isAggressive();
+		this.cloneModel.isCarrying = entity.heldBlock[1] != 0;
 		boolean forcedLook = entity.getAttackID() == MutantEndermanEntity.STARE_ATTACK;
 		boolean scream = entity.getAttackID() == MutantEndermanEntity.SCREAM_ATTACK;
 		boolean clone = entity.isClone() && entity.isAggressive();
@@ -96,9 +94,9 @@ public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity,
 		if (entity.getAttackID() == MutantEndermanEntity.TELEPORT_ATTACK) {
 			this.teleportAttack = true;
 			try {
-				double renderPosX = (double)entity.teleX + 0.5D - RENDER_POS_X.getDouble(this.renderManager);
-				double renderPosY = (double)entity.teleY - RENDER_POS_Y.getDouble(this.renderManager);
-				double renderPosZ = (double)entity.teleZ + 0.5D - RENDER_POS_Z.getDouble(this.renderManager);
+				double renderPosX = (double)entity.getTeleportPosition().getX() + 0.5D - RENDER_POS_X.getDouble(this.renderManager);
+				double renderPosY = (double)entity.getTeleportPosition().getY() - RENDER_POS_Y.getDouble(this.renderManager);
+				double renderPosZ = (double)entity.getTeleportPosition().getZ() + 0.5D - RENDER_POS_Z.getDouble(this.renderManager);
 				super.doRender(entity, renderPosX, renderPosY, renderPosZ, entityYaw, partialTicks);
 			} catch (IllegalArgumentException | IllegalAccessException exception) {
 				MutantBeasts.LOGGER.error("Failed to render mutant enderman teleport position", exception);
@@ -129,7 +127,10 @@ public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity,
 				this.bindTexture(EYES_TEXTURE);
 				GLX.glMultiTexCoord2f(GLX.GL_TEXTURE1, 61680.0F, 0.0F);
 				GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+				Minecraft.getInstance().gameRenderer.setupFogColor(true);
 				this.getEntityModel().render(entityIn, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scale);
+				Minecraft.getInstance().gameRenderer.setupFogColor(false);
+				this.func_215334_a(entityIn);
 				GlStateManager.enableLighting();
 			}
 		}
@@ -162,13 +163,13 @@ public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity,
 				GlStateManager.matrixMode(5888);
 				GlStateManager.enableNormalize();
 				GlStateManager.enableBlend();
-				GlStateManager.blendFunc(770, 771);
+				GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
 				int var5 = '\uf0f0';
 				int var6 = var5 % 65536;
 				int var7 = var5 / 65536;
 				GLX.glMultiTexCoord2f(GLX.GL_TEXTURE1, (float)var6, (float)var7);
 				float alpha = 1.0F;
-				float scaleGlow = 2.0F;
+				float glowScale = 2.0F;
 
 				if (teleport) {
 					if (!teleportAttack && entityIn.getAttackTick() >= 8) {
@@ -179,9 +180,9 @@ public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity,
 						alpha = ((float)entityIn.getAttackTick() + partialTicks) / 2.0F;
 					}
 
-					scaleGlow = 1.2F + ((float)entityIn.getAttackTick() + partialTicks) / 10.0F;
+					glowScale = 1.2F + ((float)entityIn.getAttackTick() + partialTicks) / 10.0F;
 					if (teleportAttack) {
-						scaleGlow = 2.2F - ((float)entityIn.getAttackTick() + partialTicks) / 10.0F;
+						glowScale = 2.2F - ((float)entityIn.getAttackTick() + partialTicks) / 10.0F;
 					}
 				}
 
@@ -193,11 +194,11 @@ public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity,
 					}
 
 					if (entityIn.getAttackTick() < 40) {
-						scaleGlow = 1.2F + ((float)entityIn.getAttackTick() + partialTicks) / 40.0F;
+						glowScale = 1.2F + ((float)entityIn.getAttackTick() + partialTicks) / 40.0F;
 					} else if (entityIn.getAttackTick() < 160) {
-						scaleGlow = 2.2F;
+						glowScale = 2.2F;
 					} else {
-						scaleGlow = 2.2F - ((float)entityIn.getAttackTick() + partialTicks) / 10.0F;
+						glowScale = 2.2F - ((float)entityIn.getAttackTick() + partialTicks) / 10.0F;
 					}
 				}
 
@@ -208,10 +209,11 @@ public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity,
 					this.getEntityModel().render(entityIn, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scale);
 				} else {
 					GlStateManager.pushMatrix();
-					GlStateManager.scalef(scaleGlow, scaleGlow * 0.8F, scaleGlow);
+					GlStateManager.scalef(glowScale, glowScale * 0.8F, glowScale);
 					this.getEntityModel().render(entityIn, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scale);
 					GlStateManager.popMatrix();
 				}
+
 				Minecraft.getInstance().gameRenderer.setupFogColor(false);
 				GlStateManager.matrixMode(5890);
 				GlStateManager.loadIdentity();
@@ -227,17 +229,31 @@ public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity,
 	}
 
 	@OnlyIn(Dist.CLIENT)
-	static class CarriedBlocksLayer extends LayerRenderer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> {
-		public CarriedBlocksLayer(IEntityRenderer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> entityRendererIn) {
+	static class HeldBlocksLayer extends LayerRenderer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> {
+		public HeldBlocksLayer(IEntityRenderer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> entityRendererIn) {
 			super(entityRendererIn);
 		}
 
 		@Override
 		public void render(MutantEndermanEntity entityIn, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch, float scale) {
 			GlStateManager.enableRescaleNormal();
-
-			for (int i = 1; i < entityIn.heldBlock.length; i++) {
-				if (entityIn.heldBlock[i] != 0 && !entityIn.isClone()) {
+			if (entityIn.isClone() && entityIn.heldBlock[1] != 0) {
+		         GlStateManager.pushMatrix();
+		         GlStateManager.translatef(0.0F, 0.6875F, -0.75F);
+		         GlStateManager.rotatef(20.0F, 1.0F, 0.0F, 0.0F);
+		         GlStateManager.rotatef(45.0F, 0.0F, 1.0F, 0.0F);
+		         GlStateManager.translatef(0.25F, 0.1875F, 0.25F);
+		         GlStateManager.scalef(-0.5F, -0.5F, 0.5F);
+		         int i = entityIn.getBrightnessForRender();
+		         int j = i % 65536;
+		         int k = i / 65536;
+		         GLX.glMultiTexCoord2f(GLX.GL_TEXTURE1, (float)j, (float)k);
+		         GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
+		         this.bindTexture(AtlasTexture.LOCATION_BLOCKS_TEXTURE);
+		         Minecraft.getInstance().getBlockRendererDispatcher().renderBlockBrightness(Block.getStateById(entityIn.heldBlock[1]), 1.0F);
+		         GlStateManager.popMatrix();
+			} else for (int i = 1; i < entityIn.heldBlock.length; i++) {
+				if (entityIn.heldBlock[i] != 0) {
 					GlStateManager.pushMatrix();
 					((MutantEndermanModel)this.getEntityModel()).postRenderArm(0.0625F, i);
 					GlStateManager.translatef(0.0F, 1.2F, 0.0F);
@@ -252,7 +268,8 @@ public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity,
 					int var6 = var4 / 65536;
 					GLX.glMultiTexCoord2f(GLX.GL_TEXTURE1, (float)var5, (float)var6);
 					GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-					bindTexture(AtlasTexture.LOCATION_BLOCKS_TEXTURE);
+					this.bindTexture(AtlasTexture.LOCATION_BLOCKS_TEXTURE);
+					GlStateManager.translatef(-0.5F, -0.5F, 0.5F);
 					Minecraft.getInstance().getBlockRendererDispatcher().renderBlockBrightness(Block.getStateById(entityIn.heldBlock[i]), 1.0F);
 					GlStateManager.popMatrix();
 				}

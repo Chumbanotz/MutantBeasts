@@ -2,6 +2,7 @@ package chumbanotz.mutantbeasts.item;
 
 import com.google.common.collect.Multimap;
 
+import chumbanotz.mutantbeasts.MutantBeasts;
 import chumbanotz.mutantbeasts.client.MBItemStackTileEntityRenderer;
 import chumbanotz.mutantbeasts.entity.mutant.MutantEndermanEntity;
 import chumbanotz.mutantbeasts.entity.projectile.ThrowableBlockEntity;
@@ -28,7 +29,7 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.RayTraceContext;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.World;
 
 public class EndersoulHandItem extends Item {
@@ -49,20 +50,22 @@ public class EndersoulHandItem extends Item {
 
 	@Override
 	public ActionResultType onItemUse(ItemUseContext context) {
+		World world = context.getWorld();
+		BlockPos pos = context.getPos();
 		if (context.isPlacerSneaking()) {
 			return ActionResultType.FAIL;
-		} else if (net.minecraft.tags.BlockTags.WITHER_IMMUNE.contains(context.getWorld().getBlockState(context.getPos()).getBlock())) {
+		} else if (!world.getBlockState(pos).isIn(MutantBeasts.THROWABLE_BLOCKS)) {
 			return ActionResultType.FAIL;
-		} else if (!context.getWorld().canMineBlockBody(context.getPlayer(), context.getPos())) {
+		} else if (!world.canMineBlockBody(context.getPlayer(), pos)) {
 			return ActionResultType.FAIL;
-		} else if (!context.getPlayer().canPlayerEdit(context.getPos(), context.getFace(), context.getItem())) {
+		} else if (!context.getPlayer().canPlayerEdit(pos, context.getFace(), context.getItem())) {
 			return ActionResultType.FAIL;
-		} else if (context.getWorld().getBlockState(context.getPos()).hasTileEntity()) {
+		} else if (world.getBlockState(pos).hasTileEntity()) {
 			return ActionResultType.FAIL;
 		} else {
-			if (!context.getWorld().isRemote) {
-				context.getWorld().addEntity(new ThrowableBlockEntity(context.getWorld(), context.getPlayer(), context.getWorld().getBlockState(context.getPos()), context.getPos()));
-				context.getWorld().setBlockState(context.getPos(), Blocks.AIR.getDefaultState());
+			if (!world.isRemote) {
+				world.addEntity(new ThrowableBlockEntity(world, context.getPlayer(), world.getBlockState(pos), pos));
+				world.setBlockState(pos, Blocks.AIR.getDefaultState());
 			}
 
 			return ActionResultType.SUCCESS;
@@ -75,9 +78,9 @@ public class EndersoulHandItem extends Item {
 		if (!playerIn.isSneaking()) {
 			return new ActionResult<>(ActionResultType.PASS, stack);
 		} else {
-			RayTraceResult result = getMOPFromPlayer(worldIn, playerIn, 128.0F);
+			RayTraceResult result = rayTrace(worldIn, playerIn, 128.0F);
 			if (result.getType() == RayTraceResult.Type.MISS) {
-				playerIn.sendStatusMessage(new StringTextComponent("Unable to teleport to location"), true);
+				playerIn.sendStatusMessage(new TranslationTextComponent(this.getTranslationKey() + ".teleport_failed"), true);
 				return new ActionResult<>(ActionResultType.FAIL, stack);
 			} else {
 				if (result.getType() == RayTraceResult.Type.BLOCK) {
@@ -142,13 +145,12 @@ public class EndersoulHandItem extends Item {
 		return multimap;
 	}
 
-	public static RayTraceResult getMOPFromPlayer(World world, PlayerEntity player, float maxDist) {
-		float f = 1.0F;
-		float f1 = player.prevRotationPitch + (player.rotationPitch - player.prevRotationPitch) * f;
-		float f2 = player.prevRotationYaw + (player.rotationYaw - player.prevRotationYaw) * f;
-		double d0 = player.prevPosX + (player.posX - player.prevPosX) * f;
-		double d1 = player.prevPosY + (player.posY - player.prevPosY) * f + 1.62D - player.getYOffset();
-		double d2 = player.prevPosZ + (player.posZ - player.prevPosZ) * f;
+	public static RayTraceResult rayTrace(World world, PlayerEntity player, float maxDist) {
+		float f1 = player.prevRotationPitch + (player.rotationPitch - player.prevRotationPitch);
+		float f2 = player.prevRotationYaw + (player.rotationYaw - player.prevRotationYaw);
+		double d0 = player.prevPosX + (player.posX - player.prevPosX);
+		double d1 = player.prevPosY + (player.posY - player.prevPosY) + (double)player.getEyeHeight();
+		double d2 = player.prevPosZ + (player.posZ - player.prevPosZ);
 		Vec3d vec3 = new Vec3d(d0, d1, d2);
 		float f3 = MathHelper.cos(-f2 * 0.017453292F - 3.1415927F);
 		float f4 = MathHelper.sin(-f2 * 0.017453292F - 3.1415927F);

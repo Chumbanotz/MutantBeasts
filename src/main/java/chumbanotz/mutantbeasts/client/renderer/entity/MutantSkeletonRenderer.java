@@ -14,7 +14,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 
 @OnlyIn(Dist.CLIENT)
 public class MutantSkeletonRenderer extends MutantRenderer<MutantSkeletonEntity, MutantSkeletonModel> {
-	static final ResourceLocation TEXTURE = MutantBeasts.getEntityTexture("mutant_skeleton");
+	public static final ResourceLocation TEXTURE = MutantBeasts.getEntityTexture("mutant_skeleton");
 	private static final ResourceLocation GEAR_TEXTURE = MutantBeasts.getEntityTexture("mutant_skeleton_gear");
 
 	public MutantSkeletonRenderer(EntityRendererManager manager) {
@@ -24,7 +24,7 @@ public class MutantSkeletonRenderer extends MutantRenderer<MutantSkeletonEntity,
 
 	@Override
 	protected void preRenderCallback(MutantSkeletonEntity entitylivingbaseIn, float partialTickTime) {
-		GlStateManager.translatef(0.0F, 0.0F, 0.2F);
+		GlStateManager.translatef(0.0F, 0.0F, 0.1F);
 	}
 
 	@Override

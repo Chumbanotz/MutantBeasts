@@ -1,0 +1,33 @@
+{
+	"parent": "mutantbeasts:gunpowder_spice",
+	"display": {
+		"icon": {
+			"item": "minecraft:cobweb"
+		},
+		"title": {
+			"translate": "advancements.mutantbeasts.spider_pig_spider_pig.title"
+		},
+		"description": {
+			"translate": "advancements.mutantbeasts.spider_pig_spider_pig.description"
+		},
+		"frame": "task",
+		"show_toast": true,
+		"announce_to_chat": true,
+		"hidden": false
+	},
+	"criteria": {
+		"created_spider_pig": {
+			"trigger": "minecraft:summoned_entity",
+			"conditions": {
+				"entity": {
+					"type": "mutantbeasts:spider_pig"
+				}
+			}
+		}
+	},
+	"requirements": [
+		[
+			"created_spider_pig"
+		]
+	]
+}

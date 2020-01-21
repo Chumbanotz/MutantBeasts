@@ -79,7 +79,7 @@ public class MutantCreeperEntity extends CreeperEntity {
 		this.goalSelector.addGoal(5, new LookRandomlyGoal(this));
 		this.targetSelector.addGoal(1, new MBHurtByTargetGoal(this));
 		this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, PlayerEntity.class, true).setUnseenMemoryTicks(300));
-		this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, AnimalEntity.class, 100, true, true, EntityUtil::isMobFeline));
+		this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, AnimalEntity.class, 100, true, true, EntityUtil::isFeline));
 	}
 
 	@Override
@@ -87,7 +87,6 @@ public class MutantCreeperEntity extends CreeperEntity {
 		super.registerAttributes();
 		this.getAttribute(SharedMonsterAttributes.MAX_HEALTH).setBaseValue(120.0D);
 		this.getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).setBaseValue(5.0D);
-		this.getAttribute(SharedMonsterAttributes.ATTACK_KNOCKBACK).setBaseValue(1.5D);
 		this.getAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(0.26D);
 		this.getAttribute(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(24.0D);
 		this.getAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(1.0D);
@@ -165,7 +164,7 @@ public class MutantCreeperEntity extends CreeperEntity {
 		if (source.isExplosion()) {
 			float healAmount = amount / 2.0F;
 
-			if (!(source.getTrueSource() instanceof MutantCreeperEntity) && this.isAlive() && this.getHealth() < this.getMaxHealth()) {
+			if (!(source.getTrueSource() instanceof MutantCreeperEntity) && this.getHealth() < this.getMaxHealth()) {
 				this.heal(healAmount);
 				if (this.world instanceof ServerWorld) {
 					for (int i = 0; i < (int)(healAmount / 2.0F); i++) {
@@ -231,10 +230,9 @@ public class MutantCreeperEntity extends CreeperEntity {
 
 		if (!this.world.isRemote) {
 			if (this.isJumpAttacking()) {
-				if (this.onGround) {
+				if (this.onGround || this.world.containsAnyLiquid(this.getBoundingBox())) {
 					this.setJumpAttacking(false);
-					MutatedExplosion.Mode mode = net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this.world, this) ? MutatedExplosion.Mode.DESTROY : MutatedExplosion.Mode.NONE;
-					MutatedExplosion.explode(this.world, this, this.posX, this.posY, this.posZ, this.getPowered() ? 6.0F : 4.0F, false, mode);
+					MutatedExplosion.create(this, this.getPowered() ? 6.0F : 4.0F, false, MutatedExplosion.Mode.DESTROY);
 				}
 			} else if (this.isAlive() && !this.isAIDisabled() && this.isEntityInsideOpaqueBlock() && this.ticksExisted % 30 == 0) {
 				this.setJumpAttacking(true);
@@ -258,8 +256,9 @@ public class MutantCreeperEntity extends CreeperEntity {
 		livingEntity.velocityChanged = true;
 	}
 
+	@Override
 	@OnlyIn(Dist.CLIENT)
-	public int getExplosionColor() {
+	public float getCreeperFlashIntensity(float partialTicks) {
 		float f = (float)this.deathTime / (float)MAX_DEATH_TIME;
 
 		if (this.isCharging()) {
@@ -267,7 +266,7 @@ public class MutantCreeperEntity extends CreeperEntity {
 			f = i < 10 ? 0.6F : 0.0F;
 		}
 
-		return (int)(f * 255.0F);
+		return f * 255.0F;
 	}
 
 	@Override
@@ -280,19 +279,22 @@ public class MutantCreeperEntity extends CreeperEntity {
 				this.world.playMovingSound(null, this, MBSoundEvents.ENTITY_MUTANT_CREEPER_DEATH, this.getSoundCategory(), 2.0F, 1.0F);
 			}
 
-			if (cause.getTrueSource() != null && cause.getTrueSource() instanceof PlayerEntity) {
-				this.recentlyHit = Integer.MAX_VALUE;
+			if (cause.getTrueSource() instanceof PlayerEntity) {
 				this.attackingPlayer = (PlayerEntity)cause.getTrueSource();
+			}
+
+			if (this.recentlyHit > 0) {
+				this.recentlyHit += MAX_DEATH_TIME;
 			}
 		}
 	}
 
 	@Override
 	protected void onDeathUpdate() {
-		float f = this.getPowered() ? 12.0F : 8.0F;
-		float f1 = f * 1.5F;
+		float power = this.getPowered() ? 12.0F : 8.0F;
+		float radius = power * 1.5F;
 
-		for (Entity entity : this.world.getEntitiesInAABBexcluding(this, this.getBoundingBox().grow((double)f1), EntityPredicates.CAN_AI_TARGET)) {
+		for (Entity entity : this.world.getEntitiesInAABBexcluding(this, this.getBoundingBox().grow((double)radius), EntityPredicates.CAN_AI_TARGET)) {
 			double x = this.posX - entity.posX;
 			double y = this.posY - entity.posY;
 			double z = this.posZ - entity.posZ;
@@ -309,8 +311,7 @@ public class MutantCreeperEntity extends CreeperEntity {
 
 		if (++this.deathTime == MAX_DEATH_TIME) {
 			if (!this.world.isRemote) {
-				MutatedExplosion.Mode mode = net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this.world, this) ? MutatedExplosion.Mode.DESTROY : MutatedExplosion.Mode.NONE;
-				MutatedExplosion.explode(this.world, this, this.posX, this.posY, this.posZ, f, this.isBurning(), mode);
+				MutatedExplosion.create(this, power, this.isBurning(), MutatedExplosion.Mode.BREAK);
 				EntityUtil.spawnLingeringCloud(this);
 				super.onDeath(this.deathCause);
 
@@ -335,6 +336,7 @@ public class MutantCreeperEntity extends CreeperEntity {
 		return this.getPowered();
 	}
 
+	@Deprecated
 	@Override
 	public int getCreeperState() {
 		return -1;
@@ -346,8 +348,8 @@ public class MutantCreeperEntity extends CreeperEntity {
 	}
 
 	@Override
-	public float getExplosionResistance(Explosion explosionIn, IBlockReader worldIn, BlockPos pos, BlockState blockStateIn, IFluidState fluidState, float explosionResistance) {
-		return this.getPowered() && !net.minecraft.tags.BlockTags.WITHER_IMMUNE.contains(blockStateIn.getBlock()) ? Math.min(0.8F, explosionResistance) : explosionResistance;
+	public float getExplosionResistance(Explosion explosionIn, IBlockReader worldIn, BlockPos pos, BlockState blockStateIn, IFluidState fluidState, float resistance) {
+		return this.getPowered() && !blockStateIn.isAir(worldIn, pos) && !net.minecraft.tags.BlockTags.WITHER_IMMUNE.contains(blockStateIn.getBlock()) ? Math.min(0.8F, resistance) : resistance;
 	}
 
 	@Override
@@ -369,7 +371,7 @@ public class MutantCreeperEntity extends CreeperEntity {
 
 	@Override
 	protected SoundEvent getDeathSound() {
-		return null;
+		return MBSoundEvents.ENTITY_MUTANT_CREEPER_HURT;
 	}
 
 	@Override

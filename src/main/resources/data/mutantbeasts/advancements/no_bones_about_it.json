@@ -1,0 +1,56 @@
+{
+	"parent": "mutantbeasts:root",
+	"display": {
+		"icon": {
+			"item": "mutantbeasts:mutant_skeleton_skull"
+		},
+		"title": {
+			"translate": "advancements.mutantbeasts.no_bones_about_it.title"
+		},
+		"description": {
+			"translate": "advancements.mutantbeasts.no_bones_about_it.description"
+		},
+		"frame": "goal",
+		"show_toast": true,
+		"announce_to_chat": true,
+		"hidden": true
+	},
+	"criteria": {
+		"killed_mutant_skeleton": {
+			"trigger": "minecraft:impossible",
+			"conditions": {
+				"entity": {
+					"type": "mutantbeasts:mutant_skeleton"
+				},
+				"killing_blow": {
+					"is_projectile": true,
+					"source_entity": {
+						"type": "minecraft:arrow",
+						"nbt": "{ShotFromCrossbow:1b}"
+					},
+					"direct_entity": {
+						"equipment": {
+							"head": {
+								"item": "mutantbeasts:mutant_skeleton_skull"
+							},
+							"chest": {
+								"item": "mutantbeasts:mutant_skeleton_chestplate"
+							},
+							"legs": {
+								"item": "mutantbeasts:mutant_skeleton_leggings"
+							},
+							"feet": {
+								"item": "mutantbeasts:mutant_skeleton_boots"
+							}
+						}
+					}
+				}
+			}
+		}
+	},
+	"requirements": [
+		[
+			"killed_mutant_skeleton"
+		]
+	]
+}

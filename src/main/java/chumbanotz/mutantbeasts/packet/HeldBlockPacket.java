@@ -15,7 +15,7 @@ public class HeldBlockPacket {
 	private short blockId;
 	private byte blockIndex;
 
-	public HeldBlockPacket(MutantEndermanEntity enderman, int bId, int index, int data) {
+	public HeldBlockPacket(MutantEndermanEntity enderman, int bId, int index) {
 		this.entityId = enderman.getEntityId();
 		this.blockId = (short)bId;
 		this.blockIndex = (byte)index;

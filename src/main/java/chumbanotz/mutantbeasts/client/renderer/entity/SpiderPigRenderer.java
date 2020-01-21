@@ -14,8 +14,8 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 
 @OnlyIn(Dist.CLIENT)
 public class SpiderPigRenderer extends MutantRenderer<SpiderPigEntity, SpiderPigModel> {
-	private static final ResourceLocation TEXTURE = MutantBeasts.getEntityTexture("spider_pig");
-	private static final ResourceLocation SADDLE_TEXTURE = MutantBeasts.getEntityTexture("spider_pig_saddle");
+	private static final ResourceLocation TEXTURE = MutantBeasts.getEntityTexture("spider_pig/spider_pig");
+	private static final ResourceLocation SADDLE_TEXTURE = MutantBeasts.getEntityTexture("spider_pig/saddle");
 
 	public SpiderPigRenderer(EntityRendererManager manager) {
 		super(manager, new SpiderPigModel(0.0F), 0.8F);

@@ -1,0 +1,33 @@
+{
+	"parent": "mutantbeasts:root",
+	"display": {
+		"icon": {
+			"item": "minecraft:creeper_head"
+		},
+		"title": {
+			"translate": "advancements.mutantbeasts.you_da_bomby.title"
+		},
+		"description": {
+			"translate": "advancements.mutantbeasts.you_da_bomby.description"
+		},
+		"frame": "task",
+		"show_toast": true,
+		"announce_to_chat": true,
+		"hidden": false
+	},
+	"criteria": {
+		"tamed_creeper_minion": {
+			"trigger": "minecraft:tame_animal",
+			"conditions": {
+				"entity": {
+					"type": "mutantbeasts:creeper_minion"
+				}
+			}
+		}
+	},
+	"requirements": [
+		[
+			"tamed_creeper_minion"
+		]
+	]
+}

@@ -35,7 +35,7 @@ public abstract class MutantRenderer<T extends MobEntity, M extends EntityModel<
 		float hurtColor = ((float)entitylivingbaseIn.hurtTime - partialTicks) / (float)entitylivingbaseIn.maxHurtTime;
 		int colorMuliplier = this.getColorMultiplier(entitylivingbaseIn, entitylivingbaseIn.getBrightness(), partialTicks);
 		boolean hasColorMuliplier = (colorMuliplier >> 24 & 255) > 0;
-		boolean wasHurt = entitylivingbaseIn.hurtTime > 0 || !(this instanceof MutantCreeperRenderer) && !(this instanceof MutantZombieRenderer) && !(this instanceof MutantEndermanRenderer) && entitylivingbaseIn.deathTime > 0;
+		boolean wasHurt = entitylivingbaseIn.hurtTime > 0;
 		if (!hasColorMuliplier && !wasHurt) {
 			return false;
 		} else if (!hasColorMuliplier && !combineTextures) {

@@ -29,10 +29,10 @@ import net.minecraftforge.fml.network.FMLPlayMessages;
 import net.minecraftforge.fml.network.NetworkHooks;
 
 public class ChemicalXEntity extends ProjectileItemEntity {
-	private static final Predicate<LivingEntity> IS_APPLICABLE = target -> {
+	public static final Predicate<LivingEntity> IS_APPLICABLE = target -> {
 		return target.isNonBoss() && !ChemicalXEntity.MUTATIONS.values().contains(target.getType()) && target.getType() != MBEntityType.CREEPER_MINION;
 	};
-	private static final EntityPredicate CAN_TARGET = new EntityPredicate().setDistance(144.0D).setSkipAttackChecks().allowInvulnerable().setCustomPredicate(IS_APPLICABLE);
+	public static final EntityPredicate CAN_TARGET = new EntityPredicate().setDistance(144.0D).setSkipAttackChecks().allowInvulnerable().setCustomPredicate(IS_APPLICABLE);
 	private static final Map<EntityType<? extends MobEntity>, EntityType<? extends MobEntity>> MUTATIONS = Util.make(new HashMap<>(), map -> {
 		 map.put(EntityType.CREEPER, MBEntityType.MUTANT_CREEPER);
 		 map.put(EntityType.ENDERMAN, MBEntityType.MUTANT_ENDERMAN);
@@ -99,8 +99,9 @@ public class ChemicalXEntity extends ProjectileItemEntity {
 			}
 
 			if (target != null) {
-				SkullSpiritEntity spirit = new SkullSpiritEntity(this.world, target);
+				SkullSpiritEntity spirit = MBEntityType.SKULL_SPIRIT.create(this.world);
 				spirit.setPosition(this.posX, this.posY, this.posZ);
+				spirit.setTarget(target);
 				this.world.addEntity(spirit);
 			}
 
@@ -112,12 +113,14 @@ public class ChemicalXEntity extends ProjectileItemEntity {
 	}
 
 	public static MobEntity getMutantOf(MobEntity target) {
-		if (target.getType() == EntityType.PIG && (!target.isPotionActive(Effects.NAUSEA) || target.getActivePotionEffect(Effects.NAUSEA).getAmplifier() != 99)) {
+		if (!MUTATIONS.keySet().contains(target.getType())) {
+			return null;
+		} else if (target.getType() == EntityType.PIG && (!target.isPotionActive(Effects.NAUSEA) || target.getActivePotionEffect(Effects.NAUSEA).getAmplifier() != 99)) {
 			return null;
 		} else if (target.getType() == EntityType.ZOMBIE && target.isChild()) {
 			return null;
 		} else {
-			return MUTATIONS.keySet().contains(target.getType()) ? MUTATIONS.get(target.getType()).create(target.world) : null;
+			return MUTATIONS.get(target.getType()).create(target.world);
 		}
 	}
 

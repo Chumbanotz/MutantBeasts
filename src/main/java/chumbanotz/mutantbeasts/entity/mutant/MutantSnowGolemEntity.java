@@ -1,16 +1,17 @@
 package chumbanotz.mutantbeasts.entity.mutant;
 
 import java.util.EnumSet;
-import java.util.Optional;
 
 import chumbanotz.mutantbeasts.entity.ai.goal.FleeRainGoal;
 import chumbanotz.mutantbeasts.entity.ai.goal.MBHurtByTargetGoal;
 import chumbanotz.mutantbeasts.entity.projectile.ThrowableBlockEntity;
 import chumbanotz.mutantbeasts.pathfinding.MBGroundPathNavigator;
+import chumbanotz.mutantbeasts.util.EntityUtil;
 import chumbanotz.mutantbeasts.util.MBSoundEvents;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntitySize;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.IRangedAttackMob;
@@ -21,20 +22,17 @@ import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.goal.LookAtGoal;
 import net.minecraft.entity.ai.goal.LookRandomlyGoal;
-import net.minecraft.entity.ai.goal.MoveTowardsRestrictionGoal;
 import net.minecraft.entity.ai.goal.MoveTowardsVillageGoal;
 import net.minecraft.entity.ai.goal.NearestAttackableTargetGoal;
 import net.minecraft.entity.ai.goal.RangedAttackGoal;
 import net.minecraft.entity.ai.goal.WaterAvoidingRandomWalkingGoal;
-import net.minecraft.entity.item.HangingEntity;
 import net.minecraft.entity.monster.CreeperEntity;
 import net.minecraft.entity.monster.IMob;
 import net.minecraft.entity.passive.GolemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.SnowballEntity;
-import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.NBTUtil;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
@@ -43,7 +41,6 @@ import net.minecraft.particles.ParticleTypes;
 import net.minecraft.pathfinding.PathNavigator;
 import net.minecraft.pathfinding.PathNodeType;
 import net.minecraft.potion.Effects;
-import net.minecraft.tags.BlockTags;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.Hand;
 import net.minecraft.util.SoundEvent;
@@ -55,7 +52,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
 public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackMob {
-	private static final DataParameter<Optional<BlockState>> THROWN_BLOCK = EntityDataManager.createKey(MutantSnowGolemEntity.class, DataSerializers.OPTIONAL_BLOCK_STATE);
+	private static final DataParameter<Byte> PUMPKIN_EQUIPPED = EntityDataManager.createKey(MutantSnowGolemEntity.class, DataSerializers.BYTE);
 	private boolean isThrowing;
 	private int throwingTick;
 
@@ -69,12 +66,11 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 		this.goalSelector.addGoal(1, new FleeRainGoal(this, 1.1D));
 		this.goalSelector.addGoal(2, new RangedAttackGoal(this, 1.1D, 30, 12.0F));
 		this.goalSelector.addGoal(3, new MutantSnowGolemEntity.ThrowIceGoal());
-		this.goalSelector.addGoal(4, new MoveTowardsRestrictionGoal(this, 1.1D));
-		this.goalSelector.addGoal(5, new MoveTowardsVillageGoal(this, 1.0D));
-		this.goalSelector.addGoal(6, new WaterAvoidingRandomWalkingGoal(this, 1.0D, 1.0000001E-5F));
-		this.goalSelector.addGoal(7, new LookAtGoal(this, PlayerEntity.class, 6.0F));
-		this.goalSelector.addGoal(8, new LookAtGoal(this, MobEntity.class, 6.0F));
-		this.goalSelector.addGoal(9, new LookRandomlyGoal(this));
+		this.goalSelector.addGoal(4, new MoveTowardsVillageGoal(this, 1.0D));
+		this.goalSelector.addGoal(5, new WaterAvoidingRandomWalkingGoal(this, 1.0D, 1.0000001E-5F));
+		this.goalSelector.addGoal(6, new LookAtGoal(this, PlayerEntity.class, 6.0F));
+		this.goalSelector.addGoal(7, new LookAtGoal(this, MobEntity.class, 6.0F));
+		this.goalSelector.addGoal(8, new LookRandomlyGoal(this));
 		this.targetSelector.addGoal(1, new MBHurtByTargetGoal(this));
 		this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, MobEntity.class, 10, true, false, entity -> {
 			return entity instanceof IMob && (!(entity instanceof CreeperEntity) || ((CreeperEntity)entity).getAttackTarget() == this);
@@ -91,11 +87,16 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 	@Override
 	protected void registerData() {
 		super.registerData();
-		this.dataManager.register(THROWN_BLOCK, Optional.of(Blocks.ICE.getDefaultState()));
+		this.dataManager.register(PUMPKIN_EQUIPPED, (byte)16);
 	}
 
-	public BlockState getThrownBlock() {
-		return this.dataManager.get(THROWN_BLOCK).orElse(Blocks.ICE.getDefaultState());
+	public boolean isPumpkinEquipped() {
+		return (this.dataManager.get(PUMPKIN_EQUIPPED) & 16) != 0;
+	}
+
+	public void setPumpkinEquipped(boolean pumpkinEquipped) {
+		byte b0 = this.dataManager.get(PUMPKIN_EQUIPPED);
+		this.dataManager.set(PUMPKIN_EQUIPPED, pumpkinEquipped ? (byte)(b0 | 16) : (byte)(b0 & -17));
 	}
 
 	@Override
@@ -141,7 +142,7 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 			}
 		}
 
-		if (this.getHealth() > 0.0F && biomeTemp < 0.5F && this.ticksExisted % 200 == 0 && this.getHealth() < this.getMaxHealth()) {
+		if (this.isAlive() && biomeTemp < 0.5F && this.ticksExisted % 200 == 0 && this.getHealth() < this.getMaxHealth()) {
 			this.heal(1.0F);
 		}
 
@@ -156,7 +157,6 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 						BlockPos blockpos = new BlockPos(x + i, y, z + j);
 						BlockPos blockpos1 = new BlockPos(x + i, y - 1, z + j);
 						BlockPos blockpos2 = new BlockPos(x + i, y + 1, z + j);
-
 						boolean placeSnow = biomeTemp < 0.95F && this.world.isAirBlock(blockpos) && Blocks.SNOW.getDefaultState().isValidPosition(this.world, blockpos);
 						boolean placeIce = this.world.getBlockState(blockpos1).getBlock() == Blocks.WATER;
 
@@ -183,10 +183,26 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 		}
 	}
 
+	@Override
+	protected boolean processInteract(PlayerEntity player, Hand hand) {
+		if (player.getHeldItem(hand).getItem() == Items.SHEARS && this.isPumpkinEquipped()) {
+			if (!this.world.isRemote) {
+				this.setPumpkinEquipped(false);
+			}
+
+			player.getHeldItem(hand).damageItem(1, player, e -> e.sendBreakAnimation(hand));
+			return true;
+		}
+
+		return false;
+	}
+
+	@OnlyIn(Dist.CLIENT)
 	public boolean isThrowing() {
 		return this.isThrowing;
 	}
 
+	@OnlyIn(Dist.CLIENT)
 	public int getThrowingTick() {
 		return this.throwingTick;
 	}
@@ -206,53 +222,10 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 		} else if (id == 4) {
 			this.world.addParticle(ParticleTypes.FALLING_WATER, this.posX + (double)(this.rand.nextFloat() * this.getWidth() * 1.5F) - (double)this.getWidth(), this.posY - 0.15D + (double)(this.rand.nextFloat() * this.getHeight()), this.posZ + (double)(this.rand.nextFloat() * this.getWidth() * 1.5F) - (double)this.getWidth(), 0.0D, 0.0D, 0.0D);
 		} else if (id == 5 || id == 6 || id == 7) {
-			for (int i = 0; i < (id == 5 ? 1 : id == 6 ? 10 : 30); ++i) {
-				double d0 = this.rand.nextGaussian() * 0.02D;
-				double d1 = this.rand.nextGaussian() * 0.02D;
-				double d2 = this.rand.nextGaussian() * 0.02D;
-				this.world.addParticle(id == 5 ? ParticleTypes.HEART : new BlockParticleData(ParticleTypes.BLOCK, Blocks.SNOW.getDefaultState()), this.posX + (double)(this.rand.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(), this.posY + 0.5D + (double)(this.rand.nextFloat() * this.getHeight()), this.posZ + (double)(this.rand.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(), d0, d1, d2);
-			}
+			EntityUtil.spawnParticlesAtEntity(this, id == 5 ? ParticleTypes.HEART : new BlockParticleData(ParticleTypes.BLOCK, Blocks.SNOW.getDefaultState()), id == 5 ? 1 : id == 6 ? 10 : 30);
 		} else {
 			super.handleStatusUpdate(id);
 		}
-	}
-
-	@Override
-	protected void updateLeashedState() {
-		super.updateLeashedState();
-		if (this.getLeashHolder() instanceof PlayerEntity) {
-			if (this.detachHome()) {
-				this.setHomePosAndDistance(BlockPos.ZERO, -1);
-			}
-		} else if (this.getLeashHolder() instanceof HangingEntity) {
-			if (!this.detachHome()) {
-				int i = (int)this.getAttribute(SharedMonsterAttributes.FOLLOW_RANGE).getValue();
-				this.setHomePosAndDistance(((HangingEntity)this.getLeashHolder()).getHangingPosition(), i);
-			}
-		}
-	}
-
-	@Override
-	public void setHomePosAndDistance(BlockPos pos, int distance) {
-		if (!this.getLeashed()) {
-			super.setHomePosAndDistance(pos, distance);
-		}
-	}
-
-	@Override
-	protected boolean processInteract(PlayerEntity player, Hand hand) {
-		ItemStack stack = player.getHeldItem(hand);
-		if (!stack.isEmpty()) {
-			for (Block block : BlockTags.ICE.getAllElements()) {
-				if (stack.getItem() == block.asItem() && this.getThrownBlock() != block.getDefaultState()) {
-					this.dataManager.set(THROWN_BLOCK, Optional.of(block.getDefaultState()));
-					stack.shrink(1);
-					return true;
-				}
-			}
-		}
-
-		return false;
 	}
 
 	@Override
@@ -282,20 +255,27 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 		}
 	}
 
+	public static boolean canHarm(LivingEntity attacker, Entity target) {
+		if (!(attacker instanceof MutantSnowGolemEntity) || attacker == target) {
+			return false;
+		} else if (target instanceof MobEntity) {
+			return target instanceof IMob || ((MobEntity)target).getAttackTarget() == attacker;
+		} else {
+			return ((MutantSnowGolemEntity)attacker).getAttackTarget() == target;
+		}
+	}
+
 	@Override
 	public void writeAdditional(CompoundNBT compound) {
 		super.writeAdditional(compound);
-		if (this.detachHome()) {
-			compound.put("HomePosition", NBTUtil.writeBlockPos(this.getHomePosition()));
-			compound.putInt("MaximumHomeDistance", (int)this.getMaximumHomeDistance());
-		}
+		compound.putBoolean("Pumpkin", this.isPumpkinEquipped());
 	}
 
 	@Override
 	public void readAdditional(CompoundNBT compound) {
 		super.readAdditional(compound);
-		if (compound.contains("HomePosition") && compound.contains("MaximumHomeDistance")) {
-			this.setHomePosAndDistance(NBTUtil.readBlockPos(compound.getCompound("HomePosition")), compound.getInt("MaximumHomeDistance"));
+		if (compound.contains("Pumpkin")) {
+			this.setPumpkinEquipped(compound.getBoolean("Pumpkin"));
 		}
 	}
 
@@ -331,7 +311,7 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 
 		@Override
 		public void startExecuting() {
-			this.prevPos = new BlockPos(MathHelper.floor(posX), MathHelper.floor(getBoundingBox().minY) - 1, MathHelper.floor(posZ));
+			this.prevPos = new BlockPos(posX, getBoundingBox().minY - 1, posZ);
 			setMotion(((rand.nextFloat() - rand.nextFloat()) * 0.9F), 1.5D, ((rand.nextFloat() - rand.nextFloat()) * 0.9F));
 			attackEntityFrom(DamageSource.DROWN, 16.0F);
 			// world.setEntityState(MutantSnowGolemEntity.this, (byte)6);
@@ -400,8 +380,10 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 					y++;
 					continue;
 				}
+
 				break;
 			}
+
 			return y;
 		}
 	}

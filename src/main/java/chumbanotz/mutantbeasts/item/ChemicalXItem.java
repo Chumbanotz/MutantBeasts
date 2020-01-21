@@ -77,7 +77,7 @@ public class ChemicalXItem extends Item {
 		@Override
 		public boolean isIngredient(ItemStack ingredient) {
 			Item item = ingredient.getItem();
-			return item == MBItems.ENDERSOUL_HAND || item == MBItems.HULK_HAMMER || item == MBItems.CREEPER_SHARD;
+			return item == MBItems.ENDERSOUL_HAND || item == MBItems.HULK_HAMMER || item == MBItems.CREEPER_SHARD || item == MBItems.MUTANT_SKELETON_SKULL;
 		}
 
 		@Override

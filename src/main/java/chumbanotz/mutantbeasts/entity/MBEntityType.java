@@ -69,11 +69,11 @@ public class MBEntityType {
 		build("endersoul_fragment", EntityType.Builder.<EndersoulFragmentEntity>create(EndersoulFragmentEntity::new, EntityClassification.MISC).setCustomClientFactory(EndersoulFragmentEntity::new).setTrackingRange(64).setUpdateInterval(10).size(0.75F, 0.75F));
 		build("mutant_arrow", EntityType.Builder.<MutantArrowEntity>create(MutantArrowEntity::new, EntityClassification.MISC).setCustomClientFactory(MutantArrowEntity::new).setTrackingRange(80).setUpdateInterval(3));
 		build("mutant_creeper", EntityType.Builder.create(MutantCreeperEntity::new, EntityClassification.MONSTER).size(1.6F, 2.8F), 5349438, 11013646);
-		build("mutant_enderman", EntityType.Builder.create(MutantEndermanEntity::new, EntityClassification.MONSTER).size(1.2F, 4.2F), 1447446, 8860812);
+		build("mutant_enderman", EntityType.Builder.create(MutantEndermanEntity::new, EntityClassification.MONSTER).size(0.9F, 4.2F), 1447446, 8860812);
 		build("mutant_skeleton", EntityType.Builder.create(MutantSkeletonEntity::new, EntityClassification.MONSTER).size(0.9F, 3.6F), 12698049, 6310217);
 		build("mutant_snow_golem", EntityType.Builder.create(MutantSnowGolemEntity::new, EntityClassification.MISC).size(0.9F, 2.2F), 15073279, 16753434);
 		build("mutant_zombie", EntityType.Builder.create(MutantZombieEntity::new, EntityClassification.MONSTER).size(1.8F, 3.2F), 7969893, 44975);
-		build("skull_spirit", EntityType.Builder.<SkullSpiritEntity>create(SkullSpiritEntity::new, EntityClassification.MISC).setCustomClientFactory(SkullSpiritEntity::new).setTrackingRange(160).setUpdateInterval(20).setShouldReceiveVelocityUpdates(false).size(0.1F, 0.1F));
+		build("skull_spirit", EntityType.Builder.<SkullSpiritEntity>create(SkullSpiritEntity::new, EntityClassification.MISC).setCustomClientFactory(SkullSpiritEntity::new).setTrackingRange(160).setUpdateInterval(20).setShouldReceiveVelocityUpdates(false).size(0.0F, 0.0F));
 		build("spider_pig", EntityType.Builder.create(SpiderPigEntity::new, EntityClassification.CREATURE).size(1.4F, 0.9F), 3419431, 15771042);
 		build("throwable_block", EntityType.Builder.<ThrowableBlockEntity>create(ThrowableBlockEntity::new, EntityClassification.MISC).setCustomClientFactory(ThrowableBlockEntity::new).setTrackingRange(64).setUpdateInterval(100).size(1.0F, 1.0F));
 	}

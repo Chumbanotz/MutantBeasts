@@ -73,8 +73,7 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 		this.leg1.setRotationPoint(0.0F, -2.0F, 0.0F);
 		this.legjoint1.addChild(this.leg1);
 		this.leg2 = new RendererModel(this, 0, 34);
-		this.leg2.mirror = true;
-		this.leg2.addBox(-1.5F, 0.0F, -1.5F, 3, 24, 3, 0.5F);
+		this.leg2.addBox(-1.5F, 0.0F, -1.5F, 3, 24, 3, 0.5F, true);
 		this.leg2.setRotationPoint(0.0F, -2.0F, 0.0F);
 		this.legjoint2.addChild(this.leg2);
 		this.foreleg1 = new RendererModel(this, 12, 34);
@@ -82,8 +81,7 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 		this.foreleg1.setRotationPoint(0.0F, 23.0F, 0.0F);
 		this.leg1.addChild(this.foreleg1);
 		this.foreleg2 = new RendererModel(this, 12, 34);
-		this.foreleg2.mirror = true;
-		this.foreleg2.addBox(-1.5F, 0.0F, -1.5F, 3, 24, 3, 0.5F);
+		this.foreleg2.addBox(-1.5F, 0.0F, -1.5F, 3, 24, 3, 0.5F, true);
 		this.foreleg2.setRotationPoint(0.0F, 23.0F, 0.0F);
 		this.leg2.addChild(this.foreleg2);
 	}
@@ -154,13 +152,13 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 		}
 
 		if (enderman.getAttackID() == MutantEndermanEntity.MELEE_ATTACK) {
-			arm = enderman.getMeleeArm();
+			arm = enderman.getActiveArm();
 			this.animateMelee(enderman.getAttackTick(), arm);
 			walkAnim[arm] = 0.0F;
 		}
 
 		if (enderman.getAttackID() == MutantEndermanEntity.THROW_ATTACK) {
-			arm = enderman.getThrowingArm();
+			arm = enderman.getActiveArm();
 			this.animateThrowBlock(enderman.getAttackTick(), arm);
 		}
 
@@ -202,42 +200,24 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 		this.neck.rotateAngleX -= breatheAnim * 0.02F;
 		this.rightArm.arm.rotateAngleZ += breatheAnim * 0.004F;
 		this.leftArm.arm.rotateAngleZ -= breatheAnim * 0.004F;
-		RendererModel[] arr$ = this.rightArm.finger;
-		int len$ = arr$.length;
-
-		int i$;
-		RendererModel finger;
-		for (i$ = 0; i$ < len$; ++i$) {
-			finger = arr$[i$];
+		for (RendererModel finger : this.rightArm.finger) {
 			finger.rotateAngleZ += breatheAnim * 0.05F;
 		}
 
 		this.rightArm.thumb.rotateAngleZ -= breatheAnim * 0.05F;
-		arr$ = this.leftArm.finger;
-		len$ = arr$.length;
-
-		for (i$ = 0; i$ < len$; ++i$) {
-			finger = arr$[i$];
+		for (RendererModel finger : this.leftArm.finger) {
 			finger.rotateAngleZ -= breatheAnim * 0.05F;
 		}
 
 		this.leftArm.thumb.rotateAngleZ += breatheAnim * 0.05F;
 		this.lowerRightArm.arm.rotateAngleZ += breatheAnim * 0.002F;
 		this.lowerLeftArm.arm.rotateAngleZ -= breatheAnim * 0.002F;
-		arr$ = this.lowerRightArm.finger;
-		len$ = arr$.length;
-
-		for (i$ = 0; i$ < len$; ++i$) {
-			finger = arr$[i$];
+		for (RendererModel finger : this.lowerRightArm.finger) {
 			finger.rotateAngleZ += breatheAnim * 0.02F;
 		}
 
 		this.lowerRightArm.thumb.rotateAngleZ -= breatheAnim * 0.02F;
-		arr$ = this.lowerLeftArm.finger;
-		len$ = arr$.length;
-
-		for (i$ = 0; i$ < len$; ++i$) {
-			finger = arr$[i$];
+		for (RendererModel finger : this.lowerLeftArm.finger) {
 			finger.rotateAngleZ -= breatheAnim * 0.02F;
 		}
 
@@ -265,7 +245,6 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 		}
 
 		float f = MathHelper.sin(tick * (float)Math.PI / 2.0F);
-		int i;
 		if (armID == 1) {
 			this.rightArm.arm.rotateAngleZ += f * 0.8F;
 			this.rightArm.forearm.rotateAngleZ += f * 0.6F;
@@ -273,8 +252,8 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 			this.rightArm.finger[0].rotateAngleX += -f * 0.2F;
 			this.rightArm.finger[2].rotateAngleX += f * 0.2F;
 
-			for (i = 0; i < this.rightArm.finger.length; ++i) {
-				this.rightArm.finger[i].rotateAngleZ += f * 0.6F;
+			for (RendererModel finger : this.rightArm.finger) {
+				finger.rotateAngleZ += f * 0.6F;
 			}
 
 			this.rightArm.thumb.rotateAngleZ += -f * 0.4F;
@@ -285,8 +264,8 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 			this.leftArm.finger[0].rotateAngleX += -f * 0.2F;
 			this.leftArm.finger[2].rotateAngleX += f * 0.2F;
 
-			for (i = 0; i < this.leftArm.finger.length; ++i) {
-				this.leftArm.finger[i].rotateAngleZ += -f * 0.6F;
+			for (RendererModel finger : this.leftArm.finger) {
+				finger.rotateAngleZ += -f * 0.6F;
 			}
 
 			this.leftArm.thumb.rotateAngleZ += f * 0.4F;
@@ -297,8 +276,8 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 			this.lowerRightArm.finger[0].rotateAngleX += -f * 0.2F;
 			this.lowerRightArm.finger[2].rotateAngleX += f * 0.2F;
 
-			for (i = 0; i < this.lowerRightArm.finger.length; ++i) {
-				this.lowerRightArm.finger[i].rotateAngleZ += f * 0.6F;
+			for (RendererModel finger : this.lowerRightArm.finger) {
+				finger.rotateAngleZ += f * 0.6F;
 			}
 
 			this.lowerRightArm.thumb.rotateAngleZ += -f * 0.4F;
@@ -309,8 +288,8 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 			this.lowerLeftArm.finger[0].rotateAngleX += -f * 0.2F;
 			this.lowerLeftArm.finger[2].rotateAngleX += f * 0.2F;
 
-			for (i = 0; i < this.lowerLeftArm.finger.length; ++i) {
-				this.lowerLeftArm.finger[i].rotateAngleZ += -f * 0.6F;
+			for (RendererModel finger : this.lowerLeftArm.finger) {
+				finger.rotateAngleZ += -f * 0.6F;
 			}
 
 			this.lowerLeftArm.thumb.rotateAngleZ += f * 0.4F;
@@ -374,7 +353,6 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 		float tick;
 		float f;
 		float f1;
-		int i;
 		if (armID == 1) {
 			if (fullTick < 4) {
 				tick = ((float)fullTick + this.partialTick) / 4.0F;
@@ -387,8 +365,8 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 				this.rightArm.finger[0].rotateAngleX += -f * 0.2F;
 				this.rightArm.finger[2].rotateAngleX += f * 0.2F;
 
-				for (i = 0; i < this.rightArm.finger.length; ++i) {
-					this.rightArm.finger[i].rotateAngleZ += f * 0.6F;
+				for (RendererModel finger : this.rightArm.finger) {
+					finger.rotateAngleZ += f * 0.6F;
 				}
 
 				this.rightArm.thumb.rotateAngleZ += -f * 0.4F;
@@ -411,8 +389,8 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 				this.leftArm.finger[0].rotateAngleX += -f * 0.2F;
 				this.leftArm.finger[2].rotateAngleX += f * 0.2F;
 
-				for (i = 0; i < this.leftArm.finger.length; ++i) {
-					this.leftArm.finger[i].rotateAngleZ += -f * 0.6F;
+				for (RendererModel finger : this.leftArm.finger) {
+					finger.rotateAngleZ += -f * 0.6F;
 				}
 
 				this.leftArm.thumb.rotateAngleZ += f * 0.4F;
@@ -435,8 +413,8 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 				this.lowerRightArm.finger[0].rotateAngleX += -f * 0.2F;
 				this.lowerRightArm.finger[2].rotateAngleX += f * 0.2F;
 
-				for (i = 0; i < this.lowerRightArm.finger.length; ++i) {
-					this.lowerRightArm.finger[i].rotateAngleZ += f * 0.6F;
+				for (RendererModel finger : this.lowerRightArm.finger) {
+					finger.rotateAngleZ += f * 0.6F;
 				}
 
 				this.lowerRightArm.thumb.rotateAngleZ += -f * 0.4F;
@@ -459,8 +437,8 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 				this.lowerLeftArm.finger[0].rotateAngleX += -f * 0.2F;
 				this.lowerLeftArm.finger[2].rotateAngleX += f * 0.2F;
 
-				for (i = 0; i < this.lowerLeftArm.finger.length; ++i) {
-					this.lowerLeftArm.finger[i].rotateAngleZ += -f * 0.6F;
+				for (RendererModel finger : this.lowerLeftArm.finger) {
+					finger.rotateAngleZ += -f * 0.6F;
 				}
 
 				this.lowerLeftArm.thumb.rotateAngleZ += f * 0.4F;
@@ -851,13 +829,11 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 			this.finger = new RendererModel[3];
 			this.foreFinger = new RendererModel[3];
 			this.arm = new ArmRenderer(model, 92, 0);
-			this.arm.mirror = !this.right;
-			this.arm.addBox(-1.5F, 0.0F, -1.5F, 3, 22, 3, 0.1F);
+			this.arm.addBox(-1.5F, 0.0F, -1.5F, 3, 22, 3, 0.1F, !this.right);
 			this.arm.setRotationPoint(this.right ? -4.0F : 4.0F, -14.0F, 0.0F);
 			connect.addChild(this.arm);
 			this.forearm = new RendererModel(model, 104, 0);
-			this.forearm.mirror = !this.right;
-			this.forearm.addBox(-1.5F, 0.0F, -1.5F, 3, 18, 3);
+			this.forearm.addBox(-1.5F, 0.0F, -1.5F, 3, 18, 3, !this.right);
 			this.forearm.setRotationPoint(0.0F, 21.0F, 1.0F);
 			this.arm.addChild(this.forearm);
 			this.hand = new RendererModel(model);
@@ -866,11 +842,9 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 			float fingerScale = 0.6F;
 
 			int i;
-
 			for (i = 0; i < this.finger.length; ++i) {
 				this.finger[i] = new RendererModel(model, 76, 0);
-				this.finger[i].mirror = !this.right;
-				this.finger[i].addBox(-0.5F, 0.0F, -0.5F, 1, i == 1 ? 6 : 5, 1, fingerScale);
+				this.finger[i].addBox(-0.5F, 0.0F, -0.5F, 1, i == 1 ? 6 : 5, 1, fingerScale, !this.right);
 			}
 
 			this.finger[0].setRotationPoint(this.right ? -0.5F : 0.5F, 0.0F, -1.0F);
@@ -879,8 +853,7 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 
 			for (i = 0; i < this.foreFinger.length; ++i) {
 				this.foreFinger[i] = new RendererModel(model, 76, 0);
-				this.foreFinger[i].mirror = !this.right;
-				this.foreFinger[i].addBox(-0.5F, 0.0F, -0.5F, 1, i == 1 ? 6 : 5, 1, fingerScale - 0.01F);
+				this.foreFinger[i].addBox(-0.5F, 0.0F, -0.5F, 1, i == 1 ? 6 : 5, 1, fingerScale - 0.01F, !this.right);
 				this.foreFinger[i].setRotationPoint(0.0F, 0.5F + (float)(i == 1 ? 6 : 5), 0.0F);
 			}
 
@@ -890,8 +863,7 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 			}
 
 			this.thumb = new RendererModel(model, 76, 0);
-			this.thumb.mirror = this.right;
-			this.thumb.addBox(-0.5F, 0.0F, -0.5F, 1, 5, 1, fingerScale);
+			this.thumb.addBox(-0.5F, 0.0F, -0.5F, 1, 5, 1, fingerScale, this.right);
 			this.thumb.setRotationPoint(this.right ? 0.5F : -0.5F, 0.0F, -0.5F);
 			this.hand.addChild(this.thumb);
 		}
@@ -962,7 +934,7 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 		@Override
 		public void render(float scale) {
 			if (this.enderman != null) {
-				float armScale = this.enderman.getInnerArmScale(this.partialTick);
+				float armScale = this.enderman.getArmScale(this.partialTick);
 				GlStateManager.pushMatrix();
 				GlStateManager.scalef(armScale, armScale, armScale);
 			}

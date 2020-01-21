@@ -2,6 +2,7 @@ package chumbanotz.mutantbeasts.item;
 
 import com.google.common.collect.Multimap;
 
+import chumbanotz.mutantbeasts.util.MutatedExplosion;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.SharedMonsterAttributes;
@@ -19,7 +20,6 @@ import net.minecraft.util.Hand;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.Explosion;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -79,7 +79,7 @@ public class CreeperShardItem extends Item {
 				damage += 2.0F;
 			}
 
-			worldIn.createExplosion(playerIn, playerIn.posX, playerIn.posY + 1.0D, playerIn.posZ, damage, false, playerIn.isAllowEdit() ? Explosion.Mode.DESTROY : Explosion.Mode.NONE);
+			MutatedExplosion.create(worldIn, playerIn, null, playerIn.posX, playerIn.posY + 1.0D, playerIn.posZ, damage, false, playerIn.isAllowEdit() ? MutatedExplosion.Mode.DESTROY : MutatedExplosion.Mode.NONE);
 		}
 
 		if (!playerIn.abilities.isCreativeMode) {

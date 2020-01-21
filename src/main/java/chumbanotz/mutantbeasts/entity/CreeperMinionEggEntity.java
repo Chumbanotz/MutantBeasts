@@ -21,7 +21,6 @@ import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.particles.ParticleTypes;
 import net.minecraft.util.DamageSource;
-import net.minecraft.util.EntityPredicates;
 import net.minecraft.util.Hand;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.AxisAlignedBB;
@@ -36,7 +35,7 @@ import net.minecraftforge.fml.network.NetworkHooks;
 
 public class CreeperMinionEggEntity extends Entity {
 	private static final DataParameter<Optional<UUID>> OWNER_UNIQUE_ID = EntityDataManager.createKey(CreeperMinionEggEntity.class, DataSerializers.OPTIONAL_UNIQUE_ID);
-	private int health = this.getMaxHealth();
+	private int health = 8;
 	private int age = (60 + this.rand.nextInt(40)) * 1200;
 	private int recentlyHit;
 	@OnlyIn(Dist.CLIENT)
@@ -104,10 +103,6 @@ public class CreeperMinionEggEntity extends Entity {
 		return this.isAlive();
 	}
 
-	public int getMaxHealth() {
-		return 8;
-	}
-
 	@Override
 	@OnlyIn(Dist.CLIENT)
 	public void setPositionAndRotationDirect(double x, double y, double z, float yaw, float pitch, int posRotationIncrements, boolean teleport) {
@@ -132,12 +127,12 @@ public class CreeperMinionEggEntity extends Entity {
 			PlayerEntity playerEntity = this.world.getPlayerByUuid(uuid);
 			if (playerEntity != null) {
 				minion.setTamedBy(playerEntity);
+				minion.getAISit().setSitting(true);
 			} else {
 				minion.setOwnerId(uuid);
 			}
 		}
 
-		minion.setSitting(minion.isTamed());
 		minion.setPosition(this.posX, this.posY, this.posZ);
 		this.world.addEntity(minion);
 		this.playSound(MBSoundEvents.ENTITY_CREEPER_MINION_EGG_HATCH, 0.7F, 0.9F + this.rand.nextFloat() * 0.1F);
@@ -156,7 +151,6 @@ public class CreeperMinionEggEntity extends Entity {
 
 		this.move(MoverType.SELF, this.getMotion());
 		this.setMotion(this.getMotion().scale(0.98D));
-
 		if (this.onGround) {
 			this.setMotion(this.getMotion().mul(0.7D, 0.0D, 0.7D));
 		}
@@ -167,7 +161,7 @@ public class CreeperMinionEggEntity extends Entity {
 		}
 
 		if (!this.world.isRemote) {
-			if (this.health < this.getMaxHealth() && this.ticksExisted - this.recentlyHit > 80 && this.ticksExisted % 20 == 0) {
+			if (this.health < 8 && this.ticksExisted - this.recentlyHit > 80 && this.ticksExisted % 20 == 0) {
 				++this.health;
 			}
 
@@ -175,30 +169,16 @@ public class CreeperMinionEggEntity extends Entity {
 				this.hatch();
 			}
 		}
-
-		for (Entity entity : this.world.getEntitiesInAABBexcluding(this, this.getBoundingBox(), EntityPredicates.pushableBy(this))) {
-			entity.applyEntityCollision(this);
-		}
 	}
 
 	@Override
 	public boolean processInitialInteract(PlayerEntity player, Hand hand) {
-		if (player.getPose() == Pose.STANDING) {
-			if (!player.isBeingRidden()) {
-				return this.canMount(player);
-			}
+		if (player.getPose() == Pose.STANDING && !player.isBeingRidden() && this.startRiding(player, true)) {
+			this.playMountSound(true);
+			return true;
 		}
 
 		return false;
-	}
-
-	private boolean canMount(Entity entity) {
-		if (this.startRiding(entity, true)) {
-			this.playMountSound(true);
-			return true;
-		} else {
-			return false;
-		}
 	}
 
 	private void playMountSound(boolean mount) {
@@ -238,15 +218,11 @@ public class CreeperMinionEggEntity extends Entity {
 
 					if (this.health <= 0) {
 						this.world.createExplosion(null, this.posX, this.posY, this.posZ, 0.0F, true, Explosion.Mode.DESTROY);
-						if (!this.world.isRemote) {
-							if (this.world.getGameRules().getBoolean(GameRules.DO_ENTITY_DROPS)) {
-								if (this.rand.nextInt(3) == 0) {
-									this.entityDropItem(MBItems.CREEPER_SHARD);
-								} else {
-									for (int j = 5 + this.rand.nextInt(6); j > 0; --j) {
-										this.entityDropItem(Items.GUNPOWDER);
-									}
-								}
+						if (!this.world.isRemote && this.world.getGameRules().getBoolean(GameRules.DO_ENTITY_DROPS)) {
+							if (this.rand.nextInt(3) == 0) {
+								this.entityDropItem(MBItems.CREEPER_SHARD);
+							} else for (int j = 5 + this.rand.nextInt(6); j > 0; --j) {
+								this.entityDropItem(Items.GUNPOWDER);
 							}
 						}
 

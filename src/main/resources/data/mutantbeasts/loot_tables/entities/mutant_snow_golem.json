@@ -10,28 +10,13 @@
 						{
 							"function": "minecraft:set_count",
 							"count": {
-								"min": 15.0,
-								"max": 32.0,
+								"min": 32.0,
+								"max": 47.0,
 								"type": "minecraft:uniform"
 							}
 						}
 					],
 					"name": "minecraft:snowball"
-				}
-			]
-		},
-		{
-			"rolls": 1,
-			"entries": [
-				{
-					"type": "minecraft:item",
-					"functions": [
-						{
-							"function": "minecraft:set_count",
-							"count": 1
-						}
-					],
-					"name": "minecraft:jack_o_lantern"
 				}
 			]
 		}

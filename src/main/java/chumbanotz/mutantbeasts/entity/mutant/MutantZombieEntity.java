@@ -8,13 +8,12 @@ import chumbanotz.mutantbeasts.capability.SummonableCapability;
 import chumbanotz.mutantbeasts.entity.ai.goal.AvoidDamageGoal;
 import chumbanotz.mutantbeasts.entity.ai.goal.MBHurtByTargetGoal;
 import chumbanotz.mutantbeasts.entity.ai.goal.MBMeleeAttackGoal;
-import chumbanotz.mutantbeasts.entity.ai.goal.controller.ConditionalBodyController;
-import chumbanotz.mutantbeasts.entity.projectile.MutantArrowEntity;
 import chumbanotz.mutantbeasts.pathfinding.MBGroundPathNavigator;
 import chumbanotz.mutantbeasts.util.EntityUtil;
 import chumbanotz.mutantbeasts.util.MBSoundEvents;
 import chumbanotz.mutantbeasts.util.SeismicWave;
 import chumbanotz.mutantbeasts.util.ZombieResurrection;
+import net.minecraft.block.BambooBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
@@ -25,7 +24,6 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.Pose;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.SpawnReason;
-import net.minecraft.entity.ai.controller.BodyController;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.goal.LookAtGoal;
 import net.minecraft.entity.ai.goal.LookRandomlyGoal;
@@ -34,10 +32,8 @@ import net.minecraft.entity.ai.goal.NearestAttackableTargetGoal;
 import net.minecraft.entity.ai.goal.WaterAvoidingRandomWalkingGoal;
 import net.minecraft.entity.merchant.villager.AbstractVillagerEntity;
 import net.minecraft.entity.monster.ZombieEntity;
-import net.minecraft.entity.monster.ZombiePigmanEntity;
 import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
@@ -91,16 +87,16 @@ public class MutantZombieEntity extends ZombieEntity {
 
 	@Override
 	protected void registerGoals() {
-		this.goalSelector.addGoal(1, new MutantZombieEntity.SlamGroundGoal());
-		this.goalSelector.addGoal(1, new MutantZombieEntity.RoarGoal());
-		this.goalSelector.addGoal(1, new MutantZombieEntity.ThrowAttackGoal());
-		this.goalSelector.addGoal(2, new MBMeleeAttackGoal(this, 1.2D).setMaxAttackTick(0));
-		this.goalSelector.addGoal(3, new AvoidDamageGoal(this, 1.2D));
-		this.goalSelector.addGoal(4, new MoveThroughVillageGoal(this, 1.0D, true, 4, () -> true));
+		this.goalSelector.addGoal(0, new MutantZombieEntity.SlamGroundGoal());
+		this.goalSelector.addGoal(0, new MutantZombieEntity.RoarGoal());
+		this.goalSelector.addGoal(0, new MutantZombieEntity.ThrowAttackGoal());
+		this.goalSelector.addGoal(1, new MBMeleeAttackGoal(this, 1.2D).setMaxAttackTick(0));
+		this.goalSelector.addGoal(2, new AvoidDamageGoal(this, 1.2D));
+		this.goalSelector.addGoal(3, new MoveThroughVillageGoal(this, 1.0D, true, 4, () -> false));
 		this.goalSelector.addGoal(5, new WaterAvoidingRandomWalkingGoal(this, 1.0D));
 		this.goalSelector.addGoal(6, new LookAtGoal(this, PlayerEntity.class, 8.0F));
 		this.goalSelector.addGoal(6, new LookRandomlyGoal(this));
-		this.targetSelector.addGoal(1, new MBHurtByTargetGoal(this).setCallsForHelp(ZombiePigmanEntity.class));
+		this.targetSelector.addGoal(1, new MBHurtByTargetGoal(this));
 		this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, IronGolemEntity.class, true));
 		this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, PlayerEntity.class, true).setUnseenMemoryTicks(300));
 		this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, AbstractVillagerEntity.class, false));
@@ -114,7 +110,6 @@ public class MutantZombieEntity extends ZombieEntity {
 		this.getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).setBaseValue(12.0D);
 		this.getAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(0.26D);
 		this.getAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(1.0D);
-		this.getAttribute(SPAWN_REINFORCEMENTS_CHANCE).setBaseValue(0.0D);
 		this.getAttribute(SWIM_SPEED).setBaseValue(4.0D);
 	}
 
@@ -129,8 +124,8 @@ public class MutantZombieEntity extends ZombieEntity {
 		return this.dataManager.get(LIVES);
 	}
 
-	public void decrementLives() {
-		this.dataManager.set(LIVES, this.getLives() - 1);
+	public void setLives(int lives) {
+		this.dataManager.set(LIVES, lives);
 	}
 
 	public boolean getThrowAttackHit() {
@@ -170,8 +165,8 @@ public class MutantZombieEntity extends ZombieEntity {
 	}
 
 	@Override
-	protected BodyController createBodyController() {
-		return new ConditionalBodyController(this, this::isAlive);
+	protected float updateDistance(float renderYawOffset, float distance) {
+		return this.isAlive() ? super.updateDistance(renderYawOffset, distance) : distance;
 	}
 
 	@Override
@@ -222,20 +217,24 @@ public class MutantZombieEntity extends ZombieEntity {
 
 	@Override
 	public boolean attackEntityFrom(DamageSource source, float amount) {
-		if (source.isProjectile() && !(source.getImmediateSource() instanceof MutantArrowEntity)) {
-			amount *= 0.5F;
-		}
-
-		if (this.attackID == ROAR_ATTACK) {
-			if (this.attackTick <= 10) {
-				return false;
-			} else {
-				amount *= 0.15F;
+		if (this.isInvulnerableTo(source)) {
+			return false;
+		} else {
+			if (source.isProjectile() && source.getDamageLocation() != null) {
+				amount *= 0.5F;
 			}
-		}
 
-		Entity entity = source.getTrueSource();
-		return entity != null && (!this.canHarm(entity) || this.attackID == THROW_ATTACK && entity == this.getAttackTarget()) ? false : super.attackEntityFrom(source, amount);
+			if (this.attackID == ROAR_ATTACK && source != DamageSource.OUT_OF_WORLD) {
+				if (this.attackTick <= 10) {
+					return false;
+				} else {
+					amount *= 0.15F;
+				}
+			}
+
+			Entity entity = source.getTrueSource();
+			return entity != null && (!this.canHarm(entity) || this.attackID == THROW_ATTACK && entity == this.getAttackTarget()) ? false : super.attackEntityFrom(source, amount);
+		}
 	}
 
 	@Override
@@ -262,11 +261,6 @@ public class MutantZombieEntity extends ZombieEntity {
 	}
 
 	@Override
-	protected ItemStack getSkullDrop() {
-		return ItemStack.EMPTY;
-	}
-
-	@Override
 	protected void func_213623_ec() {
 	}
 
@@ -280,6 +274,14 @@ public class MutantZombieEntity extends ZombieEntity {
 			this.attackTick = 0;
 		} else {
 			super.handleStatusUpdate(id);
+		}
+	}
+
+	@Override
+	public void notifyDataManagerChange(DataParameter<?> key) {
+		super.notifyDataManagerChange(key);
+		if (THROW_ATTACK_STATE.equals(key)) {
+			
 		}
 	}
 
@@ -326,7 +328,7 @@ public class MutantZombieEntity extends ZombieEntity {
 			AxisAlignedBB bb = this.getBoundingBox().grow(0.2D);
 			for (BlockPos blockpos : BlockPos.getAllInBoxMutable(MathHelper.floor(bb.minX), MathHelper.floor(bb.minY), MathHelper.floor(bb.minZ), MathHelper.floor(bb.maxX), MathHelper.floor(bb.maxY), MathHelper.floor(bb.maxZ))) {
 				Block block = this.world.getBlockState(blockpos).getBlock();
-				if (!this.world.isRemote && (net.minecraft.tags.BlockTags.LEAVES.contains(block) || net.minecraftforge.common.Tags.Blocks.GLASS.contains(block))) {
+				if (!this.world.isRemote && (block instanceof BambooBlock || net.minecraft.tags.BlockTags.LEAVES.contains(block) || net.minecraftforge.common.Tags.Blocks.GLASS.contains(block))) {
 					this.world.destroyBlock(blockpos, false);
 				}
 			}
@@ -420,10 +422,8 @@ public class MutantZombieEntity extends ZombieEntity {
 
 	@Override
 	protected void constructKnockBackVector(LivingEntity livingEntity) {
-		if (this.attackID == MELEE_ATTACK) {
-			livingEntity.applyEntityCollision(this);
-			livingEntity.velocityChanged = true;
-		}
+		livingEntity.applyEntityCollision(this);
+		livingEntity.velocityChanged = true;
 	}
 
 	@Override
@@ -437,7 +437,7 @@ public class MutantZombieEntity extends ZombieEntity {
 			this.deathCause = cause;
 			MBHurtByTargetGoal.alertOthers(this);
 
-			if (cause.getTrueSource() != null && cause.getTrueSource() instanceof LivingEntity) {
+			if (cause.getTrueSource() instanceof LivingEntity) {
 				this.killer = (LivingEntity)cause.getTrueSource();
 			}
 
@@ -460,7 +460,7 @@ public class MutantZombieEntity extends ZombieEntity {
 			this.vanishTime = 0;
 
 			if (!this.world.isRemote) {
-				this.decrementLives();
+				this.setLives(this.getLives() - 1);
 
 				if (this.killer != null) {
 					this.setRevengeTarget(this.killer);
@@ -481,7 +481,7 @@ public class MutantZombieEntity extends ZombieEntity {
 	@Override
 	public void onKillCommand() {
 		super.onKillCommand();
-		this.dataManager.set(LIVES, 0);
+		this.setLives(0);
 	}
 
 	@Override
@@ -524,7 +524,7 @@ public class MutantZombieEntity extends ZombieEntity {
 	@Override
 	public void readAdditional(CompoundNBT compound) {
 		super.readAdditional(compound);
-		this.dataManager.set(LIVES, compound.getInt("Lives"));
+		this.setLives(compound.getInt("Lives"));
 		this.vanishTime = compound.getShort("VanishTime");
 		ListNBT listnbt1 = compound.getList("Resurrections", 10);
 
@@ -555,7 +555,7 @@ public class MutantZombieEntity extends ZombieEntity {
 		private LivingEntity attackTarget;
 
 		public SlamGroundGoal() {
-			setMutexFlags(EnumSet.of(Goal.Flag.JUMP, Goal.Flag.LOOK, Goal.Flag.MOVE));
+			this.setMutexFlags(EnumSet.of(Goal.Flag.JUMP, Goal.Flag.LOOK, Goal.Flag.MOVE));
 		}
 
 		@Override
@@ -608,6 +608,7 @@ public class MutantZombieEntity extends ZombieEntity {
 			setAttackID(0);
 			this.dirX = -1.0D;
 			this.dirZ = -1.0D;
+			this.attackTarget = null;
 		}
 	}
 
@@ -615,7 +616,7 @@ public class MutantZombieEntity extends ZombieEntity {
 		private LivingEntity attackTarget;
 
 		public RoarGoal() {
-			setMutexFlags(EnumSet.of(Goal.Flag.JUMP, Goal.Flag.LOOK, Goal.Flag.MOVE));
+			this.setMutexFlags(EnumSet.of(Goal.Flag.JUMP, Goal.Flag.LOOK, Goal.Flag.MOVE));
 		}
 
 		@Override
@@ -632,6 +633,7 @@ public class MutantZombieEntity extends ZombieEntity {
 		@Override
 		public void startExecuting() {
 			setAttackID(ROAR_ATTACK);
+			navigator.clearPath();
 			idleTime = 0;
 			livingSoundTime = -getTalkInterval();
 		}
@@ -645,20 +647,16 @@ public class MutantZombieEntity extends ZombieEntity {
 			if (attackTick == 10) {
 				playSound(MBSoundEvents.ENTITY_MUTANT_ZOMBIE_ROAR, 3.0F, 0.7F + rand.nextFloat() * 0.2F);
 
-				for (Entity entity : world.getEntitiesWithinAABBExcludingEntity(MutantZombieEntity.this, getBoundingBox().grow(12.0D, 8.0D, 12.0D))) {
-					if (getDistanceSq(entity) <= 196.0D) {
-						if (SummonableCapability.getLazy(entity).isPresent() && !SummonableCapability.get(entity).isSpawnedBySummoner() && SummonableCapability.get(entity).getSummoner() == null) {
-							SummonableCapability.get(entity).setSummoner(MutantZombieEntity.this);
-						} else if (canHarm(entity)) {
-							double x = entity.posX - posX;
-							double z = entity.posZ - posZ;
+				for (LivingEntity livingEntity : world.getEntitiesWithinAABB(LivingEntity.class, getBoundingBox().grow(12.0D, 8.0D, 12.0D))) {
+					if (getDistanceSq(livingEntity) <= 196.0D) {
+						if (SummonableCapability.getLazy(livingEntity).isPresent() && !SummonableCapability.get(livingEntity).isSpawnedBySummoner() && SummonableCapability.get(livingEntity).getSummoner() == null) {
+							SummonableCapability.get(livingEntity).setSummoner(MutantZombieEntity.this);
+						} else if (canHarm(livingEntity)) {
+							double x = livingEntity.posX - posX;
+							double z = livingEntity.posZ - posZ;
 							double d = Math.sqrt(x * x + z * z);
-							entity.setMotion(x / d * 0.699999988079071D, 0.30000001192092896D, z / d * 0.699999988079071D);
-							entity.isAirBorne = true;
-
-							if (entity instanceof LivingEntity) {
-								entity.attackEntityFrom(DamageSource.causeMobDamage(MutantZombieEntity.this).setDamageBypassesArmor().setDamageIsAbsolute(), (float)(2 + rand.nextInt(2)));
-							}
+							livingEntity.setMotion(x / d * 0.699999988079071D, 0.30000001192092896D, z / d * 0.699999988079071D);
+							livingEntity.attackEntityFrom(DamageSource.causeMobDamage(MutantZombieEntity.this).setDamageBypassesArmor().setDamageIsAbsolute(), (float)(2 + rand.nextInt(2)));
 						}
 					}
 				}
@@ -676,8 +674,6 @@ public class MutantZombieEntity extends ZombieEntity {
 					resurrectionList.add(new ZombieResurrection(world, x, y, z));
 				}
 			}
-
-			navigator.clearPath();
 		}
 
 		@Override
@@ -692,7 +688,7 @@ public class MutantZombieEntity extends ZombieEntity {
 		private LivingEntity attackTarget;
 
 		public ThrowAttackGoal() {
-			setMutexFlags(EnumSet.of(Goal.Flag.JUMP, Goal.Flag.LOOK, Goal.Flag.MOVE));
+			this.setMutexFlags(EnumSet.of(Goal.Flag.JUMP, Goal.Flag.LOOK, Goal.Flag.MOVE));
 		}
 
 		@Override
@@ -715,7 +711,7 @@ public class MutantZombieEntity extends ZombieEntity {
 
 		@Override
 		public boolean shouldContinueExecuting() {
-			return attackID == THROW_ATTACK && deathTime <= 0 && this.finish < 10;
+			return attackID == THROW_ATTACK && this.finish < 10;
 		}
 
 		@Override
@@ -772,6 +768,7 @@ public class MutantZombieEntity extends ZombieEntity {
 			this.finish = -1;
 			setThrowAttackHit(false);
 			setThrowAttackFinish(false);
+			this.attackTarget = null;
 		}
 	}
 }

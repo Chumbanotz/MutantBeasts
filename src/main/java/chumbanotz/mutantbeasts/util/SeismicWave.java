@@ -13,6 +13,7 @@ import net.minecraft.block.GrassPathBlock;
 import net.minecraft.block.LeavesBlock;
 import net.minecraft.block.RedstoneOreBlock;
 import net.minecraft.block.SnowyDirtBlock;
+import net.minecraft.block.TNTBlock;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -31,11 +32,6 @@ import net.minecraft.world.server.ServerWorld;
 public class SeismicWave extends Vec3i {
 	private boolean first;
 	private final boolean spawnParticles;
-
-	public SeismicWave(int x, int y, int z) {
-		super(x, y, z);
-		this.spawnParticles = true;
-	}
 
 	public SeismicWave(int x, int y, int z, boolean spawnParticles) {
 		super(x, y, z);
@@ -102,7 +98,7 @@ public class SeismicWave extends Vec3i {
 		SeismicWave wave = null;
 
 		if (y != -1) {
-			list.add(wave = new SeismicWave(x, y, z));
+			list.add(wave = new SeismicWave(x, y, z, true));
 		}
 
 		if (world.rand.nextInt(2) == 0) {
@@ -139,6 +135,11 @@ public class SeismicWave extends Vec3i {
 				} else if (blockstate.getMaterial() == Material.IRON) {
 					world.playEvent(1020, posAbove, 0);
 				}
+			}
+
+			if (block instanceof TNTBlock) {
+				block.catchFire(blockstate, world, pos, null, null);
+				world.removeBlock(pos, false);
 			}
 		}
 

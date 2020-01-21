@@ -21,6 +21,9 @@ public class MBSoundEvents {
 	@ObjectHolder("entity.creeper_minion_egg.hatch")
 	public static final SoundEvent ENTITY_CREEPER_MINION_EGG_HATCH = null;
 
+	@ObjectHolder("entity.endersoul_fragment.explode")
+	public static final SoundEvent ENTITY_ENDERSOUL_FRAGMENT_EXPLODE = null;
+
 	@ObjectHolder("entity.mutant_creeper.ambient")
 	public static final SoundEvent ENTITY_MUTANT_CREEPER_AMBIENT = null;
 

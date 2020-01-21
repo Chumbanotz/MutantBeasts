@@ -71,13 +71,13 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 	private static final DataParameter<Boolean> CLIMBING = EntityDataManager.createKey(SpiderPigEntity.class, DataSerializers.BOOLEAN);
 	private static final Ingredient TEMPTATION_ITEMS = Ingredient.fromItems(Items.CARROT, Items.POTATO, Items.BEETROOT, Items.PORKCHOP, Items.SPIDER_EYE);
-	private int lastJumpTick;
-	private int jumpTick;
+	private int leapCooldown;
+	private int leapTick;
+	private boolean isLeaping;
+	private float chargePower;
 	private int chargingTick;
-	private int exhaustAmount;
+	private int chargeExhaustion;
 	private boolean chargeExhausted;
-	private float jumpPower;
-	private boolean jumping;
 	private final List<SpiderPigEntity.WebPos> webList = new ArrayList<>(12);
 
 	public SpiderPigEntity(EntityType<? extends SpiderPigEntity> type, World worldIn) {
@@ -88,7 +88,7 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 	protected void registerGoals() {
 		this.goalSelector.addGoal(0, new SwimGoal(this));
 		this.goalSelector.addGoal(1, new MBMeleeAttackGoal(this, 1.1D).setMaxAttackTick(16));
-		this.goalSelector.addGoal(2, new SpiderPigEntity.JumpAttackGoal());
+		this.goalSelector.addGoal(2, new SpiderPigEntity.LeapAttackGoal());
 		this.goalSelector.addGoal(3, new AvoidDamageGoal(this, 1.1D, this::isChild));
 		this.goalSelector.addGoal(4, new FollowOwnerGoal(this, 1.0D, 10.0F, 5.0F));
 		this.goalSelector.addGoal(5, new BreedGoal(this, 1.0D));
@@ -156,40 +156,35 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 	}
 
 	@Override
-	public boolean canBeLeashedTo(PlayerEntity player) {
-		return super.canBeLeashedTo(player) && this.isTamed();
-	}
-
-	@Override
 	public boolean isBreedingItem(ItemStack stack) {
 		return TEMPTATION_ITEMS.test(stack);
 	}
 
 	@Override
+	public void fall(float distance, float damageMultiplier) {
+	}
+
+	@Override
 	public void tick() {
 		super.tick();
+		this.setBesideClimbableBlock(this.collidedHorizontally);
 
-		if (this.exhaustAmount >= 120) {
+		if (this.chargeExhaustion >= 120) {
 			this.chargeExhausted = true;
 		}
 
-		if (this.exhaustAmount <= 0) {
+		if (this.chargeExhaustion <= 0) {
 			this.chargeExhausted = false;
 		}
 
-		this.exhaustAmount = Math.max(0, this.exhaustAmount - 1);
+		this.chargeExhaustion = Math.max(0, this.chargeExhaustion - 1);
 
 		if (!this.world.isRemote) {
 			this.targetSelector.setFlag(Goal.Flag.TARGET, !this.isChild());
-			this.setBesideClimbableBlock(this.collidedHorizontally);
-			this.lastJumpTick = Math.max(0, this.lastJumpTick - 1);
+			this.leapCooldown = Math.max(0, this.leapCooldown - 1);
 
-			if (this.jumpTick > 10 && (this.onGround || this.velocityChanged)) {
-				this.jumping = false;
-			}
-
-			if (this.jumping) {
-				this.fallDistance = 0.0F;
+			if (this.leapTick > 10 && (this.onGround || this.velocityChanged)) {
+				this.isLeaping = false;
 			}
 
 			this.updateWebList(false);
@@ -300,9 +295,14 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 
 	@Override
 	public boolean attackEntityAsMob(Entity entityIn) {
-		float damage = (float)this.getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getValue();
-		boolean flag = entityIn.attackEntityFrom(DamageSource.causeMobDamage(this), damage);
+		this.isLeaping = false;
 		boolean spiderType = entityIn instanceof SpiderEntity || entityIn instanceof SpiderPigEntity;
+		float damage = (float)this.getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getValue();
+		if (entityIn.world.getBlockState(entityIn.getPosition()).getMaterial() == Material.WEB && !spiderType) {
+			damage += 4.0F;
+		}
+
+		boolean flag = entityIn.attackEntityFrom(DamageSource.causeMobDamage(this), damage);
 
 		if ((!this.isBeingRidden() || flag) && this.rand.nextInt(2) == 0 && net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this.world, this)) {
 			double dx = entityIn.posX - entityIn.prevPosX;
@@ -319,10 +319,6 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 			}
 		}
 
-		if (entityIn.world.getBlockState(entityIn.getPosition()).getMaterial() == Material.WEB && !spiderType) {
-			damage += 4.0F;
-		}
-
 		return flag;
 	}
 
@@ -334,8 +330,8 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 	@Override
 	@OnlyIn(Dist.CLIENT)
 	public void setJumpPower(int jumpPowerIn) {
-		this.exhaustAmount += 50 * jumpPowerIn / 100;
-		this.jumpPower = 1.0F * (float)jumpPowerIn / 100.0F;
+		this.chargeExhaustion += 50 * jumpPowerIn / 100;
+		this.chargePower = 1.0F * (float)jumpPowerIn / 100.0F;
 	}
 
 	@Override
@@ -364,6 +360,11 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 	}
 
 	@Override
+	public boolean canBeRiddenInWater(Entity rider) {
+		return false;
+	}
+
+	@Override
 	public void travel(Vec3d vec3d) {
 		if (this.isBeingRidden() && this.canBeSteered()) {
 			LivingEntity passenger = (LivingEntity)this.getControllingPassenger();
@@ -380,14 +381,13 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 				this.renderYawOffset += 360.0F;
 			}
 
-			if (!this.chargeExhausted && this.jumpPower > 0 && (this.onGround || this.world.containsAnyLiquid(this.getBoundingBox()))) {
+			if (!this.chargeExhausted && this.chargePower > 0 && (this.onGround || this.world.containsAnyLiquid(this.getBoundingBox()))) {
 				float pitch = this.rotationPitch;
 				this.rotationPitch = 0.0F;
 				this.rotationPitch = pitch;
-				double power = 1.600000023841858D * (double)this.jumpPower;
+				double power = 1.600000023841858D * (double)this.chargePower;
 				this.setMotion(this.getLookVec().x * power, 0.30000001192092896D, this.getLookVec().z * power);
-				this.isAirBorne = true;
-				this.jumpPower = 0;
+				this.chargePower = 0;
 			}
 
 			this.jumpMovementFactor = this.getAIMoveSpeed() * 0.1F;
@@ -398,6 +398,17 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 				super.travel(new Vec3d((double)strafe, vec3d.y, (double)forward));
 			} else if (passenger instanceof PlayerEntity) {
 				this.setMotion(Vec3d.ZERO);
+			} else {
+	            this.prevLimbSwingAmount = this.limbSwingAmount;
+	            double d2 = this.posX - this.prevPosX;
+	            double d3 = this.posZ - this.prevPosZ;
+	            float f4 = MathHelper.sqrt(d2 * d2 + d3 * d3) * 4.0F;
+	            if (f4 > 1.0F) {
+	               f4 = 1.0F;
+	            }
+
+	            this.limbSwingAmount += (f4 - this.limbSwingAmount) * 0.4F;
+	            this.limbSwing += this.limbSwingAmount;
 			}
 		} else {
 			this.stepHeight = 0.6F;
@@ -409,20 +420,22 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 	@Override
 	public void onKillEntity(LivingEntity entityLivingIn) {
 		if (!this.world.isRemote) {
-			if (entityLivingIn instanceof CreeperMinionEntity && ((CreeperMinionEntity)entityLivingIn).getOwner() instanceof PlayerEntity && !this.isTamed()) {
+			if (entityLivingIn instanceof CreeperMinionEntity && !this.isTamed()) {
 				CreeperMinionEntity minion = (CreeperMinionEntity)entityLivingIn;
-				if (minion.isTamed() && !net.minecraftforge.event.ForgeEventFactory.onAnimalTame(this, (PlayerEntity)minion.getOwner())) {
+				if (minion.getOwner() instanceof PlayerEntity && !net.minecraftforge.event.ForgeEventFactory.onAnimalTame(this, (PlayerEntity)minion.getOwner())) {
 					this.playTameEffect(true);
 					this.world.setEntityState(this, (byte)7);
 					this.setTamedBy((PlayerEntity)minion.getOwner());
+					minion.remove();
+				} else {
+					this.playTameEffect(false);
+					this.world.setEntityState(this, (byte)6);
 				}
-
-				minion.remove();
 			}
 
 			if (isPigOrSpider(entityLivingIn)) {
 				SpiderPigEntity spiderPigEntity = MBEntityType.SPIDER_PIG.create(this.world);
-				EntityUtil.copyNBT(entityLivingIn, spiderPigEntity);
+				EntityUtil.copyNBT(entityLivingIn, spiderPigEntity, true);
 				entityLivingIn.remove();
 				this.world.addEntity(spiderPigEntity);
 			}
@@ -436,7 +449,7 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 
 	@Override
 	public boolean isOnLadder() {
-		return this.isBesideClimbableBlock() || this.isBeingRidden() && this.collidedHorizontally;
+		return this.isBesideClimbableBlock();
 	}
 
 	@Override
@@ -457,6 +470,7 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 				spiderPig.setOwnerId(uuid);
 				spiderPig.setTamed(true);
 			}
+
 			return spiderPig;
 		}
 	}
@@ -472,13 +486,10 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 	public void onDeath(DamageSource cause) {
 		super.onDeath(cause);
 		MBHurtByTargetGoal.alertOthers(this);
-	}
-
-	@Override
-	public void onRemovedFromWorld() {
-		super.onRemovedFromWorld();
 		if (!this.world.isRemote && !this.webList.isEmpty()) {
-			this.webList.forEach(this::removeWeb);
+			for (SpiderPigEntity.WebPos webPos : this.webList) {
+				this.removeWeb(webPos);
+			}
 		}
 	}
 
@@ -535,17 +546,17 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 		return livingEntity.getType() == EntityType.PIG || livingEntity.getType() == EntityType.SPIDER;
 	}
 
-	class JumpAttackGoal extends Goal {
+	class LeapAttackGoal extends Goal {
 		@Override
 		public boolean shouldExecute() {
 			LivingEntity target = getAttackTarget();
-			return target != null && lastJumpTick <= 0 && (onGround || isInWater()) && (getDistanceSq(target) < 64.0D && rand.nextInt(8) == 0 || getDistanceSq(target) < 6.25D);
+			return target != null && leapCooldown <= 0 && (onGround || isInWater()) && (getDistanceSq(target) < 64.0D && rand.nextInt(8) == 0 || getDistanceSq(target) < 6.25D);
 		}
 
 		@Override
 		public void startExecuting() {
-			jumping = true;
-			lastJumpTick = 15;
+			isLeaping = true;
+			leapCooldown = 15;
 			LivingEntity target = getAttackTarget();
 			double x = target.posX - posX;
 			double y = target.posY - posY;
@@ -557,17 +568,17 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 
 		@Override
 		public boolean shouldContinueExecuting() {
-			return jumping && jumpTick < 40;
+			return isLeaping && leapTick < 40;
 		}
 
 		@Override
 		public void tick() {
-			++jumpTick;
+			++leapTick;
 		}
 
 		@Override
 		public void resetTask() {
-			jumpTick = 0;
+			leapTick = 0;
 		}
 	}
 

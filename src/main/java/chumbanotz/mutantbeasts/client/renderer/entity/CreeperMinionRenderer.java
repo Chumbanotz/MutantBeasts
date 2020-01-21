@@ -67,7 +67,7 @@ public class CreeperMinionRenderer extends MobRenderer<CreeperMinionEntity, Cree
 
 		@Override
 		public void render(CreeperMinionEntity entityIn, float p_212842_2_, float p_212842_3_, float p_212842_4_, float p_212842_5_, float p_212842_6_, float p_212842_7_, float p_212842_8_) {
-			if (entityIn.isTamed() && !entityIn.isInvisible() && entityIn.getCollarColor() != null) {
+			if (!entityIn.isInvisible() && entityIn.getCollarColor() != null) {
 				this.bindTexture(COLLAR_TEXTURE);
 				float[] afloat = entityIn.getCollarColor().getColorComponentValues();
 				GlStateManager.color3f(afloat[0], afloat[1], afloat[2]);

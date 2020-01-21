@@ -32,7 +32,7 @@ public class MutantArrowRenderer extends EntityRenderer<MutantArrowEntity> {
 		GlStateManager.pushMatrix();
 		GlStateManager.enableNormalize();
 		GlStateManager.enableBlend();
-		GlStateManager.blendFunc(770, 771);
+		GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
 		GlStateManager.translatef((float)x, (float)y, (float)z);
 		this.bindEntityTexture(entity);
 

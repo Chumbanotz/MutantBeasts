@@ -1,4 +1,4 @@
-package chumbanotz.mutantbeasts.client;
+package chumbanotz.mutantbeasts.client.gui;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 

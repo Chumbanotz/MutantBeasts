@@ -21,10 +21,10 @@ public class MutantCreeperRenderer extends MutantRenderer<MutantCreeperEntity, M
 	}
 
 	@Override
-	protected void preRenderCallback(MutantCreeperEntity entitylivingbaseIn, float partialTickTime) {
+	protected void preRenderCallback(MutantCreeperEntity livingEntity, float partialTickTime) {
 		float scale = 1.2F;
-		if (entitylivingbaseIn.deathTime > 0) {
-			float f = (float)entitylivingbaseIn.deathTime / (float)MutantCreeperEntity.MAX_DEATH_TIME;
+		if (livingEntity.deathTime > 0) {
+			float f = (float)livingEntity.deathTime / (float)MutantCreeperEntity.MAX_DEATH_TIME;
 			scale -= f * 0.4F;
 		}
 
@@ -32,13 +32,13 @@ public class MutantCreeperRenderer extends MutantRenderer<MutantCreeperEntity, M
 	}
 
 	@Override
-	protected int getColorMultiplier(MutantCreeperEntity entitylivingbaseIn, float lightBrightness, float partialTickTime) {
-		int a = entitylivingbaseIn.getExplosionColor();
+	protected int getColorMultiplier(MutantCreeperEntity livingEntity, float lightBrightness, float partialTickTime) {
+		int a = (int)livingEntity.getCreeperFlashIntensity(partialTickTime);
 		int r = 255;
 		int g = 255;
 		int b = 255;
 
-		if (entitylivingbaseIn.getPowered()) {
+		if (livingEntity.getPowered()) {
 			r = 160;
 			g = 180;
 		}
@@ -47,7 +47,7 @@ public class MutantCreeperRenderer extends MutantRenderer<MutantCreeperEntity, M
 	}
 
 	@Override
-	protected float getDeathMaxRotation(MutantCreeperEntity entityLivingBaseIn) {
+	protected float getDeathMaxRotation(MutantCreeperEntity livingEntity) {
 		return 0.0F;
 	}
 

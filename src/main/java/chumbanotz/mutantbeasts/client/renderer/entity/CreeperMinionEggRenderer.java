@@ -29,9 +29,17 @@ public class CreeperMinionEggRenderer extends EntityRenderer<CreeperMinionEggEnt
 	    GlStateManager.rotatef(180.0F, 0, 0, 1.0F);
 	    GlStateManager.scalef(1.5F, 1.5F, 1.5F);
 	    this.bindEntityTexture(entity);
-	    GlStateManager.disableLighting();
+		if (this.renderOutlines) {
+			GlStateManager.enableColorMaterial();
+			GlStateManager.setupSolidRenderingTextureCombine(this.getTeamColor(entity));
+		}
+
 	    this.eggModel.render();
-	    GlStateManager.enableLighting();
+		if (this.renderOutlines) {
+			GlStateManager.tearDownSolidRenderingTextureCombine();
+			GlStateManager.disableColorMaterial();
+		}
+
 	    GlStateManager.popMatrix();
 	}
 

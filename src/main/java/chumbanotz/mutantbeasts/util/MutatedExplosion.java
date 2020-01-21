@@ -4,15 +4,21 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import chumbanotz.mutantbeasts.entity.SkullSpiritEntity;
 import chumbanotz.mutantbeasts.entity.mutant.MutantCreeperEntity;
+import chumbanotz.mutantbeasts.entity.projectile.ChemicalXEntity;
 import net.minecraft.block.BlockState;
 import net.minecraft.enchantment.ProtectionEnchantment;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.fluid.IFluidState;
 import net.minecraft.network.play.server.SExplosionPacket;
+import net.minecraft.util.DamageSource;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -24,23 +30,13 @@ import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 
 public class MutatedExplosion extends Explosion {
-	private final Explosion.Mode mode;
 	private final World world;
-	private final double x;
-	private final double y;
-	private final double z;
-	private final Entity exploder;
 	private final float size;
 
-	public MutatedExplosion(World worldIn, Entity exploderIn, double xIn, double yIn, double zIn, float sizeIn, boolean causesFireIn, Mode modeIn) {
+	private MutatedExplosion(World worldIn, @Nullable Entity exploderIn, double xIn, double yIn, double zIn, float sizeIn, boolean causesFireIn, Explosion.Mode modeIn) {
 		super(worldIn, exploderIn, xIn, yIn, zIn, sizeIn, causesFireIn, modeIn);
 		this.world = worldIn;
-		this.exploder = exploderIn;
-		this.x = xIn;
-		this.y = yIn;
-		this.z = zIn;
 		this.size = sizeIn;
-		this.mode = modeIn;
 	}
 
 	@Override
@@ -55,34 +51,33 @@ public class MutatedExplosion extends Explosion {
 						double d1 = (double)((float)k / 15.0F * 2.0F - 1.0F);
 						double d2 = (double)((float)l / 15.0F * 2.0F - 1.0F);
 						double d3 = Math.sqrt(d0 * d0 + d1 * d1 + d2 * d2);
-						d0 = d0 / d3;
-						d1 = d1 / d3;
-						d2 = d2 / d3;
-						float f = this.size * (0.7F + this.world.rand.nextFloat() * 0.6F);
-						double d4 = this.x;
-						double d6 = this.y;
-						double d8 = this.z;
+						d0 /= d3;
+						d1 /= d3;
+						d2 /= d3;
+						float intensity = this.size * (0.7F + this.world.rand.nextFloat() * 0.6F);
+						double x = this.getPosition().x;
+						double y = this.getPosition().y;
+						double z = this.getPosition().z;
 
-						for (float f1 = 0.3F; f > 0.0F; f -= 0.22500001F) {
-							BlockPos blockpos = new BlockPos(d4, d6, d8);
+						for (float attenuation = 0.3F; intensity > 0.0F; intensity -= 0.22500001F) {
+							BlockPos blockpos = new BlockPos(x, y, z);
 							BlockState blockstate = this.world.getBlockState(blockpos);
-							IFluidState ifluidstate = this.world.getFluidState(blockpos);
-							if (!blockstate.isAir(this.world, blockpos) || !ifluidstate.isEmpty()) {
-								float f2 = Math.max(blockstate.getExplosionResistance(this.world, blockpos, exploder, this), ifluidstate.getExplosionResistance(this.world, blockpos, exploder, this));
-								if (this.exploder != null) {
-									f2 = this.exploder.getExplosionResistance(this, this.world, blockpos, blockstate, ifluidstate, f2);
+							if (!blockstate.isAir(this.world, blockpos) && !blockstate.getMaterial().isLiquid()) {
+								float resistance = blockstate.getExplosionResistance(this.world, blockpos, this.getExplosivePlacedBy(), this);
+								if (this.getExplosivePlacedBy() != null) {
+									resistance = this.getExplosivePlacedBy().getExplosionResistance(this, this.world, blockpos, blockstate, this.world.getFluidState(blockpos), resistance);
 								}
 
-								f -= (f2 + f1) * f1;
+								intensity -= (resistance + attenuation) * attenuation;
 							}
 
-							if (f > 0.0F && (this.exploder == null || this.exploder.canExplosionDestroyBlock(this, this.world, blockpos, blockstate, f))) {
+							if (intensity > 0.0F && !blockstate.getMaterial().isLiquid() && (this.getExplosivePlacedBy() == null || this.getExplosivePlacedBy().canExplosionDestroyBlock(this, this.world, blockpos, blockstate, intensity))) {
 								set.add(blockpos);
 							}
 
-							d4 += d0 * (double)f1;
-							d6 += d1 * (double)f1;
-							d8 += d2 * (double)f1;
+							x += d0 * (double)attenuation;
+							y += d1 * (double)attenuation;
+							z += d2 * (double)attenuation;
 						}
 					}
 				}
@@ -90,46 +85,50 @@ public class MutatedExplosion extends Explosion {
 		}
 
 		this.getAffectedBlockPositions().addAll(set);
-		float f3 = this.size * 2.0F;
-		int k1 = MathHelper.floor(this.x - (double)f3 - 1.0D);
-		int l1 = MathHelper.floor(this.x + (double)f3 + 1.0D);
-		int i2 = MathHelper.floor(this.y - (double)f3 - 1.0D);
-		int i1 = MathHelper.floor(this.y + (double)f3 + 1.0D);
-		int j2 = MathHelper.floor(this.z - (double)f3 - 1.0D);
-		int j1 = MathHelper.floor(this.z + (double)f3 + 1.0D);
-		List<Entity> list = this.world.getEntitiesWithinAABBExcludingEntity(this.exploder, new AxisAlignedBB((double)k1, (double)i2, (double)j2, (double)l1, (double)i1, (double)j1));
-		net.minecraftforge.event.ForgeEventFactory.onExplosionDetonate(this.world, this, list, f3);
-		Vec3d vec3d = new Vec3d(this.x, this.y, this.z);
+		float diameter = this.size * 2.0F;
+		int minX = MathHelper.floor(this.getPosition().x - (double)diameter - 1.0D);
+		int maxX = MathHelper.floor(this.getPosition().x + (double)diameter + 1.0D);
+		int minY = MathHelper.floor(this.getPosition().y - (double)diameter - 1.0D);
+		int maxY = MathHelper.floor(this.getPosition().y + (double)diameter + 1.0D);
+		int minZ = MathHelper.floor(this.getPosition().z - (double)diameter - 1.0D);
+		int maxZ = MathHelper.floor(this.getPosition().z + (double)diameter + 1.0D);
+		List<Entity> list = this.world.getEntitiesInAABBexcluding(this.getExplosivePlacedBy(), new AxisAlignedBB((double)minX, (double)minY, (double)minZ, (double)maxX, (double)maxY, (double)maxZ), entity -> {
+			if (entity.isImmuneToExplosions()) {
+				return false;
+			} else if (this.getDamageSource().getTrueSource() instanceof SkullSpiritEntity) {
+				return !(entity instanceof LivingEntity) || ChemicalXEntity.IS_APPLICABLE.test((LivingEntity)entity);
+			} else {
+				return true;
+			}
+		});
+		net.minecraftforge.event.ForgeEventFactory.onExplosionDetonate(this.world, this, list, diameter);
 
 		for (Entity entity : list) {
-			if (!entity.isImmuneToExplosions()) {
-				double d12 = (double)(MathHelper.sqrt(entity.getDistanceSq(new Vec3d(this.x, this.y, this.z))) / f3);
-				if (d12 <= 1.0D) {
-					double d5 = entity.posX - this.x;
-					double d7 = entity.posY + (double)entity.getEyeHeight() - this.y;
-					double d9 = entity.posZ - this.z;
-					double d13 = (double)MathHelper.sqrt(d5 * d5 + d7 * d7 + d9 * d9);
-					if (d13 != 0.0D) {
-						d5 = d5 / d13;
-						d7 = d7 / d13;
-						d9 = d9 / d13;
-						double d14 = (double)getBlockDensity(vec3d, entity);
-						double d10 = (1.0D - d12) * d14;
-						entity.attackEntityFrom(this.getDamageSource(), (float)((int)((d10 * d10 + d10) / 2.0D * 6.0D * (double)f3 + 1.0D)));
-						double d11 = d10;
-						if (entity instanceof LivingEntity) {
-							d11 = ProtectionEnchantment.getBlastDamageReduction((LivingEntity)entity, d10);
-						}
+			double distance = (double)(MathHelper.sqrt(entity.getDistanceSq(this.getPosition())) / diameter);
+			if (distance <= 1.0D) {
+				double x = entity.posX - this.getPosition().x;
+				double y = entity.posY + (double)entity.getEyeHeight() - this.getPosition().y;
+				double z = entity.posZ - this.getPosition().z;
+				double d13 = (double)MathHelper.sqrt(x * x + y * y + z * z);
+				if (d13 != 0.0D) {
+					x /= d13;
+					y /= d13;
+					z /= d13;
+					double impact = (1.0D - distance) * (double)getBlockDensity(this.getPosition(), entity);
+					entity.attackEntityFrom(this.getDamageSource(), (float)((int)((impact * impact + impact) / 2.0D * 6.0D * (double)diameter + 1.0D)));
+					double exposure = impact;
+					if (entity instanceof LivingEntity) {
+						exposure = ProtectionEnchantment.getBlastDamageReduction((LivingEntity)entity, impact);
+					}
 
-						if (!(entity instanceof MutantCreeperEntity)) {
-							entity.setMotion(entity.getMotion().add(d5 * d11, d7 * d11, d9 * d11));
-						}
+					if (!(entity instanceof MutantCreeperEntity)) {
+						entity.setMotion(entity.getMotion().add(x * exposure, y * exposure, z * exposure));
+					}
 
-						if (entity instanceof PlayerEntity) {
-							PlayerEntity playerentity = (PlayerEntity)entity;
-							if (!playerentity.isSpectator() && (!playerentity.isCreative() || !playerentity.abilities.isFlying)) {
-								this.getPlayerKnockbackMap().put(playerentity, new Vec3d(d5 * d10, d7 * d10, d9 * d10));
-							}
+					if (entity instanceof PlayerEntity) {
+						PlayerEntity playerentity = (PlayerEntity)entity;
+						if (!playerentity.isSpectator() && (!playerentity.isCreative() || !playerentity.abilities.isFlying)) {
+							this.getPlayerKnockbackMap().put(playerentity, new Vec3d(x * impact, y * impact, z * impact));
 						}
 					}
 				}
@@ -137,22 +136,37 @@ public class MutatedExplosion extends Explosion {
 		}
 	}
 
-	public static void explode(World worldIn, Entity exploderIn, double xIn, double yIn, double zIn, float sizeIn, boolean causesFireIn, Mode mode) {
+	public static MutatedExplosion create(@Nonnull Entity exploderIn, float sizeIn, boolean causesFireIn, Explosion.Mode mode) {
+		return create(exploderIn.world, exploderIn, null, exploderIn.posX, exploderIn.posY, exploderIn.posZ, sizeIn, causesFireIn, mode);
+	}
+
+	public static MutatedExplosion create(World worldIn, @Nullable Entity exploderIn, @Nullable DamageSource damageSource, double xIn, double yIn, double zIn, float sizeIn, boolean causesFireIn, Explosion.Mode mode) {
+		if (exploderIn instanceof MobEntity && !net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(exploderIn.world, exploderIn)) {
+			mode = Explosion.Mode.NONE;
+		}
+
 		MutatedExplosion explosion = new MutatedExplosion(worldIn, exploderIn, xIn, yIn, zIn, sizeIn, causesFireIn, mode);
+		if (net.minecraftforge.event.ForgeEventFactory.onExplosionStart(explosion.world, explosion)) return explosion;
+		if (damageSource != null) {
+			explosion.setDamageSource(damageSource);
+		}
+
 		explosion.doExplosionA();
 		explosion.doExplosionB(true);
 
 		if (explosion.world instanceof ServerWorld) {
-			if (explosion.mode == Explosion.Mode.NONE) {
+			if (mode == Explosion.Mode.NONE) {
 				explosion.clearAffectedBlockPositions();
 			}
 
 			for (ServerPlayerEntity serverplayerentity : ((ServerWorld)explosion.world).getPlayers()) {
-				if (serverplayerentity.getDistanceSq(explosion.x, explosion.y, explosion.z) < 4096.0D) {
-					serverplayerentity.connection.sendPacket(new SExplosionPacket(explosion.x, explosion.y, explosion.z, explosion.size, explosion.getAffectedBlockPositions(), explosion.getPlayerKnockbackMap().get(serverplayerentity)));
+				if (serverplayerentity.getDistanceSq(explosion.getPosition().x, explosion.getPosition().y, explosion.getPosition().z) < 4096.0D) {
+					serverplayerentity.connection.sendPacket(new SExplosionPacket(explosion.getPosition().x, explosion.getPosition().y, explosion.getPosition().z, explosion.size, explosion.getAffectedBlockPositions(), explosion.getPlayerKnockbackMap().get(serverplayerentity)));
 				}
 			}
 		}
+
+		return explosion;
 	}
 
 	public static float getBlockDensity(Vec3d endVec, Entity entity) {
@@ -172,8 +186,8 @@ public class MutatedExplosion extends Explosion {
 						double d5 = MathHelper.lerp((double)f, axisalignedbb.minX, axisalignedbb.maxX);
 						double d6 = MathHelper.lerp((double)f1, axisalignedbb.minY, axisalignedbb.maxY);
 						double d7 = MathHelper.lerp((double)f2, axisalignedbb.minZ, axisalignedbb.maxZ);
-						Vec3d vec3d = new Vec3d(d5 + d3, d6, d7 + d4);
-						if (entity.world.rayTraceBlocks(new RayTraceContext(vec3d, endVec, RayTraceContext.BlockMode.COLLIDER, RayTraceContext.FluidMode.ANY, entity)).getType() == RayTraceResult.Type.MISS) {
+						Vec3d vec3d = new Vec3d(d5 + d3, d6, d7 + d4); // Changed from RayTraceContext.BlockMode.OUTLINE
+						if (entity.world.rayTraceBlocks(new RayTraceContext(vec3d, endVec, RayTraceContext.BlockMode.COLLIDER, RayTraceContext.FluidMode.NONE, entity)).getType() == RayTraceResult.Type.MISS) {
 							++i;
 						}
 

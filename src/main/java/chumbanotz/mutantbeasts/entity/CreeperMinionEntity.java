@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import javax.annotation.Nullable;
 
-import chumbanotz.mutantbeasts.client.ClientEventHandler;
+import chumbanotz.mutantbeasts.client.gui.CreeperMinionTrackerScreen;
 import chumbanotz.mutantbeasts.entity.ai.goal.AvoidDamageGoal;
 import chumbanotz.mutantbeasts.entity.ai.goal.CopyAttackTargetGoal;
 import chumbanotz.mutantbeasts.item.MBItems;
@@ -13,6 +13,7 @@ import chumbanotz.mutantbeasts.pathfinding.MBGroundPathNavigator;
 import chumbanotz.mutantbeasts.util.EntityUtil;
 import chumbanotz.mutantbeasts.util.MBSoundEvents;
 import chumbanotz.mutantbeasts.util.MutatedExplosion;
+import net.minecraft.client.Minecraft;
 import net.minecraft.entity.AgeableEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntitySize;
@@ -45,6 +46,7 @@ import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
+import net.minecraft.particles.ParticleTypes;
 import net.minecraft.pathfinding.PathNavigator;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.Hand;
@@ -52,16 +54,17 @@ import net.minecraft.util.SoundCategory;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.text.StringTextComponent;
+import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.fml.DistExecutor;
 
 public class CreeperMinionEntity extends ShoulderRidingEntity {
-	private static final DataParameter<Integer> EXPLODE_STATE = EntityDataManager.createKey(CreeperMinionEntity.class, DataSerializers.VARINT);
 	private static final DataParameter<Byte> CREEPER_MINION_FLAGS = EntityDataManager.createKey(CreeperMinionEntity.class, DataSerializers.BYTE);
+	private static final DataParameter<Integer> EXPLODE_STATE = EntityDataManager.createKey(CreeperMinionEntity.class, DataSerializers.VARINT);
 	private static final DataParameter<Float> EXPLOSION_RADIUS = EntityDataManager.createKey(CreeperMinionEntity.class, DataSerializers.FLOAT);
 	private static final DataParameter<Integer> COLLAR_COLOR = EntityDataManager.createKey(CreeperMinionEntity.class, DataSerializers.VARINT);
 	private int lastActiveTime;
@@ -79,7 +82,7 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 		this.goalSelector.addGoal(1, this.sitGoal = new SitGoal(this));
 		this.goalSelector.addGoal(2, new CreeperMinionEntity.SwellGoal());
 		this.goalSelector.addGoal(3, new AvoidDamageGoal(this, 1.2D));
-		this.goalSelector.addGoal(3, new AvoidEntityGoal<AnimalEntity>(this, AnimalEntity.class, 6.0F, 1.0D, 1.2D, EntityUtil::isMobFeline) {
+		this.goalSelector.addGoal(3, new AvoidEntityGoal<AnimalEntity>(this, AnimalEntity.class, 6.0F, 1.0D, 1.2D, EntityUtil::isFeline) {
 			@Override
 			public boolean shouldExecute() {
 				return !isTamed() && super.shouldExecute();
@@ -125,18 +128,14 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 		UUID uuid = this.getOwnerId();
 		if (uuid == null) {
 			return null;
-		} else if (this.world.getPlayerByUuid(uuid) != null) {
-			return this.world.getPlayerByUuid(uuid);
 		} else {
-			Entity entity = this.world instanceof ServerWorld ? ((ServerWorld)this.world).getEntityByUuid(uuid) : null;
-			return entity != null && entity instanceof LivingEntity ? (LivingEntity)entity : null;
-		}
-	}
+			Entity entity = this.world.getPlayerByUuid(uuid);
+			if (entity == null && this.world instanceof ServerWorld) {
+				entity = ((ServerWorld)this.world).getEntityByUuid(uuid);
+			}
 
-	@Override
-	public void setTamedBy(PlayerEntity player) {
-		this.setTamed(true);
-		this.setOwnerId(player.getUniqueID());
+			return entity instanceof LivingEntity ? (LivingEntity)entity : null;
+		}
 	}
 
 	public int getExplodeState() {
@@ -156,7 +155,7 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 		this.dataManager.set(CREEPER_MINION_FLAGS, powered ? (byte)(b0 | 1) : (byte)(b0 & ~1));
 	}
 
-	public boolean isIgnited() {
+	public boolean hasIgnited() {
 		return (this.dataManager.get(CREEPER_MINION_FLAGS) & 4) != 0;
 	}
 
@@ -275,7 +274,7 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 		if (this.isAlive()) {
 			this.lastActiveTime = this.timeSinceIgnited;
 
-			if (this.isIgnited()) {
+			if (this.hasIgnited()) {
 				this.setExplodeState(1);
 			}
 
@@ -295,9 +294,7 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 				this.timeSinceIgnited = 0;
 
 				if (!this.world.isRemote) {
-					MutatedExplosion.Mode mode = net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this.world, this) && this.canDestroyBlocks() ? MutatedExplosion.Mode.DESTROY : MutatedExplosion.Mode.NONE;
-					MutatedExplosion.explode(this.world, this, this.posX, this.posY, this.posZ, this.getExplosionRadius() + (this.getPowered() ? 2.0F : 0.0F), false, mode);
-
+					MutatedExplosion.create(this, this.getExplosionRadius() + (this.getPowered() ? 2.0F : 0.0F), false, this.canDestroyBlocks() ? MutatedExplosion.Mode.DESTROY : MutatedExplosion.Mode.NONE);
 					if (!this.canExplodeContinuously()) {
 						this.dead = true;
 						this.remove();
@@ -320,7 +317,7 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 
 	@OnlyIn(Dist.CLIENT)
 	public float getCreeperFlashIntensity(float partialTicks) {
-		return MathHelper.lerp(partialTicks, (float)this.lastActiveTime, (float)this.timeSinceIgnited) / (float)(30 - 2);
+		return MathHelper.lerp(partialTicks, (float)this.lastActiveTime, (float)this.timeSinceIgnited) / (float)(this.fuseTime - 2);
 	}
 
 	@Override
@@ -333,7 +330,7 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 		if (this.isTamed()) {
 			if (this.isOwner(player)) {
 				if (itemstack.getItem() == MBItems.CREEPER_MINION_TRACKER) {
-					ClientEventHandler.INSTANCE.openCreeperMinionTrackerScreen(this);
+					DistExecutor.runWhenOn(Dist.CLIENT, () -> this::openGui);
 					return true;
 				} else if (itemstack.getItem() instanceof DyeItem) {
 					DyeColor dyecolor = ((DyeItem)itemstack.getItem()).getDyeColor();
@@ -345,13 +342,19 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 				} else if (itemstack.getItem() == Items.GUNPOWDER) {
 					if (this.getHealth() < this.getMaxHealth()) {
 						this.heal(1.0F);
-						this.world.setEntityState(this, (byte)18);
 						itemstack.shrink(1);
+						if (this.world.isRemote) {
+							EntityUtil.spawnParticlesAtEntity(this, ParticleTypes.HEART, 1);
+						}
+
 						return true;
 					} else if (this.getMaxHealth() < 20.0F) {
-						this.world.setEntityState(this, (byte)18);
 						this.getAttribute(SharedMonsterAttributes.MAX_HEALTH).setBaseValue(this.getMaxHealth() + 1.0F);
 						itemstack.shrink(1);
+						if (this.world.isRemote) {
+							EntityUtil.spawnParticlesAtEntity(this, ParticleTypes.HEART, 1);
+						}
+
 						return true;
 					}
 				} else if (itemstack.getItem() == Items.TNT) {
@@ -381,7 +384,7 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 			}
 
 			return false;
-		} else if (itemstack.getItem() == Items.FLINT_AND_STEEL && !this.isIgnited()) {
+		} else if (itemstack.getItem() == Items.FLINT_AND_STEEL && !this.hasIgnited()) {
 			this.world.playSound(player, this.posX, this.posY, this.posZ, SoundEvents.ITEM_FLINTANDSTEEL_USE, this.getSoundCategory(), 1.0F, this.rand.nextFloat() * 0.4F + 0.8F);
 			player.swingArm(hand);
 
@@ -391,16 +394,23 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 			}
 
 			return true; // MC-99779
-		} else if (this.getOwner() == null && player.isCreative() && itemstack.getItem() == MBItems.CREEPER_MINION_TRACKER) {
+		} else if (player.isCreative() && itemstack.getItem() == MBItems.CREEPER_MINION_TRACKER && this.getOwner() == null) {
 			if (!this.world.isRemote) {
 				this.setTamedBy(player);
-				player.sendMessage(new StringTextComponent("Creeper Minion has been tamed by " + player.getName().getString()));
+				player.sendMessage(new TranslationTextComponent("item.mutantbeasts.creeper_minion_tracker.tame_success", this.getDisplayName(), player.getDisplayName()));
 			}
 
 			return true;
+		} else {
+			return false;
 		}
+	}
 
-		return false;
+	@OnlyIn(Dist.CLIENT)
+	private void openGui() {
+		if (this.world.isRemote) {
+			Minecraft.getInstance().displayGuiScreen(new CreeperMinionTrackerScreen(this));
+		}
 	}
 
 	@Override
@@ -459,7 +469,7 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 
 	@Override
 	public void playAmbientSound() {
-		if (this.getAttackTarget() == null && !this.isIgnited()) {
+		if (this.getAttackTarget() == null && !this.hasIgnited()) {
 			super.playAmbientSound();
 		}
 	}
@@ -481,7 +491,7 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 
 	@Override
 	public SoundCategory getSoundCategory() {
-		return !this.isTamed() ? SoundCategory.HOSTILE : SoundCategory.NEUTRAL;
+		return this.isTamed() ? SoundCategory.NEUTRAL : SoundCategory.HOSTILE;
 	}
 
 	@Override
@@ -491,7 +501,7 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 		compound.putBoolean("ExplodesContinuously", this.canExplodeContinuously());
 		compound.putBoolean("DestroysBlocks", this.canDestroyBlocks());
 		compound.putBoolean("CanRideOnShoulder", this.canRideOnShoulder());
-		compound.putBoolean("Ignited", this.isIgnited());
+		compound.putBoolean("Ignited", this.hasIgnited());
 		compound.putShort("Fuse", (short)this.fuseTime);
 		compound.putFloat("ExplosionRadius", this.getExplosionRadius());
 

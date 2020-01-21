@@ -34,25 +34,40 @@ import chumbanotz.mutantbeasts.particles.MBParticleTypes;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.PlayerRenderer;
 import net.minecraft.client.renderer.entity.SpriteRenderer;
+import net.minecraft.client.renderer.model.IBakedModel;
+import net.minecraft.client.renderer.model.ModelResourceLocation;
+import net.minecraft.client.renderer.model.ModelRotation;
+import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.ModelBakeEvent;
 import net.minecraftforge.client.event.ModelRegistryEvent;
 import net.minecraftforge.client.event.ParticleFactoryRegisterEvent;
-import net.minecraftforge.client.model.ModelLoaderRegistry;
+import net.minecraftforge.client.model.ModelLoader;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.client.registry.RenderingRegistry;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
-@EventBusSubscriber(modid = MutantBeasts.MOD_ID, value = Dist.CLIENT)
-public enum ClientEventHandler {
-	INSTANCE;
-
+@EventBusSubscriber(modid = MutantBeasts.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+public class ClientEventHandler {
 	@SubscribeEvent
 	public static void onModelRegistry(ModelRegistryEvent event) {
-		ModelLoaderRegistry.registerLoader(new EndersoulHandModel.Loader());
+		ModelLoader.addSpecialModel(new ModelResourceLocation(MutantBeasts.prefix("endersoul_hand_model"), "inventory"));
+//		ModelLoaderRegistry.registerLoader(EndersoulHandModel.Loader.INSTANCE);
 	}
 
-	public void openCreeperMinionTrackerScreen(CreeperMinionEntity creeperMinion) {
-		Minecraft.getInstance().displayGuiScreen(new CreeperMinionTrackerScreen(creeperMinion));
+	@SubscribeEvent
+	public static void onModelBake(ModelBakeEvent event) {
+		ResourceLocation loc = new ModelResourceLocation(MutantBeasts.prefix("endersoul_hand"), "inventory");
+		ResourceLocation modelLoc = new ModelResourceLocation(MutantBeasts.prefix("endersoul_hand_model"), "inventory");
+		IBakedModel bakedModel = event.getModelLoader().getUnbakedModel(modelLoc).bake(event.getModelLoader(), Minecraft.getInstance().getTextureMap()::getSprite, ModelRotation.X0_Y0, DefaultVertexFormats.ITEM);
+		event.getModelRegistry().replace(loc, new EndersoulHandModel.Baked(event.getModelRegistry().get(loc), bakedModel));
+	}
+
+	@SubscribeEvent
+	public static void onParticleFactoryRegistry(ParticleFactoryRegisterEvent event) {
+		Minecraft.getInstance().particles.registerFactory(MBParticleTypes.LARGE_PORTAL, LargePortalParticle.Factory::new);
+		Minecraft.getInstance().particles.registerFactory(MBParticleTypes.SKULL_SPIRIT, SkullSpiritParticle.Factory::new);
 	}
 
 	public static void registerEntityRenderers(Minecraft client) {
@@ -72,16 +87,6 @@ public enum ClientEventHandler {
 
 		for (PlayerRenderer renderer : client.getRenderManager().getSkinMap().values()) {
 			renderer.addLayer(new CreeperMinionShoulderLayer<>(renderer));
-		}
-	}
-
-	@EventBusSubscriber(modid = MutantBeasts.MOD_ID, value = Dist.CLIENT, bus = EventBusSubscriber.Bus.MOD)
-	enum Mod {
-		;
-		@SubscribeEvent
-		public static void onParticleFactoryRegistry(ParticleFactoryRegisterEvent event) {
-			Minecraft.getInstance().particles.registerFactory(MBParticleTypes.LARGE_PORTAL, LargePortalParticle.Factory::new);
-			Minecraft.getInstance().particles.registerFactory(MBParticleTypes.SKULL_SPIRIT, SkullSpiritParticle.Factory::new);
 		}
 	}
 }
