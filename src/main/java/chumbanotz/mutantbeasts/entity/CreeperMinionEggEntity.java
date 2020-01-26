@@ -75,7 +75,7 @@ public class CreeperMinionEggEntity extends Entity {
 
 	@Override
 	public double getYOffset() {
-		return this.getRidingEntity() instanceof PlayerEntity ? (double)this.getHeight() - 0.2D : super.getYOffset();
+		return (double)this.getHeight() - (this.getRidingEntity().getPose() == Pose.SNEAKING ? 0.35D : 0.2D);
 	}
 
 	@Override
@@ -95,12 +95,17 @@ public class CreeperMinionEggEntity extends Entity {
 
 	@Override
 	public boolean canBeCollidedWith() {
-		return this.isAlive() && !this.isPassenger();
+		return this.isAlive();
 	}
 
 	@Override
 	public boolean canBePushed() {
 		return this.isAlive();
+	}
+
+	@Override
+	public boolean canRiderInteract() {
+		return true;
 	}
 
 	@Override
@@ -155,8 +160,8 @@ public class CreeperMinionEggEntity extends Entity {
 			this.setMotion(this.getMotion().mul(0.7D, 0.0D, 0.7D));
 		}
 
-		if (this.isPassenger() && (this.isEntityInsideOpaqueBlock() || this.getRidingEntity().getPose() != Pose.STANDING || this.getRidingEntity().isSpectator())) {
-			this.detach();
+		if (this.isPassenger() && (this.isEntityInsideOpaqueBlock() || this.getRidingEntity().getPose() != Pose.STANDING && this.getRidingEntity().getPose() != Pose.SNEAKING || this.getRidingEntity().isSpectator())) {
+			this.stopRiding();
 			this.playMountSound(false);
 		}
 
@@ -173,12 +178,17 @@ public class CreeperMinionEggEntity extends Entity {
 
 	@Override
 	public boolean processInitialInteract(PlayerEntity player, Hand hand) {
-		if (player.getPose() == Pose.STANDING && !player.isBeingRidden() && this.startRiding(player, true)) {
+		if (this.isPassenger() && player == this.getRidingEntity()) {
+			this.stopRiding();
+			this.playMountSound(false);
+			return true;
+		} else if (!player.isBeingRidden() && (player.getPose() == Pose.STANDING || player.getPose() == Pose.SNEAKING)) {
+			this.startRiding(player, true);
 			this.playMountSound(true);
 			return true;
+		} else {
+			return false;
 		}
-
-		return false;
 	}
 
 	private void playMountSound(boolean mount) {
@@ -187,7 +197,7 @@ public class CreeperMinionEggEntity extends Entity {
 
 	@Override
 	public boolean attackEntityFrom(DamageSource source, float amount) {
-		if (this.isInvulnerableTo(source) || this.isPassenger()) {
+		if (this.isInvulnerableTo(source) || source.getTrueSource() == this.getRidingEntity()) {
 			return false;
 		} else {
 			Entity entity = source.getTrueSource();
@@ -209,7 +219,7 @@ public class CreeperMinionEggEntity extends Entity {
 					return false;
 				} else {
 					this.recentlyHit = this.ticksExisted;
-					// this.setMotion(0.0D, 0.2D, 0.0D);
+					this.setMotion(0.0D, 0.2D, 0.0D);
 					this.markVelocityChanged();
 
 					if (!this.world.isRemote) {
@@ -241,6 +251,7 @@ public class CreeperMinionEggEntity extends Entity {
 	protected void writeAdditional(CompoundNBT compound) {
 		compound.putInt("Health", this.health);
 		compound.putInt("Age", this.age);
+		compound.putInt("RecentlyHit", this.recentlyHit);
 		if (this.getOwnerUniqueId() != null) {
 			compound.putUniqueId("OwnerUUID", this.getOwnerUniqueId());
 		}
@@ -250,6 +261,7 @@ public class CreeperMinionEggEntity extends Entity {
 	protected void readAdditional(CompoundNBT compound) {
 		this.health = compound.getInt("Health");
 		this.age = compound.getInt("Age");
+		this.recentlyHit = compound.getInt("RecentlyHit");
 		if (compound.hasUniqueId("OwnerUUID")) {
 			this.setOwnerUniqueId(compound.getUniqueId("OwnerUUID"));
 		}

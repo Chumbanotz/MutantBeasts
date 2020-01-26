@@ -12,7 +12,6 @@ import chumbanotz.mutantbeasts.entity.mutant.MutantEndermanEntity;
 import chumbanotz.mutantbeasts.item.ChemicalXItem;
 import chumbanotz.mutantbeasts.item.MBItems;
 import chumbanotz.mutantbeasts.packet.PacketHandler;
-import chumbanotz.mutantbeasts.tileentity.MBSkullTileEntity;
 import net.minecraft.block.Block;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
@@ -59,7 +58,7 @@ public class MutantBeasts {
 	}
 
 	private void onClientSetup(FMLClientSetupEvent event) {
-		MBSkullTileEntity.addModelsAndSkins();
+		ClientEventHandler.addSkullModelsAndSkins();
 		ClientEventHandler.registerEntityRenderers(event.getMinecraftSupplier().get());
 		ClientRegistry.registerEntityShader(CreeperMinionEntity.class, new ResourceLocation("shaders/post/creeper.json"));
 		ClientRegistry.registerEntityShader(MutantEndermanEntity.class, new ResourceLocation("shaders/post/invert.json"));

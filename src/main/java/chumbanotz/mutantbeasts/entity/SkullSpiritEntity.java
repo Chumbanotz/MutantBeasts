@@ -19,7 +19,6 @@ import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.util.DamageSource;
-import net.minecraft.util.EntityDamageSource;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -30,12 +29,18 @@ import net.minecraftforge.fml.network.NetworkHooks;
 public class SkullSpiritEntity extends Entity {
 	private static final DataParameter<OptionalInt> TARGET_ENTITY_ID = EntityDataManager.createKey(SkullSpiritEntity.class, DataSerializers.OPTIONAL_VARINT);
 	private static final DataParameter<Boolean> ATTACHED = EntityDataManager.createKey(SkullSpiritEntity.class, DataSerializers.BOOLEAN);
+	private MobEntity target;
 	private int startTick = 15;
 	private int attachedTick = 80 + this.rand.nextInt(40);
 
 	public SkullSpiritEntity(EntityType<? extends SkullSpiritEntity> type, World worldIn) {
 		super(type, worldIn);
 		this.noClip = true;
+	}
+
+	public SkullSpiritEntity(World worldIn, MobEntity target) {
+		this(MBEntityType.SKULL_SPIRIT, worldIn);
+		this.setTarget(target);
 	}
 
 	public SkullSpiritEntity(FMLPlayMessages.SpawnEntity packet, World worldIn) {
@@ -66,26 +71,28 @@ public class SkullSpiritEntity extends Entity {
 		}
 	}
 
-	public void setTarget(MobEntity mobEntity) {
+	private void setTarget(MobEntity mobEntity) {
 		this.dataManager.set(TARGET_ENTITY_ID, OptionalInt.of(mobEntity.getEntityId()));
 	}
 
 	@Override
 	public void tick() {
 		super.tick();
-		MobEntity target = this.getTarget();
+		if (this.target == null) {
+			this.target = this.getTarget();
+		}
 
-		if (target != null && target.isAlive()) {
+		if (this.target != null && this.target.isAlive()) {
 			if (this.isAttached()) {
 				if (!this.world.isRemote) {
-					target.setMotion((double)((this.rand.nextFloat() - this.rand.nextFloat()) * 0.1F), target.getMotion().y, (double)((this.rand.nextFloat() - this.rand.nextFloat()) * 0.1F));
+					this.target.setMotion((double)((this.rand.nextFloat() - this.rand.nextFloat()) * 0.1F), this.target.getMotion().y, (double)((this.rand.nextFloat() - this.rand.nextFloat()) * 0.1F));
 
 					if (--this.attachedTick <= 0) {
-						MutatedExplosion.create(this.world, this, new EntityDamageSource("explosion", this).setDifficultyScaled().setExplosion(), this.posX, this.posY, this.posZ, 2.0F, false, MutatedExplosion.Mode.NONE);
-						MobEntity mutant = ChemicalXEntity.getMutantOf(target);
+						MobEntity mutant = ChemicalXEntity.getMutantOf(this.target);
 						if (mutant != null && this.rand.nextFloat() < 0.75F) {
-							target.setPosition(this.posX, 0.0D, this.posZ);
-							target.remove();
+							this.target.setPosition(this.posX, 0.0D, this.posZ);
+							this.target.remove();
+							MutatedExplosion.create(this, 2.0F, false, MutatedExplosion.Mode.NONE);
 							mutant.enablePersistence();
 							mutant.setPosition(this.posX, this.posY, this.posZ);
 							this.world.addEntity(mutant);
@@ -101,23 +108,24 @@ public class SkullSpiritEntity extends Entity {
 								CriteriaTriggers.SUMMONED_ENTITY.trigger(serverplayerentity, mutant);
 							}
 						} else {
-							target.attackEntityFrom(DamageSource.causeExplosionDamage((LivingEntity)null), Float.MAX_VALUE);
+							MutatedExplosion.create(this, 2.0F, false, MutatedExplosion.Mode.NONE);
+							this.target.attackEntityFrom(DamageSource.causeExplosionDamage((LivingEntity)null), Float.MAX_VALUE);
 						}
 
 						this.remove();
 					}
 				}
 
-				this.setPosition(target.posX, target.posY, target.posZ);
+				this.setPosition(this.target.posX, this.target.posY, this.target.posZ);
 
 				if (this.rand.nextInt(8) == 0) {
-					target.attackEntityFrom(DamageSource.MAGIC, 0.0F);
+					this.target.attackEntityFrom(DamageSource.MAGIC, 0.0F);
 				}
 
 				for (int i = 0; i < 3; i++) {
-					double posX = target.posX + (this.rand.nextFloat() * target.getWidth() * 2.0F) - target.getWidth();
-					double posY = target.posY + 0.5D + (this.rand.nextFloat() * target.getHeight());
-					double posZ = target.posZ + (this.rand.nextFloat() * target.getWidth() * 2.0F) - target.getWidth();
+					double posX = this.target.posX + (this.rand.nextFloat() * this.target.getWidth() * 2.0F) - this.target.getWidth();
+					double posY = this.target.posY + 0.5D + (this.rand.nextFloat() * this.target.getHeight());
+					double posZ = this.target.posZ + (this.rand.nextFloat() * this.target.getWidth() * 2.0F) - this.target.getWidth();
 					double x = this.rand.nextGaussian() * 0.02D;
 					double y = this.rand.nextGaussian() * 0.02D;
 					double z = this.rand.nextGaussian() * 0.02D;
@@ -133,14 +141,14 @@ public class SkullSpiritEntity extends Entity {
 					this.setMotion(this.getMotion().add(0.0D, (double)(0.3F * (float)this.startTick / 15.0F), 0.0D));
 				}
 
-				double x = target.posX - this.posX;
-				double y = target.posY - this.posY;
-				double z = target.posZ - this.posZ;
+				double x = this.target.posX - this.posX;
+				double y = this.target.posY - this.posY;
+				double z = this.target.posZ - this.posZ;
 				double d = Math.sqrt(x * x + y * y + z * z);
 				this.setMotion(this.getMotion().add(x / d * 0.20000000298023224D, y / d * 0.20000000298023224D, z / d * 0.20000000298023224D));
 				this.move(MoverType.SELF, this.getMotion());
 
-				if (!this.world.isRemote && this.getDistanceSq(target) < 1.0D) {
+				if (!this.world.isRemote && this.getDistanceSq(this.target) < 1.0D) {
 					this.attach(true);
 				}
 

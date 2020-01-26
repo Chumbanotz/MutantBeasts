@@ -218,7 +218,9 @@ public class EndersoulFragmentEntity extends Entity {
 	@Override
 	protected void readAdditional(CompoundNBT compound) {
 		this.setCollected(compound.getBoolean("Collected"));
-		this.explodeTick = compound.getInt("ExplodeTick");
+		if (compound.contains("ExplodeTick")) {
+			this.explodeTick = compound.getInt("ExplodeTick");
+		}
 	}
 
 	@Override

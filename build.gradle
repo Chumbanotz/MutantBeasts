@@ -13,14 +13,14 @@ apply plugin: 'net.minecraftforge.gradle'
 apply plugin: 'eclipse'
 apply plugin: 'maven-publish'
 
-version = '1.14.4-0.8.0'
+version = '1.14.4-0.8.1'
 group = 'chumbanotz.mutantbeasts' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = 'MutantBeasts'
 
 sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8' // Need this here so eclipse task generates correctly.
 
 minecraft {
-    mappings channel: 'snapshot', version: '20200117-1.14.3'
+    mappings channel: 'snapshot', version: '20200119-1.14.4'
     // makeObfSourceJar = false // an Srg named sources jar is made by default. uncomment this to disable.
     
     // accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
@@ -81,7 +81,7 @@ minecraft {
 }
 
 dependencies {
-    minecraft 'net.minecraftforge:forge:1.14.4-28.1.115'
+    minecraft 'net.minecraftforge:forge:1.14.4-28.1.116'
 
 }
 

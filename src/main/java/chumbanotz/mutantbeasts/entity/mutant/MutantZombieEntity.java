@@ -524,12 +524,14 @@ public class MutantZombieEntity extends ZombieEntity {
 	@Override
 	public void readAdditional(CompoundNBT compound) {
 		super.readAdditional(compound);
-		this.setLives(compound.getInt("Lives"));
-		this.vanishTime = compound.getShort("VanishTime");
-		ListNBT listnbt1 = compound.getList("Resurrections", 10);
+		if (compound.contains("Lives")) {
+			this.setLives(compound.getInt("Lives"));
+		}
 
-		for (int i = 0; i < listnbt1.size(); i++) {
-			CompoundNBT compound1 = listnbt1.getCompound(i);
+		this.vanishTime = compound.getShort("VanishTime");
+		ListNBT listNBT = compound.getList("Resurrections", 10);
+		for (int i = 0; i < listNBT.size(); i++) {
+			CompoundNBT compound1 = listNBT.getCompound(i);
 			this.resurrectionList.add(i, new ZombieResurrection(this.world, NBTUtil.readBlockPos(compound1), compound1.getInt("Tick")));
 		}
 	}

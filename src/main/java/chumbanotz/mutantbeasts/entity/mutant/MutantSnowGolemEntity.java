@@ -52,7 +52,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
 public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackMob {
-	private static final DataParameter<Byte> PUMPKIN_EQUIPPED = EntityDataManager.createKey(MutantSnowGolemEntity.class, DataSerializers.BYTE);
+	private static final DataParameter<Boolean> PUMPKIN_EQUIPPED = EntityDataManager.createKey(MutantSnowGolemEntity.class, DataSerializers.BOOLEAN);
 	private boolean isThrowing;
 	private int throwingTick;
 
@@ -87,16 +87,15 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 	@Override
 	protected void registerData() {
 		super.registerData();
-		this.dataManager.register(PUMPKIN_EQUIPPED, (byte)16);
+		this.dataManager.register(PUMPKIN_EQUIPPED, true);
 	}
 
 	public boolean isPumpkinEquipped() {
-		return (this.dataManager.get(PUMPKIN_EQUIPPED) & 16) != 0;
+		return this.dataManager.get(PUMPKIN_EQUIPPED);
 	}
 
 	public void setPumpkinEquipped(boolean pumpkinEquipped) {
-		byte b0 = this.dataManager.get(PUMPKIN_EQUIPPED);
-		this.dataManager.set(PUMPKIN_EQUIPPED, pumpkinEquipped ? (byte)(b0 | 16) : (byte)(b0 & -17));
+		this.dataManager.set(PUMPKIN_EQUIPPED, pumpkinEquipped);
 	}
 
 	@Override

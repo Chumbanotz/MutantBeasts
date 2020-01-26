@@ -18,7 +18,6 @@ import chumbanotz.mutantbeasts.item.MBItems;
 import chumbanotz.mutantbeasts.util.EntityUtil;
 import chumbanotz.mutantbeasts.util.MBSoundEvents;
 import chumbanotz.mutantbeasts.util.SeismicWave;
-import net.minecraft.client.entity.player.ClientPlayerEntity;
 import net.minecraft.entity.CreatureEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -101,9 +100,8 @@ public class EventHandler {
 
 	@SubscribeEvent
 	public static void onLivingHurt(LivingHurtEvent event) {
-		LivingEntity livingEntity = event.getEntityLiving();
-		if (livingEntity instanceof PlayerEntity && !(livingEntity instanceof ClientPlayerEntity)) {
-			PlayerEntity playerEntity = (PlayerEntity)livingEntity;
+		if (event.getEntityLiving() instanceof PlayerEntity) {
+			PlayerEntity playerEntity = (PlayerEntity)event.getEntityLiving();
 			ItemStack stack = playerEntity.getItemStackFromSlot(EquipmentSlotType.HEAD);
 			if (stack.getItem() instanceof ArmorBlockItem && !event.getSource().isUnblockable()) {
 				float damage = event.getAmount();

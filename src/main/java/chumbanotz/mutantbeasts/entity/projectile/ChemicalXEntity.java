@@ -99,9 +99,8 @@ public class ChemicalXEntity extends ProjectileItemEntity {
 			}
 
 			if (target != null) {
-				SkullSpiritEntity spirit = MBEntityType.SKULL_SPIRIT.create(this.world);
+				SkullSpiritEntity spirit = new SkullSpiritEntity(this.world, target);
 				spirit.setPosition(this.posX, this.posY, this.posZ);
-				spirit.setTarget(target);
 				this.world.addEntity(spirit);
 			}
 

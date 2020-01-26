@@ -315,7 +315,7 @@ public class MutantCreeperEntity extends CreeperEntity {
 				EntityUtil.spawnLingeringCloud(this);
 				super.onDeath(this.deathCause);
 
-				if (EntityUtil.dropExperience(this, this.recentlyHit, this::getExperiencePoints, this.attackingPlayer)) {
+				if (EntityUtil.dropExperience(this, this.recentlyHit, this::getExperiencePoints, this.attackingPlayer) && this.attackingPlayer != null) {
 					CreeperMinionEggEntity egg = new CreeperMinionEggEntity(this.world, this.attackingPlayer);
 					egg.setPosition(this.posX, this.posY, this.posZ);
 					this.world.addEntity(egg);

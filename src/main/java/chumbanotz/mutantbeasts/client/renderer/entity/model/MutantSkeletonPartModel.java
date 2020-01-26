@@ -9,7 +9,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 @OnlyIn(Dist.CLIENT)
 public class MutantSkeletonPartModel extends Model {
 	private final RendererModel pelvis;
-	private final MutantSkeletonSpineModel[] spine;
+	private final MutantSkeletonModel.Spine[] spine;
 	private final JointRendererModel head;
 	private final RendererModel jaw;
 	private final JointRendererModel arm1;
@@ -28,10 +28,10 @@ public class MutantSkeletonPartModel extends Model {
 		this.textureHeight = 128;
 		this.pelvis = new RendererModel(this, 0, 16);
 		this.pelvis.addBox(-4.0F, -3.0F, -3.0F, 8, 6, 6);
-		this.spine = new MutantSkeletonSpineModel[3];
+		this.spine = new MutantSkeletonModel.Spine[3];
 
 		for (int i = 0; i < this.spine.length; ++i) {
-			this.spine[i] = new MutantSkeletonSpineModel(this, true);
+			this.spine[i] = new MutantSkeletonModel.Spine(this, true);
 			this.boxList.remove(this.spine[i].middle);
 		}
 

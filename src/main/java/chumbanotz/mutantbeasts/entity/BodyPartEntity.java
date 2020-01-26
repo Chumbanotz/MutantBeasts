@@ -39,7 +39,7 @@ public class BodyPartEntity extends Entity {
 	private double velocityY;
 	@OnlyIn(Dist.CLIENT)
 	private double velocityZ;
-	private int age;
+	private int despawnTimer;
 
 	public BodyPartEntity(EntityType<? extends BodyPartEntity> type, World world) {
 		super(type, world);
@@ -129,7 +129,7 @@ public class BodyPartEntity extends Entity {
 		}
 
 		if (!this.onGround && this.motionMultiplier.length() == 0.0D) {
-			this.age = Math.max(0, this.age - 1);
+			this.despawnTimer = Math.max(0, this.despawnTimer - 1);
 			this.rotationYaw += 10.0F * (float)(this.yawPositive ? 1 : -1);
 			this.rotationPitch += 15.0F * (float)(this.pitchPositive ? 1 : -1);
 			for (Entity entity : this.world.getEntitiesInAABBexcluding(this, this.getBoundingBox(), this::canHarm)) {
@@ -137,10 +137,10 @@ public class BodyPartEntity extends Entity {
 				entity.attackEntityFrom(DamageSource.causeThrownDamage(this, this.owner == null ? this : this.owner.get()), 4.0F + (float)this.rand.nextInt(4));
 			}
 		} else {
-			++this.age;
+			++this.despawnTimer;
 		}
 
-		if (!this.world.isRemote && this.age >= 6000) {
+		if (!this.world.isRemote && this.despawnTimer >= 6000) {
 			this.remove();
 		}
 	}
@@ -220,14 +220,14 @@ public class BodyPartEntity extends Entity {
 	protected void writeAdditional(CompoundNBT compound) {
 		compound.putString("OwnerType", this.getOwnerType());
 		compound.putByte("Part", (byte)this.getPart());
-		compound.putShort("Age", (short)this.age);
+		compound.putShort("DespawnTimer", (short)this.despawnTimer);
 	}
 
 	@Override
 	protected void readAdditional(CompoundNBT compound) {
 		this.setOwnerType(compound.getString("OwnerType"));
 		this.setPart(compound.getByte("Part"));
-		this.age = compound.getShort("Age");
+		this.despawnTimer = compound.getShort("DespawnTimer");
 	}
 
 	@Override

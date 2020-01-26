@@ -7,7 +7,6 @@ import net.minecraft.pathfinding.Path;
 import net.minecraft.util.Hand;
 
 public class MBMeleeAttackGoal extends MeleeAttackGoal {
-	private final CreatureEntity attacker;
 	private int maxAttackTick = 20;
 	private final float moveSpeed;
 	private Path path;
@@ -15,7 +14,6 @@ public class MBMeleeAttackGoal extends MeleeAttackGoal {
 
 	public MBMeleeAttackGoal(CreatureEntity creatureEntity, double moveSpeed) {
 		super(creatureEntity, moveSpeed, true);
-		this.attacker = creatureEntity;
 		this.moveSpeed = (float)moveSpeed;
 	}
 
@@ -25,7 +23,7 @@ public class MBMeleeAttackGoal extends MeleeAttackGoal {
 		if (livingEntity == null || !livingEntity.isAlive()) {
 			return false;
 		} else {
-			this.path = this.attacker.getNavigator().getPathToEntityLiving(livingEntity, 0);
+			this.path = this.attacker.getNavigator().func_75494_a(livingEntity, 0);
 			return this.path != null;
 		}
 	}
