@@ -13,7 +13,7 @@ import net.minecraft.world.IBlockReader;
 import net.minecraft.world.World;
 
 public class MBSkullBlock extends SkullBlock {
-	public MBSkullBlock(SkullBlock.ISkullType skullType, Properties properties) {
+	public MBSkullBlock(MBSkullBlock.ISkullType skullType, Properties properties) {
 		super(skullType, properties);
 	}
 

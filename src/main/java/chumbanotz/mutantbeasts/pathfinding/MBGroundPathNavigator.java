@@ -6,7 +6,6 @@ import net.minecraft.pathfinding.PathFinder;
 import net.minecraft.pathfinding.PathNodeType;
 import net.minecraft.pathfinding.PathPoint;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
 
@@ -25,20 +24,16 @@ public class MBGroundPathNavigator extends GroundPathNavigator {
 	}
 
 	@Override
-	protected boolean canNavigate() {
-		return super.canNavigate() || this.entity.hasNoGravity(); //https://bugs.mojang.com/browse/MC-102965
-	}
-
-	@Override
 	protected void pathFollow() {
-		Vec3d vec3d = this.getEntityPosition();
-		this.maxDistanceToWaypoint = this.entity.getWidth() > 0.75F ? this.entity.getWidth() / 2.0F : 0.75F - this.entity.getWidth() / 2.0F;
-		Vec3d vec3d1 = this.currentPath.getCurrentPos();
-		if (Math.abs(this.entity.posX - (vec3d1.x + 0.5D)) < (double)this.maxDistanceToWaypoint && Math.abs(this.entity.posZ - (vec3d1.z + 0.5D)) < (double)this.maxDistanceToWaypoint && Math.abs(this.entity.posY - vec3d1.y) < 1.0D) {
-			this.currentPath.setCurrentPathIndex(this.currentPath.getCurrentPathIndex() + 1);
-		}
-
-		this.checkForStuck(vec3d);
+//		Vec3d vec3d = this.getEntityPosition();
+//		this.maxDistanceToWaypoint = this.entity.getWidth() > 0.75F ? this.entity.getWidth() / 2.0F : 0.75F - this.entity.getWidth() / 2.0F;
+//		Vec3d vec3d1 = this.currentPath.getCurrentPos();
+//		if (Math.abs(this.entity.posX - (vec3d1.x + 0.5D)) < (double)this.maxDistanceToWaypoint && Math.abs(this.entity.posZ - (vec3d1.z + 0.5D)) < (double)this.maxDistanceToWaypoint && Math.abs(this.entity.posY - vec3d1.y) < 1.0D) {
+//			this.currentPath.setCurrentPathIndex(this.currentPath.getCurrentPathIndex() + 1);
+//		}
+//
+//		this.checkForStuck(vec3d);
+		super.pathFollow();
 	}
 
 	@Override

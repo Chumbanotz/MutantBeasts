@@ -2,8 +2,7 @@ package chumbanotz.mutantbeasts.client.renderer.entity.model;
 
 import java.util.Arrays;
 
-import com.mojang.blaze3d.platform.GlStateManager;
-
+import chumbanotz.mutantbeasts.client.renderer.model.ScalableRendererModel;
 import chumbanotz.mutantbeasts.entity.mutant.MutantEndermanEntity;
 import net.minecraft.client.renderer.entity.model.EntityModel;
 import net.minecraft.client.renderer.entity.model.RendererModel;
@@ -20,10 +19,10 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 	private final RendererModel neck;
 	private final RendererModel head;
 	private final RendererModel mouth;
-	private final MutantEndermanModel.ArmModel rightArm;
-	private final MutantEndermanModel.ArmModel leftArm;
-	private final MutantEndermanModel.ArmModel lowerRightArm;
-	private final MutantEndermanModel.ArmModel lowerLeftArm;
+	private final Arm rightArm;
+	private final Arm leftArm;
+	private final Arm lowerRightArm;
+	private final Arm lowerLeftArm;
 	private final RendererModel legjoint1;
 	private final RendererModel legjoint2;
 	private final RendererModel leg1;
@@ -56,11 +55,11 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 		this.mouth = new RendererModel(this, 0, 24);
 		this.mouth.addBox(-4.0F, 3.0F, -8.0F, 8, 2, 8);
 		this.head.addChild(this.mouth);
-		this.rightArm = new MutantEndermanModel.ArmModel(this, this.chest, true);
-		this.leftArm = new MutantEndermanModel.ArmModel(this, this.chest, false);
-		this.lowerRightArm = new MutantEndermanModel.ArmModel(this, this.chest, true);
+		this.rightArm = new Arm(this, this.chest, true);
+		this.leftArm = new Arm(this, this.chest, false);
+		this.lowerRightArm = new Arm(this, this.chest, true);
 		this.lowerRightArm.arm.rotationPointY += 6.0F;
-		this.lowerLeftArm = new MutantEndermanModel.ArmModel(this, this.chest, false);
+		this.lowerLeftArm = new Arm(this, this.chest, false);
 		this.lowerLeftArm.arm.rotationPointY += 6.0F;
 		this.legjoint1 = new RendererModel(this);
 		this.legjoint1.setRotationPoint(-1.5F, 0.0F, 0.75F);
@@ -90,10 +89,8 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 	public void render(MutantEndermanEntity entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch, float scale) {
 		this.setAngles();
 		this.animate(entity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scale);
-		this.lowerRightArm.arm.partialTick = this.partialTick;
-		this.lowerRightArm.arm.enderman = entity;
-		this.lowerLeftArm.arm.partialTick = this.partialTick;
-		this.lowerLeftArm.arm.enderman = entity;
+		this.lowerRightArm.arm.setScale(entity.getArmScale(this.partialTick));
+		this.lowerLeftArm.arm.setScale(entity.getArmScale(this.partialTick));
 		this.pelvis.render(scale);
 	}
 
@@ -162,10 +159,9 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 			this.animateThrowBlock(enderman.getAttackTick(), arm);
 		}
 
-		float scale;
 		if (enderman.getAttackID() == MutantEndermanEntity.SCREAM_ATTACK) {
 			this.animateScream(enderman.getAttackTick());
-			scale = 1.0F - MathHelper.clamp((float)enderman.deathTime / 6.0F, 0.0F, 1.0F);
+			float scale = 1.0F - MathHelper.clamp((float)enderman.deathTime / 6.0F, 0.0F, 1.0F);
 			faceYaw *= scale;
 			facePitch *= scale;
 			walkAnim1 *= scale;
@@ -181,7 +177,7 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 
 		if (enderman.getAttackID() == MutantEndermanEntity.DEATH_ATTACK) {
 			this.animateDeath(enderman.deathTime);
-			scale = 1.0F - MathHelper.clamp((float)enderman.deathTime / 6.0F, 0.0F, 1.0F);
+			float scale = 1.0F - MathHelper.clamp((float)enderman.deathTime / 6.0F, 0.0F, 1.0F);
 			faceYaw *= scale;
 			facePitch *= scale;
 			walkAnim1 *= scale;
@@ -298,7 +294,7 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 
 	private void animateMelee(int fullTick, int armID) {
 		int right = (armID & 1) == 1 ? 1 : -1;
-		ArmModel arm = this.getArmFromID(armID);
+		Arm arm = this.getArmFromID(armID);
 		float tick;
 		float f;
 		if (fullTick < 2) {
@@ -798,7 +794,7 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 		}
 	}
 
-	private ArmModel getArmFromID(int armID) {
+	private Arm getArmFromID(int armID) {
 		return armID == 1 ? this.rightArm : (armID == 2 ? this.leftArm : (armID == 3 ? this.lowerRightArm : this.lowerLeftArm));
 	}
 
@@ -815,8 +811,8 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 	}
 
 	@OnlyIn(Dist.CLIENT)
-	static class ArmModel {
-		private final ArmRenderer arm;
+	static class Arm {
+		private final ScalableRendererModel arm;
 		private final RendererModel forearm;
 		private final RendererModel hand;
 		private final RendererModel[] finger;
@@ -824,11 +820,11 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 		private final RendererModel thumb;
 		private final boolean right;
 
-		private ArmModel(Model model, RendererModel connect, boolean right) {
+		private Arm(Model model, RendererModel connect, boolean right) {
 			this.right = right;
 			this.finger = new RendererModel[3];
 			this.foreFinger = new RendererModel[3];
-			this.arm = new ArmRenderer(model, 92, 0);
+			this.arm = new ScalableRendererModel(model, 92, 0);
 			this.arm.addBox(-1.5F, 0.0F, -1.5F, 3, 22, 3, 0.1F, !this.right);
 			this.arm.setRotationPoint(this.right ? -4.0F : 4.0F, -14.0F, 0.0F);
 			connect.addChild(this.arm);
@@ -919,31 +915,6 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 			this.arm.postRender(scale);
 			this.forearm.postRender(scale);
 			this.hand.postRender(scale);
-		}
-	}
-
-	@OnlyIn(Dist.CLIENT)
-	static class ArmRenderer extends RendererModel {
-		private float partialTick;
-		private MutantEndermanEntity enderman;
-
-		private ArmRenderer(Model model, int x, int y) {
-			super(model, x, y);
-		}
-
-		@Override
-		public void render(float scale) {
-			if (this.enderman != null) {
-				float armScale = this.enderman.getArmScale(this.partialTick);
-				GlStateManager.pushMatrix();
-				GlStateManager.scalef(armScale, armScale, armScale);
-			}
-
-			super.render(scale);
-
-			if (this.enderman != null) {
-				GlStateManager.popMatrix();
-			}
 		}
 	}
 }

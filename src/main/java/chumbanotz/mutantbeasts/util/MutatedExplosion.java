@@ -18,7 +18,6 @@ import net.minecraft.entity.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.network.play.server.SExplosionPacket;
-import net.minecraft.util.DamageSource;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -30,11 +29,13 @@ import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 
 public class MutatedExplosion extends Explosion {
+	private final Entity exploder;
 	private final World world;
 	private final float size;
 
 	private MutatedExplosion(World worldIn, @Nullable Entity exploderIn, double xIn, double yIn, double zIn, float sizeIn, boolean causesFireIn, Explosion.Mode modeIn) {
 		super(worldIn, exploderIn, xIn, yIn, zIn, sizeIn, causesFireIn, modeIn);
+		this.exploder = exploderIn;
 		this.world = worldIn;
 		this.size = sizeIn;
 	}
@@ -63,15 +64,15 @@ public class MutatedExplosion extends Explosion {
 							BlockPos blockpos = new BlockPos(x, y, z);
 							BlockState blockstate = this.world.getBlockState(blockpos);
 							if (!blockstate.isAir(this.world, blockpos) && !blockstate.getMaterial().isLiquid()) {
-								float resistance = blockstate.getExplosionResistance(this.world, blockpos, this.getExplosivePlacedBy(), this);
-								if (this.getExplosivePlacedBy() != null) {
-									resistance = this.getExplosivePlacedBy().getExplosionResistance(this, this.world, blockpos, blockstate, this.world.getFluidState(blockpos), resistance);
+								float resistance = blockstate.getExplosionResistance(this.world, blockpos, this.exploder, this);
+								if (this.exploder != null) {
+									resistance = this.exploder.getExplosionResistance(this, this.world, blockpos, blockstate, this.world.getFluidState(blockpos), resistance);
 								}
 
 								intensity -= (resistance + attenuation) * attenuation;
 							}
 
-							if (intensity > 0.0F && !blockstate.getMaterial().isLiquid() && (this.getExplosivePlacedBy() == null || this.getExplosivePlacedBy().canExplosionDestroyBlock(this, this.world, blockpos, blockstate, intensity))) {
+							if (intensity > 0.0F && !blockstate.getMaterial().isLiquid() && (this.exploder == null || this.exploder.canExplosionDestroyBlock(this, this.world, blockpos, blockstate, intensity))) {
 								set.add(blockpos);
 							}
 
@@ -92,10 +93,10 @@ public class MutatedExplosion extends Explosion {
 		int maxY = MathHelper.floor(this.getPosition().y + (double)diameter + 1.0D);
 		int minZ = MathHelper.floor(this.getPosition().z - (double)diameter - 1.0D);
 		int maxZ = MathHelper.floor(this.getPosition().z + (double)diameter + 1.0D);
-		List<Entity> list = this.world.getEntitiesInAABBexcluding(this.getExplosivePlacedBy(), new AxisAlignedBB((double)minX, (double)minY, (double)minZ, (double)maxX, (double)maxY, (double)maxZ), entity -> {
+		List<Entity> list = this.world.getEntitiesInAABBexcluding(this.exploder, new AxisAlignedBB((double)minX, (double)minY, (double)minZ, (double)maxX, (double)maxY, (double)maxZ), entity -> {
 			if (entity.isImmuneToExplosions()) {
 				return false;
-			} else if (this.getDamageSource().getTrueSource() instanceof SkullSpiritEntity) {
+			} else if (this.exploder instanceof SkullSpiritEntity) {
 				return !(entity instanceof LivingEntity) || ChemicalXEntity.IS_APPLICABLE.test((LivingEntity)entity);
 			} else {
 				return true;
@@ -137,19 +138,16 @@ public class MutatedExplosion extends Explosion {
 	}
 
 	public static MutatedExplosion create(@Nonnull Entity exploderIn, float sizeIn, boolean causesFireIn, Explosion.Mode mode) {
-		return create(exploderIn.world, exploderIn, null, exploderIn.posX, exploderIn.posY, exploderIn.posZ, sizeIn, causesFireIn, mode);
+		return create(exploderIn.world, exploderIn, exploderIn.posX, exploderIn.posY, exploderIn.posZ, sizeIn, causesFireIn, mode);
 	}
 
-	public static MutatedExplosion create(World worldIn, @Nullable Entity exploderIn, @Nullable DamageSource damageSource, double xIn, double yIn, double zIn, float sizeIn, boolean causesFireIn, Explosion.Mode mode) {
+	public static MutatedExplosion create(World worldIn, @Nullable Entity exploderIn, double xIn, double yIn, double zIn, float sizeIn, boolean causesFireIn, Explosion.Mode mode) {
 		if (exploderIn instanceof MobEntity && !net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(exploderIn.world, exploderIn)) {
 			mode = Explosion.Mode.NONE;
 		}
 
 		MutatedExplosion explosion = new MutatedExplosion(worldIn, exploderIn, xIn, yIn, zIn, sizeIn, causesFireIn, mode);
 		if (net.minecraftforge.event.ForgeEventFactory.onExplosionStart(explosion.world, explosion)) return explosion;
-		if (damageSource != null) {
-			explosion.setDamageSource(damageSource);
-		}
 
 		explosion.doExplosionA();
 		explosion.doExplosionB(true);

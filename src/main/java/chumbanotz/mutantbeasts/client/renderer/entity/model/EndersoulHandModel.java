@@ -13,6 +13,8 @@ import net.minecraftforge.client.model.BakedModelWrapper;
 
 @OnlyIn(Dist.CLIENT)
 public class EndersoulHandModel extends Model {
+//	public static final ResourceLocation GUI_LOCATION = new ModelResourceLocation(MutantBeasts.prefix("endersoul_hand_gui"), "inventory");
+//	public static final ResourceLocation MODEL_LOCATION = new ModelResourceLocation(MutantBeasts.prefix("endersoul_hand_model"), "inventory");
 	private final RendererModel hand;
 	private final RendererModel[] finger = new RendererModel[3];
 	private final RendererModel[] foreFinger = new RendererModel[3];
@@ -24,8 +26,7 @@ public class EndersoulHandModel extends Model {
 		this.hand.setRotationPoint(0.0F, 17.5F, 0.0F);
 		float fingerScale = 0.6F;
 
-		int i;
-		for (i = 0; i < this.finger.length; ++i) {
+		for (int i = 0; i < this.finger.length; ++i) {
 			this.finger[i] = new RendererModel(this, i * 4, 0);
 			this.finger[i].addBox(-0.5F, 0.0F, -0.5F, 1, i == 1 ? 6 : 5, 1, fingerScale);
 		}
@@ -34,13 +35,13 @@ public class EndersoulHandModel extends Model {
 		this.finger[1].setRotationPoint(-0.5F, 0.0F, 0.0F);
 		this.finger[2].setRotationPoint(-0.5F, 0.0F, 1.0F);
 
-		for (i = 0; i < this.foreFinger.length; ++i) {
+		for (int i = 0; i < this.foreFinger.length; ++i) {
 			this.foreFinger[i] = new RendererModel(this, 1 + i * 5, 0);
 			this.foreFinger[i].addBox(-0.5F, 0.0F, -0.5F, 1, i == 1 ? 6 : 5, 1, fingerScale - 0.01F);
 			this.foreFinger[i].setRotationPoint(0.0F, 0.5F + (float)(i == 1 ? 6 : 5), 0.0F);
 		}
 
-		for (i = 0; i < this.finger.length; ++i) {
+		for (int i = 0; i < this.finger.length; ++i) {
 			this.hand.addChild(this.finger[i]);
 			this.finger[i].addChild(this.foreFinger[i]);
 		}
@@ -87,12 +88,11 @@ public class EndersoulHandModel extends Model {
 //
 //		@Override
 //		public void onResourceManagerReload(IResourceManager resourceManager) {
-//			System.out.println("Reloading model loader");
 //		}
 //
 //		@Override
 //		public boolean accepts(ResourceLocation modelLocation) {
-//			return modelLocation.equals(new ModelResourceLocation(MutantBeasts.prefix("endersoul_hand"), "inventory"));
+//			return modelLocation.getNamespace().equals(MutantBeasts.MOD_ID) && modelLocation.getPath().equals("endersoul_hand");
 //		}
 //
 //		@Override
@@ -105,19 +105,24 @@ public class EndersoulHandModel extends Model {
 //	static class Unbaked implements IUnbakedModel {
 //		@Override
 //		public IBakedModel bake(ModelBakery bakery, Function<ResourceLocation, TextureAtlasSprite> spriteGetter, ISprite sprite, VertexFormat format) {
-//			IBakedModel original = bakery.getUnbakedModel(new ModelResourceLocation(new ResourceLocation(MutantBeasts.MOD_ID, "endersoul_hand_gui"), "inventory")).bake(bakery, spriteGetter, sprite, format);
-//			IBakedModel model = bakery.getUnbakedModel(new ModelResourceLocation(new ResourceLocation(MutantBeasts.MOD_ID, "endersoul_hand_model"), "inventory")).bake(bakery, spriteGetter, sprite, format);
-//			return new EndersoulHandModel.Baked(original, model);
+//			try {
+//				IBakedModel guiModel = ModelLoaderRegistry.getModel(GUI_LOCATION).bake(bakery, spriteGetter, sprite, format);
+//				IBakedModel bakedModel = ModelLoaderRegistry.getModel(MODEL_LOCATION).bake(bakery, spriteGetter, sprite, format);
+//				return new EndersoulHandModel.Baked(guiModel, bakedModel);
+//			} catch (Exception exception) {
+//				MutantBeasts.LOGGER.warn("Failed to load models for the endersoul hand", exception);
+//				return null;
+//			}
 //		}
 //
 //		@Override
 //		public Collection<ResourceLocation> getDependencies() {
-//			return Arrays.asList(MutantBeasts.prefix("item/endersoul_hand_gui"), MutantBeasts.prefix("item/endersoul_hand_model"));
+//			return ImmutableList.of(GUI_LOCATION, MODEL_LOCATION);
 //		}
 //
 //		@Override
 //		public Collection<ResourceLocation> getTextures(Function<ResourceLocation, IUnbakedModel> modelGetter, Set<String> missingTextureErrors) {
-//			return Arrays.asList(MutantBeasts.prefix("item/endersoul_hand_gui"), MutantBeasts.prefix("item/endersoul_hand_model"));
+//			return ImmutableList.of();
 //		}
 //	}
 
@@ -125,8 +130,8 @@ public class EndersoulHandModel extends Model {
 	public static class Baked extends BakedModelWrapper<IBakedModel> {
 		private final IBakedModel bakedModel;
 
-		public Baked(IBakedModel originalModel, IBakedModel bakedModel) {
-			super(originalModel);
+		public Baked(IBakedModel guiModel, IBakedModel bakedModel) {
+			super(guiModel);
 			this.bakedModel = bakedModel;
 		}
 

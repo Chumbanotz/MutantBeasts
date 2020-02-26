@@ -32,7 +32,7 @@ import net.minecraftforge.fml.network.NetworkHooks;
 
 public class EndersoulFragmentEntity extends Entity {
 	public static final Predicate<Entity> IS_VALID_TARGET = entity -> EntityPredicates.CAN_AI_TARGET.test(entity) && entity.canBeCollidedWith() && !(entity instanceof EndersoulFragmentEntity) && !(entity instanceof MutantEndermanEntity) && !(entity instanceof EndermanEntity);
-	private static final DataParameter<Boolean> COLLECTED = EntityDataManager.createKey(EndersoulFragmentEntity.class, DataSerializers.BOOLEAN);
+	private static final DataParameter<Boolean> TAMED = EntityDataManager.createKey(EndersoulFragmentEntity.class, DataSerializers.BOOLEAN);
 	private int explodeTick = 20 + this.rand.nextInt(20);
 	public final float[][] stickRotations = new float[8][3];
 	private WeakReference<MutantEndermanEntity> owner;
@@ -42,7 +42,7 @@ public class EndersoulFragmentEntity extends Entity {
 		super(type, world);
 		for (int i = 0; i < this.stickRotations.length; ++i) {
 			for (int j = 0; j < this.stickRotations[i].length; ++j) {
-				this.stickRotations[i][j] = this.rand.nextFloat() * 2.0F * 3.1415927F;
+				this.stickRotations[i][j] = this.rand.nextFloat() * 2.0F * (float)Math.PI;
 			}
 		}
 	}
@@ -58,15 +58,15 @@ public class EndersoulFragmentEntity extends Entity {
 
 	@Override
 	protected void registerData() {
-		this.dataManager.register(COLLECTED, false);
+		this.dataManager.register(TAMED, false);
 	}
 
-	public boolean isCollected() {
-		return this.dataManager.get(COLLECTED);
+	public boolean isTamed() {
+		return this.dataManager.get(TAMED);
 	}
 
-	public void setCollected(boolean collected) {
-		this.dataManager.set(COLLECTED, collected);
+	public void setTamed(boolean tamed) {
+		this.dataManager.set(TAMED, tamed);
 	}
 
 	public PlayerEntity getCollector() {
@@ -90,7 +90,7 @@ public class EndersoulFragmentEntity extends Entity {
 
 	@Override
 	public boolean canBeAttackedWithItem() {
-		return !this.isCollected();
+		return !this.isTamed();
 	}
 
 	@Override
@@ -108,7 +108,7 @@ public class EndersoulFragmentEntity extends Entity {
 		this.prevPosY = this.posY;
 		this.prevPosZ = this.posZ;
 		Vec3d vec3d = this.getMotion();
-		if (this.collector == null && vec3d.y > -0.05000000074505806D) {
+		if (this.collector == null && vec3d.y > -0.05000000074505806D && !this.hasNoGravity()) {
 			this.setMotion(vec3d.x, Math.max(-0.05000000074505806D, vec3d.y - 0.10000000149011612D), vec3d.z);
 		}
 
@@ -126,14 +126,14 @@ public class EndersoulFragmentEntity extends Entity {
 			}
 		}
 
-		if (!this.world.isRemote && !this.isCollected() && --this.explodeTick == 0) {
+		if (!this.world.isRemote && !this.isTamed() && --this.explodeTick == 0) {
 			this.explode();
 		}
 	}
 
 	@Override
 	public boolean processInitialInteract(PlayerEntity player, Hand hand) {
-		if (this.isCollected()) {
+		if (this.isTamed()) {
 			if (this.collector == null && !player.isSneaking()) {
 				this.collector = player;
 				this.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F, 1.0F);
@@ -149,7 +149,7 @@ public class EndersoulFragmentEntity extends Entity {
 			return false;
 		} else {
 			if (!this.world.isRemote) {
-				this.setCollected(true);
+				this.setTamed(true);
 			}
 
 			this.collector = player;
@@ -206,18 +206,18 @@ public class EndersoulFragmentEntity extends Entity {
 
 	@Override
 	public SoundCategory getSoundCategory() {
-		return this.isCollected() ? SoundCategory.NEUTRAL : SoundCategory.HOSTILE;
+		return this.isTamed() ? SoundCategory.NEUTRAL : SoundCategory.HOSTILE;
 	}
 
 	@Override
 	protected void writeAdditional(CompoundNBT compound) {
-		compound.putBoolean("Collected", this.isCollected());
+		compound.putBoolean("Tamed", this.isTamed());
 		compound.putInt("ExplodeTick", this.explodeTick);
 	}
 
 	@Override
 	protected void readAdditional(CompoundNBT compound) {
-		this.setCollected(compound.getBoolean("Collected"));
+		this.setTamed(compound.getBoolean("Collected") || compound.getBoolean("Tamed"));
 		if (compound.contains("ExplodeTick")) {
 			this.explodeTick = compound.getInt("ExplodeTick");
 		}

@@ -125,7 +125,7 @@ public class RegistryHandler {
 
 	@SubscribeEvent
 	public static void onModConfigEvent(ModConfig.ModConfigEvent event) {
-		Config.bake(event.getConfig().getSpec());
+		MBConfig.bake(event.getConfig().getSpec());
 	}
 
 	public static Item.Properties defaultProperty() {

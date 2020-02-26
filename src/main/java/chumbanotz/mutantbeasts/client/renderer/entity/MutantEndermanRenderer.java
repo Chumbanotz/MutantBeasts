@@ -66,7 +66,6 @@ public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity,
 		double addZ = 0.0D;
 		this.entityModel = entity.isClone() ? this.cloneModel : this.endermanModel;
 		this.cloneModel.isAttacking = entity.isAggressive();
-		this.cloneModel.isCarrying = entity.heldBlock[1] != 0;
 		boolean forcedLook = entity.getAttackID() == MutantEndermanEntity.STARE_ATTACK;
 		boolean scream = entity.getAttackID() == MutantEndermanEntity.SCREAM_ATTACK;
 		boolean clone = entity.isClone() && entity.isAggressive();
@@ -168,8 +167,17 @@ public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity,
 				int var6 = var5 % 65536;
 				int var7 = var5 / 65536;
 				GLX.glMultiTexCoord2f(GLX.GL_TEXTURE1, (float)var6, (float)var7);
+				float red = 0.9F;
+				float green = 0.3F;
+				float blue = 1.0F;
 				float alpha = 1.0F;
 				float glowScale = 2.0F;
+				if (entityIn.getTeam() != null && entityIn.getTeam().getColor().getColor() != null) {
+					Integer integer = entityIn.getTeam().getColor().getColor();
+//		            red = (float)(integer >> 16 & 255) / 255.0F;
+//		            green = (float)(integer >> 8 & 255) / 255.0F;
+//		            blue = (float)(integer & 255) / 255.0F;
+				}
 
 				if (teleport) {
 					if (!teleportAttack && entityIn.getAttackTick() >= 8) {
@@ -237,27 +245,13 @@ public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity,
 		@Override
 		public void render(MutantEndermanEntity entityIn, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch, float scale) {
 			GlStateManager.enableRescaleNormal();
-			if (entityIn.isClone() && entityIn.heldBlock[1] != 0) {
-		         GlStateManager.pushMatrix();
-		         GlStateManager.translatef(0.0F, 0.6875F, -0.75F);
-		         GlStateManager.rotatef(20.0F, 1.0F, 0.0F, 0.0F);
-		         GlStateManager.rotatef(45.0F, 0.0F, 1.0F, 0.0F);
-		         GlStateManager.translatef(0.25F, 0.1875F, 0.25F);
-		         GlStateManager.scalef(-0.5F, -0.5F, 0.5F);
-		         int i = entityIn.getBrightnessForRender();
-		         int j = i % 65536;
-		         int k = i / 65536;
-		         GLX.glMultiTexCoord2f(GLX.GL_TEXTURE1, (float)j, (float)k);
-		         GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-		         this.bindTexture(AtlasTexture.LOCATION_BLOCKS_TEXTURE);
-		         Minecraft.getInstance().getBlockRendererDispatcher().renderBlockBrightness(Block.getStateById(entityIn.heldBlock[1]), 1.0F);
-		         GlStateManager.popMatrix();
-			} else for (int i = 1; i < entityIn.heldBlock.length; i++) {
-				if (entityIn.heldBlock[i] != 0) {
+
+			for (int i = 1; i < entityIn.heldBlock.length; i++) {
+				if (entityIn.heldBlock[i] != 0 && !entityIn.isClone()) {
 					GlStateManager.pushMatrix();
 					((MutantEndermanModel)this.getEntityModel()).postRenderArm(0.0625F, i);
 					GlStateManager.translatef(0.0F, 1.2F, 0.0F);
-					float tick = (float)entityIn.ticksExisted + (float)i * 2.0F * 3.1415927F + partialTicks;
+					float tick = (float)entityIn.ticksExisted + (float)i * 2.0F * (float)Math.PI + partialTicks;
 					GlStateManager.rotatef(tick * 10.0F, 1.0F, 0.0F, 0.0F);
 					GlStateManager.rotatef(tick * 8.0F, 0.0F, 1.0F, 0.0F);
 					GlStateManager.rotatef(tick * 6.0F, 0.0F, 0.0F, 1.0F);

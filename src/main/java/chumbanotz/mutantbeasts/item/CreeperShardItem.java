@@ -79,7 +79,7 @@ public class CreeperShardItem extends Item {
 				damage += 2.0F;
 			}
 
-			MutatedExplosion.create(worldIn, playerIn, null, playerIn.posX, playerIn.posY + 1.0D, playerIn.posZ, damage, false, playerIn.isAllowEdit() ? MutatedExplosion.Mode.DESTROY : MutatedExplosion.Mode.NONE);
+			MutatedExplosion.create(worldIn, playerIn, playerIn.posX, playerIn.posY + 1.0D, playerIn.posZ, damage, false, playerIn.isAllowEdit() ? MutatedExplosion.Mode.DESTROY : MutatedExplosion.Mode.NONE);
 		}
 
 		if (!playerIn.abilities.isCreativeMode) {

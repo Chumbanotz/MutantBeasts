@@ -5,37 +5,46 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 
 @OnlyIn(Dist.CLIENT)
 public class Transform {
-	public float rotX, rotY, rotZ;
-	public float offsetX, offsetY, offsetZ;
+    private float rotationX;
+    private float rotationY;
+    private float rotationZ;
+    private float offsetX;
+    private float offsetY;
+    private float offsetZ;
 
-	public Transform() {
-		rotX = rotY = rotZ = 0F;
-		offsetX = offsetY = offsetZ = 0F;
+	public float getRotationX() {
+		return rotationX;
 	}
 
-	public Transform(float rx, float ry, float rz) {
-		rotX = rx;
-		rotY = ry;
-		rotZ = rz;
-		offsetX = offsetY = offsetZ = 0F;
+	public float getRotationY() {
+		return this.rotationY;
 	}
 
-	public Transform(float x, float y, float z, float rx, float ry, float rz) {
-		this(rx, ry, rz);
-		offsetX = x;
-		offsetY = y;
-		offsetZ = z;
+	public float getRotationZ() {
+		return this.rotationZ;
 	}
 
-	public void addRot(float x, float y, float z) {
-		rotX += x;
-		rotY += y;
-		rotZ += z;
+	public float getOffsetX() {
+		return this.offsetX;
+	}
+
+	public float getOffsetY() {
+		return this.offsetY;
+	}
+
+	public float getOffsetZ() {
+		return this.offsetZ;
+	}
+
+	public void addRotation(float x, float y, float z) {
+		this.rotationX += x;
+		this.rotationY += y;
+		this.rotationZ += z;
 	}
 
 	public void addOffset(float x, float y, float z) {
-		offsetX += x;
-		offsetY += y;
-		offsetZ += z;
+		this.offsetX += x;
+		this.offsetY += y;
+		this.offsetZ += z;
 	}
 }

@@ -13,22 +13,22 @@
 		"frame": "goal",
 		"show_toast": true,
 		"announce_to_chat": true,
-		"hidden": true
+		"hidden": false
 	},
 	"criteria": {
 		"killed_mutant_skeleton": {
-			"trigger": "minecraft:impossible",
+			"trigger": "minecraft:player_killed_entity",
 			"conditions": {
 				"entity": {
 					"type": "mutantbeasts:mutant_skeleton"
 				},
 				"killing_blow": {
 					"is_projectile": true,
-					"source_entity": {
+					"direct_entity": {
 						"type": "minecraft:arrow",
 						"nbt": "{ShotFromCrossbow:1b}"
 					},
-					"direct_entity": {
+					"source_entity": {
 						"equipment": {
 							"head": {
 								"item": "mutantbeasts:mutant_skeleton_skull"

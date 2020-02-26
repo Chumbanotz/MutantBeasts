@@ -75,7 +75,11 @@ public class CreeperMinionEggEntity extends Entity {
 
 	@Override
 	public double getYOffset() {
-		return (double)this.getHeight() - (this.getRidingEntity().getPose() == Pose.SNEAKING ? 0.35D : 0.2D);
+		if (this.isPassenger()) {
+			return (double)this.getHeight() - (this.getRidingEntity().getPose() == Pose.SNEAKING ? 0.35D : 0.2D);	
+		} else {
+			return 0.0D;
+		}
 	}
 
 	@Override
@@ -202,6 +206,8 @@ public class CreeperMinionEggEntity extends Entity {
 		} else {
 			Entity entity = source.getTrueSource();
 			if (entity == null || !(entity instanceof CreeperEntity) && !(entity instanceof CreeperMinionEntity)) {
+				this.markVelocityChanged();
+
 				if (source.isExplosion()) {
 					if (!this.world.isRemote) {
 						this.age = (int)((float)this.age - amount * 80.0F);
@@ -220,7 +226,6 @@ public class CreeperMinionEggEntity extends Entity {
 				} else {
 					this.recentlyHit = this.ticksExisted;
 					this.setMotion(0.0D, 0.2D, 0.0D);
-					this.markVelocityChanged();
 
 					if (!this.world.isRemote) {
 						this.health = (int)((float)this.health - amount);
@@ -260,7 +265,10 @@ public class CreeperMinionEggEntity extends Entity {
 	@Override
 	protected void readAdditional(CompoundNBT compound) {
 		this.health = compound.getInt("Health");
-		this.age = compound.getInt("Age");
+		if (compound.contains("Age")) {
+			this.age = compound.getInt("Age");
+		}
+
 		this.recentlyHit = compound.getInt("RecentlyHit");
 		if (compound.hasUniqueId("OwnerUUID")) {
 			this.setOwnerUniqueId(compound.getUniqueId("OwnerUUID"));

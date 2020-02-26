@@ -224,7 +224,7 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 
 	@Override
 	public EntitySize getSize(Pose poseIn) {
-		return this.isSitting() ? EntitySize.flexible(0.3F, 0.62F) : this.getType().getSize();
+		return this.isSitting() ? super.getSize(poseIn).scale(1.0F, 0.75F) : super.getSize(poseIn);
 	}
 
 	@Override
@@ -235,6 +235,11 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 	@Override
 	protected boolean canDropLoot() {
 		return true;
+	}
+
+	@Override
+	public float getRenderScale() {
+		return 1.0F;
 	}
 
 	@Override
@@ -261,14 +266,8 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 
 	@Override
 	public void tick() {
-		if (!this.isTamed()) {
-			if (!this.world.isRemote && this.world.getDifficulty() == Difficulty.PEACEFUL) {
-				this.remove();
-			}
-
-			if (this.getBrightness() > 0.5F) {
-				this.idleTime += 2;
-			}
+		if (!this.isTamed() && !this.world.isRemote && this.world.getDifficulty() == Difficulty.PEACEFUL) {
+			this.remove();
 		}
 
 		if (this.isAlive()) {

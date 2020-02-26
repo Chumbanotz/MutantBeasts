@@ -1,4 +1,4 @@
-package chumbanotz.mutantbeasts.client.renderer.entity.model;
+package chumbanotz.mutantbeasts.client.renderer.model;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 
@@ -10,22 +10,22 @@ import net.minecraft.client.renderer.model.Model;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
-/** Taken from 1.12.2 ModelRenderer */
+/** Taken from 1.12.2 ModelRenderer, to fix the issues with the Mutant Skeleton's crossbow */
 @OnlyIn(Dist.CLIENT)
-public class OldRendererModel extends RendererModel {
+public class LegacyRendererModel extends RendererModel {
 	private boolean compiled;
 	private int displayList;
 
-	public OldRendererModel(Model model, String boxNameIn) {
+	public LegacyRendererModel(Model model, String boxNameIn) {
 		super(model, boxNameIn);
 		this.setTextureSize(model.textureWidth, model.textureHeight);
 	}
 
-	public OldRendererModel(Model model) {
+	public LegacyRendererModel(Model model) {
 		this(model, (String)null);
 	}
 
-	public OldRendererModel(Model model, int texOffX, int texOffY) {
+	public LegacyRendererModel(Model model, int texOffX, int texOffY) {
 		this(model);
 		this.setTextureOffset(texOffX, texOffY);
 	}
@@ -153,9 +153,7 @@ public class OldRendererModel extends RendererModel {
 		}
 	}
 
-	/**
-	 * Compiles a GL display list for this model
-	 */
+	/** Compiles a GL display list for this model */
 	private void compileDisplayList(float scale) {
 		this.displayList = GLAllocation.generateDisplayLists(1);
 		GlStateManager.newList(this.displayList, 4864);

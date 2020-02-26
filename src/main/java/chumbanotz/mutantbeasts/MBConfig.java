@@ -4,18 +4,10 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import net.minecraftforge.common.ForgeConfigSpec;
 
-public class Config {
-//	static final ForgeConfigSpec CLIENT_SPEC;
-//	private static final Config.Client CLIENT;
+public class MBConfig {
 	static final ForgeConfigSpec COMMON_SPEC;
-	private static final Config.Common COMMON;
+	private static final MBConfig.Common COMMON;
 	public static int globalSpawnRate;
-
-	static class Client {
-
-		Client(ForgeConfigSpec.Builder builder) {
-		}
-	}
 
 	static class Common {
 		private final ForgeConfigSpec.IntValue globalSpawnRate;
@@ -30,17 +22,13 @@ public class Config {
 	}
 
 	static {
-//		final Pair<Config.Client, ForgeConfigSpec> clientPair = new ForgeConfigSpec.Builder().configure(Config.Client::new);
-//		CLIENT_SPEC = clientPair.getRight();
-//		CLIENT = clientPair.getLeft();
-		final Pair<Config.Common, ForgeConfigSpec> commonPair = new ForgeConfigSpec.Builder().configure(Config.Common::new);
+		final Pair<MBConfig.Common, ForgeConfigSpec> commonPair = new ForgeConfigSpec.Builder().configure(MBConfig.Common::new);
 		COMMON_SPEC = commonPair.getRight();
 		COMMON = commonPair.getLeft();
 	}
 
 	public static void bake(ForgeConfigSpec spec) {
 		if (spec == COMMON_SPEC) {
-			System.out.println(globalSpawnRate);
 			globalSpawnRate = COMMON.globalSpawnRate.get();
 		}
 	}

@@ -24,6 +24,10 @@ public class CopyAttackTargetGoal extends TargetGoal {
 		if (this.getMobToCopy() == null) {
 			return false;
 		} else {
+			if (this.goalOwner.getAttackTarget() == this.getMobToCopy()) {
+				this.goalOwner.setAttackTarget(null);
+			}
+
 			return this.isSuitableTarget(this.getMobToCopy().getAttackTarget(), EntityPredicate.DEFAULT);
 		}
 	}

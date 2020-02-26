@@ -178,7 +178,7 @@ public class EventHandler {
 			boolean isHand = stack.getItem() == MBItems.ENDERSOUL_HAND && stack.isDamaged();
 			if (stack.getItem() == Items.ENDER_EYE || isHand) {
 				int count = 0;
-				for (EndersoulFragmentEntity orb : world.getEntitiesWithinAABB(EndersoulFragmentEntity.class, player.getBoundingBox().grow(8.0D), EndersoulFragmentEntity::isCollected)) {
+				for (EndersoulFragmentEntity orb : world.getEntitiesWithinAABB(EndersoulFragmentEntity.class, player.getBoundingBox().grow(8.0D), EndersoulFragmentEntity::isTamed)) {
 					if (orb.getCollector() == player) {
 						count++;
 						orb.remove();

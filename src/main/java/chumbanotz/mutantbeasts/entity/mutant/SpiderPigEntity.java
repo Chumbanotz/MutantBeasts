@@ -485,7 +485,7 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 	@Override
 	public void onDeath(DamageSource cause) {
 		super.onDeath(cause);
-		MBHurtByTargetGoal.alertOthers(this);
+		EntityUtil.alertOthers(this);
 		if (!this.world.isRemote && !this.webList.isEmpty()) {
 			for (SpiderPigEntity.WebPos webPos : this.webList) {
 				this.removeWeb(webPos);

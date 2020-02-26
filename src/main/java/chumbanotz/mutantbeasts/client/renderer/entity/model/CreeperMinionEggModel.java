@@ -12,14 +12,14 @@ public class CreeperMinionEggModel extends Model {
     public CreeperMinionEggModel() {
         this.textureWidth = 512;
         this.textureHeight = 256;
-        this.egg = new RendererModel(this, 0, 0)
-        		.addBox(-2.0F, 1.0F, -2.0F, 4, 1, 4)
-        		.addBox(-3.0F, -3.0F, -3.0F, 6, 4, 6)
-        		.addBox(-1.0F, -6.0F, -1.0F, 2, 1, 2)
-        		.addBox(-2.0F, -5.0F, -2.0F, 4, 2, 4);
+        this.egg = new RendererModel(this, 0, 0);
+        this.egg.addBox(-2.0F, 1.0F, -2.0F, 4, 1, 4);
+        this.egg.addBox(-3.0F, -3.0F, -3.0F, 6, 4, 6);
+        this.egg.addBox(-1.0F, -6.0F, -1.0F, 2, 1, 2);
+        this.egg.addBox(-2.0F, -5.0F, -2.0F, 4, 2, 4);
     }
 
-    public void render() { 
-        this.egg.render(0.0625F);
+    public void render() {
+    	this.egg.render(0.0625F);
     }
 }

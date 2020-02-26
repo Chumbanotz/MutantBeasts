@@ -24,7 +24,7 @@
 				},
 				"killing_blow": {
 					"is_projectile": true,
-					"source_entity": {
+					"direct_entity": {
 						"type": "mutantbeasts:throwable_block"
 					}
 				}

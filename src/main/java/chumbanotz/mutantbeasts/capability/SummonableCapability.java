@@ -82,8 +82,7 @@ public class SummonableCapability implements ISummonable {
 	public static class Provider implements ICapabilitySerializable<INBT> {
 		@CapabilityInject(ISummonable.class)
 		public static final Capability<ISummonable> SUMMONABLE = null;
-		private final ISummonable instance = SUMMONABLE.getDefaultInstance();
-		private final LazyOptional<ISummonable> holder = LazyOptional.of(() -> this.instance);
+		private final LazyOptional<ISummonable> holder = LazyOptional.of(SUMMONABLE::getDefaultInstance);
 
 		@Override
 		public <T> LazyOptional<T> getCapability(Capability<T> cap, Direction side) {
@@ -92,12 +91,12 @@ public class SummonableCapability implements ISummonable {
 
 		@Override
 		public INBT serializeNBT() {
-			return SUMMONABLE.getStorage().writeNBT(SUMMONABLE, this.instance, null);
+			return SUMMONABLE.getStorage().writeNBT(SUMMONABLE, this.holder.orElseThrow(() -> new IllegalStateException("Invalid LazyOptional for " + ID + " capability, must not be empty")), null);
 		}
 
 		@Override
 		public void deserializeNBT(INBT nbt) {
-			SUMMONABLE.getStorage().readNBT(SUMMONABLE, this.instance, null, nbt);
+			SUMMONABLE.getStorage().readNBT(SUMMONABLE, this.holder.orElseThrow(() -> new IllegalStateException("Invalid LazyOptional for " + ID + " capability, must not be empty")), null, nbt);
 		}
 	}
 

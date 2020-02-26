@@ -177,12 +177,10 @@ public class MutantEndermanEntity extends MonsterEntity {
 		this.setAttackID(newState > 0 ? CLONE_ATTACK : 0);
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	public int getAttackID() {
 		return this.attackID;
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	public int getAttackTick() {
 		return this.attackTick;
 	}
@@ -205,6 +203,16 @@ public class MutantEndermanEntity extends MonsterEntity {
 	@Override
 	public int getMaxSpawnedInChunk() {
 		return 1;
+	}
+
+	@Override
+	public int getMaxFallHeight() {
+		return this.isClone() ? 3 : super.getMaxFallHeight();
+	}
+
+	@Override
+	public boolean canBeCollidedWith() {
+		return super.canBeCollidedWith() && this.attackID != TELEPORT_ATTACK;
 	}
 
 	@Override
@@ -367,7 +375,7 @@ public class MutantEndermanEntity extends MonsterEntity {
 	private void updateBlockFrenzy() {
 		this.blockSearchTick = Math.max(0, this.blockSearchTick - 1);
 		if (this.getAttackTarget() != null && this.attackID == 0) {
-			if (this.blockSearchTick == 0 && this.rand.nextInt(this.getAttackTarget() instanceof IRangedAttackMob ? 300 : 600) == 0) {
+			if (this.blockSearchTick == 0 && this.rand.nextInt(this.getAttackTarget() instanceof IRangedAttackMob ? 100 : 600) == 0) {
 				this.blockSearchTick = 200 + this.rand.nextInt(80);
 			}
 
@@ -390,7 +398,7 @@ public class MutantEndermanEntity extends MonsterEntity {
 	private void updateTeleport() {
 		Entity entity = this.getAttackTarget();
 		this.teleportByChance(entity == null ? 1600 : 800, entity);
-		if (entity != null && (this.getDistanceSq(entity) > 1024.0D || this.getDistanceSq(entity) > 16.0D && !this.hasPath())) {
+		if (entity != null && (this.getDistanceSq(entity) > 1024.0D )) {
 			this.teleportByChance(10, entity);
 		}
 	}
@@ -743,7 +751,7 @@ public class MutantEndermanEntity extends MonsterEntity {
 
 	@Override
 	protected boolean canBeRidden(Entity entityIn) {
-		return true;
+		return false;
 	}
 
 	@Override
@@ -761,7 +769,7 @@ public class MutantEndermanEntity extends MonsterEntity {
 
 	@Override
 	public Team getTeam() {
-		return this.isDecoyClone() && this.cloner != null ? this.cloner.getTeam() : super.getTeam();
+		return super.getTeam();
 	}
 
 	@Override
@@ -883,10 +891,9 @@ public class MutantEndermanEntity extends MonsterEntity {
 		}
 	}
 
-	private void setAttackID(int id) {
-		this.attackID = id;
-		this.attackTick = 0;
-		this.world.setEntityState(this, (byte)id);
+	private void setAttackID(int attackID) {
+		this.attackID = attackID;
+		this.world.setEntityState(this, (byte)attackID);
 	}
 
 	@Override
@@ -945,16 +952,16 @@ public class MutantEndermanEntity extends MonsterEntity {
 	}
 
 	private boolean isBeingLookedAt(LivingEntity target) {
-		if (!EndersoulFragmentEntity.IS_VALID_TARGET.test(target) || target instanceof MobEntity && ((MobEntity)target).getAttackTarget() != this) {
-			return false;
+		if (target instanceof MobEntity) {
+			return ((MobEntity)target).getAttackTarget() == this;
+		} else {
+			Vec3d playerVec = target.getLook(1.0F).normalize();
+			Vec3d targetVec = new Vec3d(this.posX - target.posX, this.getBoundingBox().minY + (double)this.getEyeHeight() - (target.posY + (double)target.getEyeHeight()), this.posZ - target.posZ);
+			double length = targetVec.length();
+			targetVec = targetVec.normalize();
+			double d = playerVec.dotProduct(targetVec);
+			return d > 1.0D - 0.08D / length ? target.canEntityBeSeen(this) : false;
 		}
-
-		Vec3d playerVec = target.getLook(1.0F).normalize();
-		Vec3d targetVec = new Vec3d(this.posX - target.posX, this.getBoundingBox().minY + (double)this.getEyeHeight() - (target.posY + (double)target.getEyeHeight()), this.posZ - target.posZ);
-		double length = targetVec.length();
-		targetVec = targetVec.normalize();
-		double d = playerVec.dotProduct(targetVec);
-		return d > 1.0D - 0.08D / length ? target.canEntityBeSeen(this) : false;
 	}
 
 	class TargetLookerGoal extends NearestAttackableTargetGoal<LivingEntity> {
@@ -964,7 +971,7 @@ public class MutantEndermanEntity extends MonsterEntity {
 
 		@Override
 		public boolean shouldExecute() {
-			return !isClone() && getAttackTarget() == null && super.shouldExecute();
+			return attackID == 0 && getAttackTarget() == null && super.shouldExecute();
 		}
 
 		@Override
@@ -989,15 +996,16 @@ public class MutantEndermanEntity extends MonsterEntity {
 
 		@Override
 		public void startExecuting() {
+			attackTick = 0;
 			navigator.clearPath();
-			if (!isSilent()) {
+			if (!isSilent() && this.attackTarget instanceof PlayerEntity) {
 				world.playMovingSound(null, MutantEndermanEntity.this, MBSoundEvents.ENTITY_MUTANT_ENDERMAN_STARE, getSoundCategory(), 2.5F, 0.7F + rand.nextFloat() * 0.2F);
 			}
 		}
 
 		@Override
 		public boolean shouldContinueExecuting() {
-			if (this.attackTarget == null || !this.attackTarget.isAlive()) {
+			if (this.attackTarget == null || !this.attackTarget.isAlive() || !(this.attackTarget instanceof PlayerEntity)) {
 				return false;
 			} else {
 				return attackTick < 100 && getDistanceSq(this.attackTarget) > 9.0D && isBeingLookedAt(this.attackTarget);
@@ -1031,6 +1039,11 @@ public class MutantEndermanEntity extends MonsterEntity {
 		@Override
 		public boolean shouldContinueExecuting() {
 			return attackTick < 10;
+		}
+
+		@Override
+		public void startExecuting() {
+			attackTick = 0;
 		}
 
 		@Override
@@ -1083,6 +1096,7 @@ public class MutantEndermanEntity extends MonsterEntity {
 
 		@Override
 		public void startExecuting() {
+			attackTick = 0;
 			setCloneState(1);
 			this.attackTarget = getAttackTarget();
 			extinguish();
@@ -1147,6 +1161,7 @@ public class MutantEndermanEntity extends MonsterEntity {
 
 		@Override
 		public void startExecuting() {
+			attackTick = 0;
 			setAttackID(SCREAM_ATTACK);
 			navigator.clearPath();
 		}
@@ -1210,6 +1225,7 @@ public class MutantEndermanEntity extends MonsterEntity {
 
 		@Override
 		public void startExecuting() {
+			attackTick = 0;
 			navigator.clearPath();
 			stopRiding();
 
@@ -1261,6 +1277,7 @@ public class MutantEndermanEntity extends MonsterEntity {
 
 		@Override
 		public void startExecuting() {
+			attackTick = 0;
 			this.attackTarget.addPotionEffect(new EffectInstance(Effects.SLOWNESS, 20, 5));
 			this.attackTarget.addPotionEffect(new EffectInstance(Effects.NAUSEA, 160 + this.attackTarget.getRNG().nextInt(160), 0));
 		}
@@ -1320,6 +1337,7 @@ public class MutantEndermanEntity extends MonsterEntity {
 
 		@Override
 		public void startExecuting() {
+			attackTick = 0;
 			setAttackID(THROW_ATTACK);
 			int id = getActiveArm();
 			ThrowableBlockEntity block = new ThrowableBlockEntity(world, MutantEndermanEntity.this, id);

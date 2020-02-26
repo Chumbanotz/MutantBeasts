@@ -16,6 +16,7 @@ import chumbanotz.mutantbeasts.util.ZombieResurrection;
 import net.minecraft.block.BambooBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.entity.CreatureAttribute;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntitySize;
 import net.minecraft.entity.EntityType;
@@ -31,7 +32,7 @@ import net.minecraft.entity.ai.goal.MoveThroughVillageGoal;
 import net.minecraft.entity.ai.goal.NearestAttackableTargetGoal;
 import net.minecraft.entity.ai.goal.WaterAvoidingRandomWalkingGoal;
 import net.minecraft.entity.merchant.villager.AbstractVillagerEntity;
-import net.minecraft.entity.monster.ZombieEntity;
+import net.minecraft.entity.monster.MonsterEntity;
 import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Items;
@@ -63,7 +64,7 @@ import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
-public class MutantZombieEntity extends ZombieEntity {
+public class MutantZombieEntity extends MonsterEntity {
 	private static final DataParameter<Integer> LIVES = EntityDataManager.createKey(MutantZombieEntity.class, DataSerializers.VARINT);
 	private static final DataParameter<Byte> THROW_ATTACK_STATE = EntityDataManager.createKey(MutantZombieEntity.class, DataSerializers.BYTE);
 	public static final int MAX_DEATH_TIME = 140, MAX_VANISH_TIME = 100;
@@ -96,7 +97,7 @@ public class MutantZombieEntity extends ZombieEntity {
 		this.goalSelector.addGoal(5, new WaterAvoidingRandomWalkingGoal(this, 1.0D));
 		this.goalSelector.addGoal(6, new LookAtGoal(this, PlayerEntity.class, 8.0F));
 		this.goalSelector.addGoal(6, new LookRandomlyGoal(this));
-		this.targetSelector.addGoal(1, new MBHurtByTargetGoal(this));
+		this.targetSelector.addGoal(1, new MBHurtByTargetGoal(this).setCallsForHelp());
 		this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, IronGolemEntity.class, true));
 		this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, PlayerEntity.class, true).setUnseenMemoryTicks(300));
 		this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, AbstractVillagerEntity.class, false));
@@ -109,6 +110,7 @@ public class MutantZombieEntity extends ZombieEntity {
 		this.getAttribute(SharedMonsterAttributes.ARMOR).setBaseValue(3.0D);
 		this.getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).setBaseValue(12.0D);
 		this.getAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(0.26D);
+		this.getAttribute(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(35.0D);
 		this.getAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(1.0D);
 		this.getAttribute(SWIM_SPEED).setBaseValue(4.0D);
 	}
@@ -124,7 +126,7 @@ public class MutantZombieEntity extends ZombieEntity {
 		return this.dataManager.get(LIVES);
 	}
 
-	public void setLives(int lives) {
+	private void setLives(int lives) {
 		this.dataManager.set(LIVES, lives);
 	}
 
@@ -150,6 +152,12 @@ public class MutantZombieEntity extends ZombieEntity {
 		return this.attackID;
 	}
 
+	private void setAttackID(int attackID) {
+		this.attackID = attackID;
+		this.attackTick = 0;
+		this.world.setEntityState(this, (byte)attackID);
+	}
+
 	public int getAttackTick() {
 		return this.attackTick;
 	}
@@ -157,6 +165,11 @@ public class MutantZombieEntity extends ZombieEntity {
 	@Override
 	protected float getStandingEyeHeight(Pose poseIn, EntitySize sizeIn) {
 		return 2.8F;
+	}
+
+	@Override
+	public CreatureAttribute getCreatureAttribute() {
+		return CreatureAttribute.UNDEAD;
 	}
 
 	@Override
@@ -238,29 +251,6 @@ public class MutantZombieEntity extends ZombieEntity {
 	}
 
 	@Override
-	public boolean isChild() {
-		return false;
-	}
-
-	@Override
-	public void setChild(boolean childZombie) {
-	}
-
-	@Override
-	protected boolean shouldDrown() {
-		return false;
-	}
-
-	@Override
-	protected boolean shouldBurnInDay() {
-		return false;
-	}
-
-	@Override
-	public void setBreakDoorsAItask(boolean enabled) {
-	}
-
-	@Override
 	protected void func_213623_ec() {
 	}
 
@@ -274,14 +264,6 @@ public class MutantZombieEntity extends ZombieEntity {
 			this.attackTick = 0;
 		} else {
 			super.handleStatusUpdate(id);
-		}
-	}
-
-	@Override
-	public void notifyDataManagerChange(DataParameter<?> key) {
-		super.notifyDataManagerChange(key);
-		if (THROW_ATTACK_STATE.equals(key)) {
-			
 		}
 	}
 
@@ -435,7 +417,7 @@ public class MutantZombieEntity extends ZombieEntity {
 	public void onDeath(DamageSource cause) {
 		if (!this.world.isRemote) {
 			this.deathCause = cause;
-			MBHurtByTargetGoal.alertOthers(this);
+			EntityUtil.alertOthers(this);
 
 			if (cause.getTrueSource() instanceof LivingEntity) {
 				this.killer = (LivingEntity)cause.getTrueSource();
@@ -451,8 +433,8 @@ public class MutantZombieEntity extends ZombieEntity {
 	protected void onDeathUpdate() {
 		if (this.isBurning()) {
 			++this.vanishTime;
-		} else {
-			this.vanishTime = Math.max(0, this.vanishTime - 1);
+		} else if (this.vanishTime > 0) {
+			--this.vanishTime;
 		}
 
 		if (++this.deathTime >= MAX_DEATH_TIME) {
@@ -493,12 +475,6 @@ public class MutantZombieEntity extends ZombieEntity {
 		return !SummonableCapability.isEntityEligible(entity.getType()) && !(entity instanceof MutantZombieEntity);
 	}
 
-	private void setAttackID(int id) {
-		this.attackID = id;
-		this.attackTick = 0;
-		this.world.setEntityState(this, (byte)id);
-	}
-
 	@Override
 	public void writeAdditional(CompoundNBT compound) {
 		super.writeAdditional(compound);
@@ -514,10 +490,6 @@ public class MutantZombieEntity extends ZombieEntity {
 			}
 
 			compound.put("Resurrections", listnbt);
-		}
-
-		for (String s : new String[] {"IsBaby", "CanBreakDoors", "InWaterTime", "DrownedConversionTime"}) {
-			compound.remove(s);
 		}
 	}
 
@@ -549,6 +521,11 @@ public class MutantZombieEntity extends ZombieEntity {
 	@Override
 	protected SoundEvent getDeathSound() {
 		return MBSoundEvents.ENTITY_MUTANT_ZOMBIE_DEATH;
+	}
+
+	@Override
+	protected void playStepSound(BlockPos pos, BlockState blockIn) {
+		this.playSound(SoundEvents.ENTITY_ZOMBIE_STEP, 0.15F, 1.0F);
 	}
 
 	class SlamGroundGoal extends Goal {

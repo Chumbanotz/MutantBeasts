@@ -28,6 +28,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.fml.event.lifecycle.FMLFingerprintViolationEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 
 @Mod(MutantBeasts.MOD_ID)
@@ -46,8 +47,8 @@ public class MutantBeasts {
 	public MutantBeasts() {
 		FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onCommonSetup);
 		FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onClientSetup);
-//      ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, Config.CLIENT_SPEC);
-        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.COMMON_SPEC);
+		FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onFingerprintViolation);
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, MBConfig.COMMON_SPEC);
 	}
 
 	private void onCommonSetup(FMLCommonSetupEvent event) {
@@ -58,17 +59,20 @@ public class MutantBeasts {
 	}
 
 	private void onClientSetup(FMLClientSetupEvent event) {
-		ClientEventHandler.addSkullModelsAndSkins();
 		ClientEventHandler.registerEntityRenderers(event.getMinecraftSupplier().get());
 		ClientRegistry.registerEntityShader(CreeperMinionEntity.class, new ResourceLocation("shaders/post/creeper.json"));
 		ClientRegistry.registerEntityShader(MutantEndermanEntity.class, new ResourceLocation("shaders/post/invert.json"));
+	}
+
+	private void onFingerprintViolation(FMLFingerprintViolationEvent event) {
+		LOGGER.warn("Invalid fingerprint detected! The file " + event.getSource().getName() + " may have been tampered with. This version will NOT be supported by the author!");
 	}
 
 	public static ResourceLocation prefix(String name) {
 		return new ResourceLocation(MOD_ID, name);
 	}
 
-	public static ResourceLocation getEntityTexture(String fileName) {
-		return prefix("textures/entity/" + fileName + ".png");
+	public static ResourceLocation getEntityTexture(String name) {
+		return prefix("textures/entity/" + name + ".png");
 	}
 }

@@ -149,7 +149,6 @@ public class MutantCreeperEntity extends CreeperEntity {
 		double z = entityIn.posZ - this.posZ;
 		double d = Math.sqrt(x * x + y * y + z * z);
 		entityIn.addVelocity(x / d * 0.5D, y / d * 0.2D, z / d * 0.5D);
-		entityIn.stopRiding();
 		this.applyEnchantments(this, entityIn);
 		return flag;
 	}
@@ -262,8 +261,7 @@ public class MutantCreeperEntity extends CreeperEntity {
 		float f = (float)this.deathTime / (float)MAX_DEATH_TIME;
 
 		if (this.isCharging()) {
-			int i = this.ticksExisted % 20;
-			f = i < 10 ? 0.6F : 0.0F;
+			f = this.ticksExisted % 20 < 10 ? 0.6F : 0.0F;
 		}
 
 		return f * 255.0F;

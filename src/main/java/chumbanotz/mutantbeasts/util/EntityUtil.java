@@ -4,7 +4,7 @@ import java.util.Collection;
 import java.util.Random;
 import java.util.function.Function;
 
-import chumbanotz.mutantbeasts.Config;
+import chumbanotz.mutantbeasts.MBConfig;
 import chumbanotz.mutantbeasts.particles.MBParticleTypes;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -16,6 +16,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MobEntity;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.SpawnReason;
+import net.minecraft.entity.ai.goal.HurtByTargetGoal;
 import net.minecraft.entity.boss.WitherEntity;
 import net.minecraft.entity.item.ExperienceOrbEntity;
 import net.minecraft.entity.item.ItemEntity;
@@ -39,6 +40,7 @@ import net.minecraft.network.play.server.SEntityVelocityPacket;
 import net.minecraft.particles.IParticleData;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.util.DamageSource;
+import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
@@ -114,7 +116,7 @@ public final class EntityUtil {
 	}
 
 	public static boolean requireDarknessAndSky(EntityType<? extends MonsterEntity> entityType, IWorld world, SpawnReason spawnReason, BlockPos pos, Random random) {
-		return spawnReason != SpawnReason.SPAWNER && random.nextInt(50 / Math.min(20, Math.max(1, Config.globalSpawnRate))) == 0 && MonsterEntity.func_223325_c(entityType, world, spawnReason, pos, random) && world.isSkyLightMax(pos);
+		return spawnReason != SpawnReason.SPAWNER && random.nextInt(50 / Math.min(20, Math.max(1, MBConfig.globalSpawnRate))) == 0 && MonsterEntity.func_223325_c(entityType, world, spawnReason, pos, random) && world.isSkyLightMax(pos);
 	}
 
 	public static boolean isFeline(LivingEntity livingEntity) {
@@ -205,6 +207,30 @@ public final class EntityUtil {
 		}
 
 		mobEntity.world.setEntityState(mobEntity, (byte)3);
+	}
+
+	/** {@link HurtByTargetGoal#alertOthers()} */
+	public static void alertOthers(MobEntity alertingMob, Class<?>... excludedReinforcementTypes) {
+		if (alertingMob.isAIDisabled() || alertingMob.getRevengeTarget() == null) {
+			return;
+		}
+
+		double d0 = (double)alertingMob.getNavigator().getPathSearchRange();
+		for (MobEntity otherMob : alertingMob.world.getEntitiesWithinAABB(alertingMob.getClass(), new AxisAlignedBB(alertingMob.posX, alertingMob.posY, alertingMob.posZ, alertingMob.posX + 1.0D, alertingMob.posY + 1.0D, alertingMob.posZ + 1.0D).grow(d0, 10.0D, d0))) {
+			if (otherMob != null && alertingMob != otherMob && (!(alertingMob instanceof TameableEntity) || ((TameableEntity)alertingMob).getOwner() == ((TameableEntity)otherMob).getOwner()) && !otherMob.isOnSameTeam(alertingMob.getRevengeTarget())) {
+				boolean flag = false;
+				for (Class<?> oclass : excludedReinforcementTypes) {
+					if (otherMob.getClass() == oclass) {
+						flag = true;
+						break;
+					}
+				}
+
+				if (!flag) {
+					otherMob.setRevengeTarget(alertingMob.getRevengeTarget());
+				}
+			}
+		}
 	}
 
 	public static void copyNBT(Entity oldEntity, Entity newEntity, boolean resetHealth) {

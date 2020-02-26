@@ -1,7 +1,6 @@
 package chumbanotz.mutantbeasts.block;
 
 import net.minecraft.block.BlockState;
-import net.minecraft.block.SkullBlock.ISkullType;
 import net.minecraft.block.WallSkullBlock;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -12,7 +11,7 @@ import net.minecraft.world.IBlockReader;
 import net.minecraft.world.World;
 
 public class MBWallSkullBlock extends WallSkullBlock {
-	public MBWallSkullBlock(ISkullType iSkullType, Properties properties) {
+	public MBWallSkullBlock(MBSkullBlock.ISkullType iSkullType, Properties properties) {
 		super(iSkullType, properties);
 	}
 

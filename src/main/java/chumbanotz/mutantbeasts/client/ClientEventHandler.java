@@ -53,13 +53,14 @@ import net.minecraftforge.client.event.ParticleFactoryRegisterEvent;
 import net.minecraftforge.client.model.ModelLoader;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.client.registry.RenderingRegistry;
-import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 
 @EventBusSubscriber(modid = MutantBeasts.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public class ClientEventHandler {
 	@SubscribeEvent
 	public static void onModelRegistry(ModelRegistryEvent event) {
+//		ModelLoader.addSpecialModel(new ModelResourceLocation(MutantBeasts.prefix("endersoul_hand_gui"), "inventory"));
 		ModelLoader.addSpecialModel(new ModelResourceLocation(MutantBeasts.prefix("endersoul_hand_model"), "inventory"));
 //		ModelLoaderRegistry.registerLoader(EndersoulHandModel.Loader.INSTANCE);
 	}
@@ -96,9 +97,7 @@ public class ClientEventHandler {
 		for (PlayerRenderer renderer : client.getRenderManager().getSkinMap().values()) {
 			renderer.addLayer(new CreeperMinionShoulderLayer<>(renderer));
 		}
-	}
 
-	public static void addSkullModelsAndSkins() {
 		final Map<SkullBlock.ISkullType, GenericHeadModel> MODELS_MAP = ObfuscationReflectionHelper.getPrivateValue(SkullTileEntityRenderer.class, SkullTileEntityRenderer.instance, "field_199358_e");
 		final Map<SkullBlock.ISkullType, ResourceLocation> SKIN_MAP = ObfuscationReflectionHelper.getPrivateValue(SkullTileEntityRenderer.class, SkullTileEntityRenderer.instance, "field_199357_d");
 		MODELS_MAP.putIfAbsent(MBSkullBlock.Types.MUTANT_SKELETON, new SkullModel());

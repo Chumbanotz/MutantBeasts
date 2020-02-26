@@ -8,13 +8,13 @@ import net.minecraft.util.Hand;
 
 public class MBMeleeAttackGoal extends MeleeAttackGoal {
 	private int maxAttackTick = 20;
-	private final float moveSpeed;
+	private final double moveSpeed;
 	private Path path;
 	private int delayCounter;
 
 	public MBMeleeAttackGoal(CreatureEntity creatureEntity, double moveSpeed) {
 		super(creatureEntity, moveSpeed, true);
-		this.moveSpeed = (float)moveSpeed;
+		this.moveSpeed = moveSpeed;
 	}
 
 	@Override
@@ -31,6 +31,7 @@ public class MBMeleeAttackGoal extends MeleeAttackGoal {
 	@Override
 	public void startExecuting() {
 		this.attacker.getNavigator().setPath(this.path, (double)this.moveSpeed);
+		this.attacker.setAggroed(true);
 		this.delayCounter = 0;
 	}
 
@@ -51,18 +52,10 @@ public class MBMeleeAttackGoal extends MeleeAttackGoal {
 	@Override
 	protected void checkAndPerformAttack(LivingEntity enemy, double distToEnemySqr) {
 		if ((distToEnemySqr <= this.getAttackReachSqr(enemy) || this.attacker.getBoundingBox().intersects(enemy.getBoundingBox())) && this.attackTick <= 0) {
-			this.resetAttackTick();
+			this.attackTick = this.maxAttackTick;
 			this.attacker.swingArm(Hand.MAIN_HAND);
 			this.attacker.attackEntityAsMob(enemy);
 		}
-	}
-
-	public int getAttackTick() {
-		return this.attackTick;
-	}
-
-	public void resetAttackTick() {
-		this.attackTick = this.maxAttackTick;
 	}
 
 	public MBMeleeAttackGoal setMaxAttackTick(int max) {

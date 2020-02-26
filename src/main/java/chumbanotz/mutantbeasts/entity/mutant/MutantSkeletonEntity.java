@@ -13,6 +13,8 @@ import chumbanotz.mutantbeasts.entity.projectile.MutantArrowEntity;
 import chumbanotz.mutantbeasts.pathfinding.MBGroundPathNavigator;
 import chumbanotz.mutantbeasts.util.EntityUtil;
 import chumbanotz.mutantbeasts.util.MBSoundEvents;
+import net.minecraft.block.BlockState;
+import net.minecraft.entity.CreatureAttribute;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntitySize;
 import net.minecraft.entity.EntityType;
@@ -26,7 +28,7 @@ import net.minecraft.entity.ai.goal.LookAtGoal;
 import net.minecraft.entity.ai.goal.LookRandomlyGoal;
 import net.minecraft.entity.ai.goal.NearestAttackableTargetGoal;
 import net.minecraft.entity.ai.goal.WaterAvoidingRandomWalkingGoal;
-import net.minecraft.entity.monster.AbstractSkeletonEntity;
+import net.minecraft.entity.monster.MonsterEntity;
 import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.passive.WolfEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -39,13 +41,14 @@ import net.minecraft.util.DamageSource;
 import net.minecraft.util.EntityPredicates;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.util.SoundEvents;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
-public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAnimatedEntity {
+public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEntity {
 	public static final byte MELEE_ATTACK = 4, SHOOT_ATTACK = 5, MULTI_SHOT_ATTACK = 6, CONSTRICT_RIBS_ATTACK = 7;
 	private int attackID;
 	private int attackTick;
@@ -89,6 +92,11 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 	}
 
 	@Override
+	public CreatureAttribute getCreatureAttribute() {
+		return CreatureAttribute.UNDEAD;
+	}
+
+	@Override
 	protected PathNavigator createNavigator(World worldIn) {
 		return new MBGroundPathNavigator(this, worldIn);
 	}
@@ -100,12 +108,6 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 
 	@Override
 	public void fall(float distance, float damageMultiplier) {
-	}
-
-	@Deprecated
-	@Override
-	protected boolean isInDaylight() {
-		return false;
 	}
 
 	@Override
@@ -153,14 +155,6 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 	@Override
 	public boolean attackEntityFrom(DamageSource source, float amount) {
 		return !(source.getTrueSource() instanceof MutantSkeletonEntity) && super.attackEntityFrom(source, amount);
-	}
-
-	@Override
-	public void setCombatTask() {
-	}
-
-	@Override
-	public void attackEntityWithRangedAttack(LivingEntity target, float distanceFactor) {
 	}
 
 	@Override
@@ -283,8 +277,8 @@ public class MutantSkeletonEntity extends AbstractSkeletonEntity implements IAni
 	}
 
 	@Override
-	protected SoundEvent getStepSound() {
-		return MBSoundEvents.ENTITY_MUTANT_SKELETON_STEP;
+	protected void playStepSound(BlockPos pos, BlockState blockIn) {
+		this.playSound(MBSoundEvents.ENTITY_MUTANT_SKELETON_STEP, 0.15F, 1.0F);
 	}
 
 	private void setAttackID(int id) {

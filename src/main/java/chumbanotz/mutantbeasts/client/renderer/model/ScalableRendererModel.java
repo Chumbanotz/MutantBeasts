@@ -1,4 +1,4 @@
-package chumbanotz.mutantbeasts.client.renderer.entity.model;
+package chumbanotz.mutantbeasts.client.renderer.model;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 
@@ -25,26 +25,6 @@ public class ScalableRendererModel extends RendererModel {
 			GlStateManager.pushMatrix();
 			GlStateManager.scalef(this.scale, this.scale, this.scale);
 			super.render(scale);
-			GlStateManager.popMatrix();
-		}
-	}
-
-	@Override
-	public void renderWithRotation(float scale) {
-		if (!this.isHidden && this.showModel) {
-			GlStateManager.pushMatrix();
-			GlStateManager.scalef(this.scale, this.scale, this.scale);
-			super.renderWithRotation(scale);
-			GlStateManager.popMatrix();
-		}
-	}
-
-	@Override
-	public void postRender(float scale) {
-		if (!this.isHidden && this.showModel) {
-			GlStateManager.pushMatrix();
-			GlStateManager.scalef(this.scale, this.scale, this.scale);
-			super.postRender(scale);
 			GlStateManager.popMatrix();
 		}
 	}
