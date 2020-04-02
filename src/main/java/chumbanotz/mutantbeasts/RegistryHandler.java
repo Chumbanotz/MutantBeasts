@@ -21,6 +21,7 @@ import net.minecraft.item.Rarity;
 import net.minecraft.particles.BasicParticleType;
 import net.minecraft.particles.ParticleType;
 import net.minecraft.tileentity.TileEntityType;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.SoundEvent;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -71,7 +72,6 @@ public class RegistryHandler {
 		event.getRegistry().register(
 				setRegistryName("skull", TileEntityType.Builder.create(MBSkullTileEntity::new, MBBlocks.MUTANT_SKELETON_SKULL, MBBlocks.MUTANT_SKELETON_WALL_SKULL).build(null))
 				);
-		
 	}
 
 	@SubscribeEvent

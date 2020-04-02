@@ -76,6 +76,11 @@ public class SkullSpiritEntity extends Entity {
 	}
 
 	@Override
+	public boolean doesEntityNotTriggerPressurePlate() {
+		return true;
+	}
+
+	@Override
 	public void tick() {
 		super.tick();
 		if (this.target == null) {
@@ -162,6 +167,11 @@ public class SkullSpiritEntity extends Entity {
 		} else {
 			this.remove();
 		}
+	}
+
+	@Override
+	public boolean isInvisible() {
+		return true;
 	}
 
 	@Override

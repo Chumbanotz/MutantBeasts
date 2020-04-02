@@ -18,11 +18,9 @@ import net.minecraft.entity.CreatureAttribute;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntitySize;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.ILivingEntityData;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.Pose;
 import net.minecraft.entity.SharedMonsterAttributes;
-import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.goal.LookAtGoal;
 import net.minecraft.entity.ai.goal.LookRandomlyGoal;
@@ -32,7 +30,6 @@ import net.minecraft.entity.monster.MonsterEntity;
 import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.passive.WolfEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.pathfinding.PathNavigator;
 import net.minecraft.pathfinding.PathNodeType;
 import net.minecraft.potion.EffectInstance;
@@ -42,8 +39,6 @@ import net.minecraft.util.EntityPredicates;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.DifficultyInstance;
-import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -184,11 +179,6 @@ public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEnti
 	}
 
 	@Override
-	public ILivingEntityData onInitialSpawn(IWorld worldIn, DifficultyInstance difficultyIn, SpawnReason reason, ILivingEntityData spawnDataIn, CompoundNBT dataTag) {
-		return spawnDataIn;
-	}
-
-	@Override
 	public void onDeath(DamageSource cause) {
 		super.onDeath(cause);
 
@@ -314,13 +304,12 @@ public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEnti
 			}
 
 			if (attackTick == 3) {
-				double reach = (double)(2.3F + rand.nextFloat() * 0.3F);
-				for (Entity entity : world.getEntitiesInAABBexcluding(MutantSkeletonEntity.this, getBoundingBox().grow(reach, 0.0D, reach), EntityPredicates.CAN_AI_TARGET)) {
+				for (Entity entity : world.getEntitiesInAABBexcluding(MutantSkeletonEntity.this, getBoundingBox().grow(4.0D), EntityPredicates.CAN_AI_TARGET)) {
 					double dist = (double)getDistance(entity);
 					double x = posX - entity.posX;
 					double z = posZ - entity.posZ;
 
-					if (EntityUtil.isFacing(MutantSkeletonEntity.this, x, z, 60.0F) && !(entity instanceof MutantSkeletonEntity)) {
+					if (dist <= (double)(2.3F + rand.nextFloat() * 0.3F) && EntityUtil.isFacing(rotationYawHead, x, z, 60.0F) && !(entity instanceof MutantSkeletonEntity)) {
 						float power = 1.8F + (float)rand.nextInt(5) * 0.15F;
 						entity.stopRiding();
 						entity.attackEntityFrom(DamageSource.causeMobDamage(MutantSkeletonEntity.this), (float)getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getValue() + (float)rand.nextInt(2));

@@ -79,8 +79,8 @@ public class BodyPartEntity extends Entity {
 		return this.dataManager.get(PART);
 	}
 
-	private void setPart(int id) {
-		this.dataManager.set(PART, (byte)id);
+	private void setPart(int part) {
+		this.dataManager.set(PART, (byte)part);
 	}
 
 	@Override
@@ -129,12 +129,15 @@ public class BodyPartEntity extends Entity {
 		}
 
 		if (!this.onGround && this.motionMultiplier.length() == 0.0D) {
-			this.despawnTimer = Math.max(0, this.despawnTimer - 1);
 			this.rotationYaw += 10.0F * (float)(this.yawPositive ? 1 : -1);
 			this.rotationPitch += 15.0F * (float)(this.pitchPositive ? 1 : -1);
 			for (Entity entity : this.world.getEntitiesInAABBexcluding(this, this.getBoundingBox(), this::canHarm)) {
 				entity.setFireTimer(this.getFireTimer());
-				entity.attackEntityFrom(DamageSource.causeThrownDamage(this, this.owner == null ? this : this.owner.get()), 4.0F + (float)this.rand.nextInt(4));
+				entity.attackEntityFrom(DamageSource.causeThrownDamage(this, this.owner != null ? this.owner.get() : this), 4.0F + (float)this.rand.nextInt(4));
+			}
+
+			if (this.despawnTimer > 0) {
+				--this.despawnTimer;
 			}
 		} else {
 			++this.despawnTimer;
@@ -163,11 +166,6 @@ public class BodyPartEntity extends Entity {
 	@Override
 	public boolean canBeAttackedWithItem() {
 		return false;
-	}
-
-	@Override
-	public boolean attackEntityFrom(DamageSource source, float amount) {
-		return !this.isInvulnerableTo(source);
 	}
 
 	private boolean canHarm(Entity entity) {

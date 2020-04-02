@@ -78,7 +78,7 @@ public class ThrowableBlockEntity extends ThrowableEntity implements IEntityAddi
 		if (attackTarget != null) {
 			this.shoot(attackTarget.posX - this.posX, attackTarget.posY - this.posY, attackTarget.posZ - this.posZ, 1.4F, 1.0F);
 		} else {
-			this.shoot(enderman, enderman.rotationPitch, enderman.rotationYaw, 0.0F, 1.0F, 0.8F);
+			this.throwBlock(enderman);
 		}
 	}
 

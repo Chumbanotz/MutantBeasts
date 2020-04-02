@@ -13,7 +13,7 @@ public class Transform {
     private float offsetZ;
 
 	public float getRotationX() {
-		return rotationX;
+		return this.rotationX;
 	}
 
 	public float getRotationY() {

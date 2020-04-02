@@ -33,7 +33,7 @@ public class MutantCreeperRenderer extends MutantRenderer<MutantCreeperEntity, M
 
 	@Override
 	protected int getColorMultiplier(MutantCreeperEntity livingEntity, float lightBrightness, float partialTickTime) {
-		int a = (int)livingEntity.getCreeperFlashIntensity(partialTickTime);
+		int a = livingEntity.getExplosionColor();
 		int r = 255;
 		int g = 255;
 		int b = 255;

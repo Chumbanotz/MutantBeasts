@@ -23,7 +23,6 @@ public class CreeperMinionTrackerPacket {
 		buffer.writeBoolean(this.setOption);
 	}
 
-	/** decode */
 	CreeperMinionTrackerPacket(PacketBuffer buffer) {
 		this.entityId = buffer.readInt();
 		this.optionsId = buffer.readByte();

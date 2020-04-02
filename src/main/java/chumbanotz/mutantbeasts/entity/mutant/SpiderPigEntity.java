@@ -296,27 +296,30 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 	@Override
 	public boolean attackEntityAsMob(Entity entityIn) {
 		this.isLeaping = false;
-		boolean spiderType = entityIn instanceof SpiderEntity || entityIn instanceof SpiderPigEntity;
-		float damage = (float)this.getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getValue();
-		if (entityIn.world.getBlockState(entityIn.getPosition()).getMaterial() == Material.WEB && !spiderType) {
-			damage += 4.0F;
-		}
 
-		boolean flag = entityIn.attackEntityFrom(DamageSource.causeMobDamage(this), damage);
-
-		if ((!this.isBeingRidden() || flag) && this.rand.nextInt(2) == 0 && net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this.world, this)) {
+		if (this.rand.nextInt(2) == 0 && net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this.world, this)) {
 			double dx = entityIn.posX - entityIn.prevPosX;
 			double dz = entityIn.posZ - entityIn.prevPosZ;
 			BlockPos pos = new BlockPos((int)(entityIn.posX + dx * 0.5D), MathHelper.floor(this.getBoundingBox().minY), (int)(entityIn.posZ + dz * 0.5D));
 			Material material = this.world.getBlockState(pos).getMaterial();
 
-			if (!material.isSolid() && !material.isLiquid() && material != Material.WEB && !spiderType) {
+			if (!material.isSolid() && !material.isLiquid() && material != Material.WEB) {
 				this.world.setBlockState(pos, Blocks.COBWEB.getDefaultState());
 				this.webList.add(new SpiderPigEntity.WebPos(pos, this.isBeingRidden() ? 600 : 1200));
 				this.updateWebList(true);
 				this.setMotion(0.0D, Math.max(0.25D, this.getMotion().y), 0.0D);
 				this.fallDistance = 0.0F;
 			}
+		}
+
+		float damage = (float)this.getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getValue();
+		if (this.world.isMaterialInBB(entityIn.getBoundingBox(), Material.WEB) && !(entityIn instanceof SpiderEntity || entityIn instanceof SpiderPigEntity)) {
+			damage *= 1.5F;
+		}
+
+		boolean flag = entityIn.attackEntityFrom(DamageSource.causeMobDamage(this), damage);
+		if (flag) {
+			this.applyEnchantments(this, entityIn);
 		}
 
 		return flag;

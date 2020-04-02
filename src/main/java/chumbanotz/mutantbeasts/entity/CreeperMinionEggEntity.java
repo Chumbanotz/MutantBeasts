@@ -93,6 +93,7 @@ public class CreeperMinionEggEntity extends Entity {
 	}
 
 	@Override
+	@Nullable
 	public AxisAlignedBB getCollisionBox(Entity entity) {
 		return entity.canBePushed() ? entity.getBoundingBox() : null;
 	}

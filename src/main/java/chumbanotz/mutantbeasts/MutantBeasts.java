@@ -5,10 +5,7 @@ import org.apache.logging.log4j.Logger;
 
 import chumbanotz.mutantbeasts.capability.ISummonable;
 import chumbanotz.mutantbeasts.capability.SummonableCapability;
-import chumbanotz.mutantbeasts.client.ClientEventHandler;
-import chumbanotz.mutantbeasts.entity.CreeperMinionEntity;
 import chumbanotz.mutantbeasts.entity.MBEntityType;
-import chumbanotz.mutantbeasts.entity.mutant.MutantEndermanEntity;
 import chumbanotz.mutantbeasts.item.ChemicalXItem;
 import chumbanotz.mutantbeasts.item.MBItems;
 import chumbanotz.mutantbeasts.packet.PacketHandler;
@@ -23,10 +20,8 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.brewing.BrewingRecipeRegistry;
 import net.minecraftforge.common.capabilities.CapabilityManager;
 import net.minecraftforge.fml.ModLoadingContext;
-import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLFingerprintViolationEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -46,22 +41,20 @@ public class MutantBeasts {
 
 	public MutantBeasts() {
 		FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onCommonSetup);
-		FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onClientSetup);
 		FMLJavaModLoadingContext.get().getModEventBus().addListener(this::onFingerprintViolation);
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, MBConfig.COMMON_SPEC);
 	}
 
+	@SuppressWarnings("deprecation")
 	private void onCommonSetup(FMLCommonSetupEvent event) {
-		MBEntityType.addSpawns();
 		PacketHandler.register();
 		BrewingRecipeRegistry.addRecipe(new ChemicalXItem.BrewingRecipe());
-		CapabilityManager.INSTANCE.register(ISummonable.class, new SummonableCapability.Storage(), new SummonableCapability.Factory());
-	}
-
-	private void onClientSetup(FMLClientSetupEvent event) {
-		ClientEventHandler.registerEntityRenderers(event.getMinecraftSupplier().get());
-		ClientRegistry.registerEntityShader(CreeperMinionEntity.class, new ResourceLocation("shaders/post/creeper.json"));
-		ClientRegistry.registerEntityShader(MutantEndermanEntity.class, new ResourceLocation("shaders/post/invert.json"));
+		CapabilityManager.INSTANCE.register(ISummonable.class, new SummonableCapability.Storage(), SummonableCapability::new);
+		MBEntityType.setSpawnPlacement();
+		net.minecraftforge.fml.DeferredWorkQueue.runLater(() -> {
+			MBEntityType.addSpawns();
+			MBEntityType.registerDispenseBehavior();
+		});
 	}
 
 	private void onFingerprintViolation(FMLFingerprintViolationEvent event) {

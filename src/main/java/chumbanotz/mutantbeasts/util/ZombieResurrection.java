@@ -74,8 +74,11 @@ public class ZombieResurrection {
 			}
 
 			if (!this.world.isRemote) {
-				SummonableCapability.get(zombie).setSummoner(mutantZombie);
-				SummonableCapability.get(zombie).setSpawnedBySummoner(true);
+				SummonableCapability.getLazy(zombie).ifPresent(summonable -> {
+					summonable.setSummonerUUID(mutantZombie.getUniqueID());
+					summonable.setSpawnedBySummoner(true);
+				});
+
 				zombie.setPosition((double)this.posX + 0.5D, (double)this.posY + 1.0D, (double)this.posZ + 0.5D);
 				this.world.addEntity(zombie);
 			}

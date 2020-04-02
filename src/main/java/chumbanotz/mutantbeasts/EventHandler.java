@@ -7,7 +7,6 @@ import javax.annotation.Nullable;
 import chumbanotz.mutantbeasts.capability.SummonableCapability;
 import chumbanotz.mutantbeasts.entity.EndersoulFragmentEntity;
 import chumbanotz.mutantbeasts.entity.MBEntityType;
-import chumbanotz.mutantbeasts.entity.ai.goal.CopyAttackTargetGoal;
 import chumbanotz.mutantbeasts.entity.ai.goal.TrackSummonerGoal;
 import chumbanotz.mutantbeasts.entity.mutant.MutantCreeperEntity;
 import chumbanotz.mutantbeasts.entity.mutant.MutantZombieEntity;
@@ -25,7 +24,9 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.AvoidEntityGoal;
 import net.minecraft.entity.ai.goal.MoveTowardsRestrictionGoal;
 import net.minecraft.entity.ai.goal.TemptGoal;
+import net.minecraft.entity.item.ItemEntity;
 import net.minecraft.entity.merchant.villager.VillagerEntity;
+import net.minecraft.entity.merchant.villager.WanderingTraderEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.EquipmentSlotType;
 import net.minecraft.item.ItemStack;
@@ -43,10 +44,10 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.item.ItemTossEvent;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.living.LivingDropsEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.minecraftforge.event.world.ExplosionEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
@@ -56,7 +57,7 @@ public class EventHandler {
 	@SubscribeEvent
 	public static void onAttachEntityCapability(AttachCapabilitiesEvent<Entity> event) {
 		if (SummonableCapability.isEntityEligible(event.getObject().getType())) {
-			event.addCapability(SummonableCapability.ID, new SummonableCapability.Provider());
+			event.addCapability(MutantBeasts.prefix("summonable"), new SummonableCapability.Provider());
 		}
 	}
 
@@ -77,10 +78,13 @@ public class EventHandler {
 				creature.goalSelector.addGoal(0, new AvoidEntityGoal<>(creature, MutantZombieEntity.class, 8.0F, 0.8F, 0.8F));
 			}
 
+			if (creature instanceof WanderingTraderEntity) {
+				creature.goalSelector.addGoal(1, new AvoidEntityGoal<>(creature, MutantZombieEntity.class, 12.0F, 0.5F, 0.5F));
+			}
+
 			if (SummonableCapability.getLazy(creature).isPresent()) {
 				creature.goalSelector.addGoal(0, new TrackSummonerGoal(creature));
 				creature.goalSelector.addGoal(3, new MoveTowardsRestrictionGoal(creature, 1.0D));
-				creature.targetSelector.addGoal(0, new CopyAttackTargetGoal(creature, false, SummonableCapability.get(creature)::getSummoner));
 			}
 		}
 	}
@@ -88,12 +92,12 @@ public class EventHandler {
 	@SubscribeEvent
 	public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
 		ItemStack stack = event.getPlayer().getHeldItem(event.getHand());
-		if (event.getTarget().getType() == EntityType.PIG && !event.getEntityLiving().isPotionActive(Effects.NAUSEA) && stack.getItem() == Items.FERMENTED_SPIDER_EYE) {
+		if (event.getTarget().getType() == EntityType.PIG && !((LivingEntity)event.getTarget()).isPotionActive(Effects.UNLUCK) && stack.getItem() == Items.FERMENTED_SPIDER_EYE) {
 			if (!event.getPlayer().isCreative()) {
 				stack.shrink(1);
 			}
 
-			((CreatureEntity)event.getTarget()).addPotionEffect(new EffectInstance(Effects.NAUSEA, 600, 99));
+			((CreatureEntity)event.getTarget()).addPotionEffect(new EffectInstance(Effects.UNLUCK, 600, 13));
 			event.setCancellationResult(ActionResultType.SUCCESS);
 		}
 	}
@@ -144,7 +148,7 @@ public class EventHandler {
 	public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
 		playShoulderEntitySound(event.player, event.player.getLeftShoulderEntity());
 		playShoulderEntitySound(event.player, event.player.getRightShoulderEntity());
-		if (!event.player.world.isRemote && HulkHammerItem.WAVES.keySet().contains(event.player.getUniqueID())) {
+		if (!event.player.world.isRemote && !HulkHammerItem.WAVES.isEmpty()) {
 			PlayerEntity player = event.player;
 			List<SeismicWave> waveList = HulkHammerItem.WAVES.get(player.getUniqueID());
 
@@ -179,7 +183,7 @@ public class EventHandler {
 			if (stack.getItem() == Items.ENDER_EYE || isHand) {
 				int count = 0;
 				for (EndersoulFragmentEntity orb : world.getEntitiesWithinAABB(EndersoulFragmentEntity.class, player.getBoundingBox().grow(8.0D), EndersoulFragmentEntity::isTamed)) {
-					if (orb.getCollector() == player) {
+					if (orb.getOwner() == player) {
 						count++;
 						orb.remove();
 					}
@@ -202,11 +206,10 @@ public class EventHandler {
 	}
 
 	@SubscribeEvent
-	public static void onLivingDeath(LivingDeathEvent event) {
-		LivingEntity livingEntity = event.getEntityLiving();
-		if (SummonableCapability.isEntityEligible(livingEntity.getType()) && SummonableCapability.getLazy(livingEntity).isPresent()) {
-			SummonableCapability.getLazy(livingEntity).invalidate();
-		}
+	public static void onExplosionDetonate(ExplosionEvent.Detonate event) {
+		event.getAffectedEntities().removeIf(entity -> {
+			return entity instanceof ItemEntity && ((ItemEntity)entity).getItem().getItem() == MBItems.CREEPER_SHARD;
+		});
 	}
 
 	private static void playShoulderEntitySound(PlayerEntity player, @Nullable CompoundNBT compoundNBT) {

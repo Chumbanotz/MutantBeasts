@@ -167,17 +167,8 @@ public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity,
 				int var6 = var5 % 65536;
 				int var7 = var5 / 65536;
 				GLX.glMultiTexCoord2f(GLX.GL_TEXTURE1, (float)var6, (float)var7);
-				float red = 0.9F;
-				float green = 0.3F;
-				float blue = 1.0F;
 				float alpha = 1.0F;
 				float glowScale = 2.0F;
-				if (entityIn.getTeam() != null && entityIn.getTeam().getColor().getColor() != null) {
-					Integer integer = entityIn.getTeam().getColor().getColor();
-//		            red = (float)(integer >> 16 & 255) / 255.0F;
-//		            green = (float)(integer >> 8 & 255) / 255.0F;
-//		            blue = (float)(integer & 255) / 255.0F;
-				}
 
 				if (teleport) {
 					if (!teleportAttack && entityIn.getAttackTick() >= 8) {

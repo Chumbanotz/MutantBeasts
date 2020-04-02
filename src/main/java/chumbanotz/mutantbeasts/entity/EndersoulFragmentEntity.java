@@ -11,7 +11,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MoverType;
-import net.minecraft.entity.monster.EndermanEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.IPacket;
@@ -31,12 +30,14 @@ import net.minecraftforge.fml.network.FMLPlayMessages;
 import net.minecraftforge.fml.network.NetworkHooks;
 
 public class EndersoulFragmentEntity extends Entity {
-	public static final Predicate<Entity> IS_VALID_TARGET = entity -> EntityPredicates.CAN_AI_TARGET.test(entity) && entity.canBeCollidedWith() && !(entity instanceof EndersoulFragmentEntity) && !(entity instanceof MutantEndermanEntity) && !(entity instanceof EndermanEntity);
+	public static final Predicate<Entity> IS_VALID_TARGET = EntityPredicates.CAN_AI_TARGET.and(entity -> {
+		return entity.canBeCollidedWith() && entity.getType() != MBEntityType.ENDERSOUL_FRAGMENT && entity.getType() != MBEntityType.MUTANT_ENDERMAN && entity.getType() != EntityType.ENDER_DRAGON && entity.getType() != EntityType.ENDERMAN;
+	});
 	private static final DataParameter<Boolean> TAMED = EntityDataManager.createKey(EndersoulFragmentEntity.class, DataSerializers.BOOLEAN);
 	private int explodeTick = 20 + this.rand.nextInt(20);
 	public final float[][] stickRotations = new float[8][3];
-	private WeakReference<MutantEndermanEntity> owner;
-	private PlayerEntity collector;
+	private WeakReference<MutantEndermanEntity> spawner;
+	private PlayerEntity owner;
 
 	public EndersoulFragmentEntity(EntityType<? extends EndersoulFragmentEntity> type, World world) {
 		super(type, world);
@@ -49,7 +50,7 @@ public class EndersoulFragmentEntity extends Entity {
 
 	public EndersoulFragmentEntity(World world, MutantEndermanEntity owner) {
 		this(MBEntityType.ENDERSOUL_FRAGMENT, world);
-		this.owner = new WeakReference<>(owner);
+		this.spawner = new WeakReference<>(owner);
 	}
 
 	public EndersoulFragmentEntity(FMLPlayMessages.SpawnEntity packet, World world) {
@@ -69,8 +70,8 @@ public class EndersoulFragmentEntity extends Entity {
 		this.dataManager.set(TAMED, tamed);
 	}
 
-	public PlayerEntity getCollector() {
-		return this.collector;
+	public PlayerEntity getOwner() {
+		return this.owner;
 	}
 
 	@Override
@@ -108,40 +109,40 @@ public class EndersoulFragmentEntity extends Entity {
 		this.prevPosY = this.posY;
 		this.prevPosZ = this.posZ;
 		Vec3d vec3d = this.getMotion();
-		if (this.collector == null && vec3d.y > -0.05000000074505806D && !this.hasNoGravity()) {
+		if (this.owner == null && vec3d.y > -0.05000000074505806D && !this.hasNoGravity()) {
 			this.setMotion(vec3d.x, Math.max(-0.05000000074505806D, vec3d.y - 0.10000000149011612D), vec3d.z);
 		}
 
 		this.move(MoverType.SELF, this.getMotion());
 		this.setMotion(this.getMotion().scale(0.9D));
 
-		if (this.collector != null) {
-			if (!this.collector.isAlive() || !this.collector.isAddedToWorld() || this.collector.isSpectator()) {
-				this.collector = null;
-			}
-
-			if (!this.world.isRemote && this.getDistanceSq(this.collector) > 9.0D) {
-				float scale = 0.05F;
-				this.addVelocity((this.collector.posX - this.posX) * (double)scale, (this.collector.posY + (double)(this.collector.getHeight() / 3.0F) - this.posY) * (double)scale, (this.collector.posZ - this.posZ) * (double)scale);
-			}
+		if (this.owner != null && (!this.owner.isAlive() || !this.owner.isAddedToWorld() || this.owner.isSpectator())) {
+			this.owner = null;
 		}
 
-		if (!this.world.isRemote && !this.isTamed() && --this.explodeTick == 0) {
-			this.explode();
+		if (!this.world.isRemote) {
+			if (!this.isTamed() && --this.explodeTick == 0) {
+				this.explode();
+			}
+
+			if (this.owner != null && this.getDistanceSq(this.owner) > 9.0D) {
+				float scale = 0.05F;
+				this.addVelocity((this.owner.posX - this.posX) * (double)scale, (this.owner.posY + (double)(this.owner.getHeight() / 3.0F) - this.posY) * (double)scale, (this.owner.posZ - this.posZ) * (double)scale);
+			}
 		}
 	}
 
 	@Override
 	public boolean processInitialInteract(PlayerEntity player, Hand hand) {
 		if (this.isTamed()) {
-			if (this.collector == null && !player.isSneaking()) {
-				this.collector = player;
+			if (this.owner == null && !player.isSneaking()) {
+				this.owner = player;
 				this.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F, 1.0F);
 				return true;
 			}
 
-			if (this.collector == player && player.isSneaking()) {
-				this.collector = null;
+			if (this.owner == player && player.isSneaking()) {
+				this.owner = null;
 				this.playSound(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F, 1.5F);
 				return true;
 			}
@@ -152,7 +153,7 @@ public class EndersoulFragmentEntity extends Entity {
 				this.setTamed(true);
 			}
 
-			this.collector = player;
+			this.owner = player;
 			this.playSound(SoundEvents.ENTITY_PLAYER_LEVELUP, 1.0F, 1.5F);
 			return true;
 		}
@@ -188,7 +189,7 @@ public class EndersoulFragmentEntity extends Entity {
 				}
 
 				if (hitChance) {
-					entity.attackEntityFrom(DamageSource.causeThrownDamage(this, this.owner == null ? this : this.owner.get()).setDamageBypassesArmor(), 1.0F);
+					entity.attackEntityFrom(DamageSource.causeThrownDamage(this, this.spawner != null ? this.spawner.get() : this).setDamageBypassesArmor(), 1.0F);
 				}
 			}
 		}
@@ -206,7 +207,7 @@ public class EndersoulFragmentEntity extends Entity {
 
 	@Override
 	public SoundCategory getSoundCategory() {
-		return this.isTamed() ? SoundCategory.NEUTRAL : SoundCategory.HOSTILE;
+		return !this.isTamed() ? SoundCategory.HOSTILE : SoundCategory.NEUTRAL;
 	}
 
 	@Override
