@@ -6,6 +6,6 @@ import net.minecraftforge.registries.ObjectHolder;
 
 @ObjectHolder(MutantBeasts.MOD_ID)
 public class MBParticleTypes {
-	public static final BasicParticleType LARGE_PORTAL = null;
+	public static final BasicParticleType ENDERSOUL = null;
 	public static final BasicParticleType SKULL_SPIRIT = null;
 }

@@ -7,6 +7,7 @@ import javax.annotation.Nullable;
 
 import chumbanotz.mutantbeasts.item.MBItems;
 import chumbanotz.mutantbeasts.util.MBSoundEvents;
+import chumbanotz.mutantbeasts.util.MutatedExplosion;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.MoverType;
@@ -24,7 +25,6 @@ import net.minecraft.util.DamageSource;
 import net.minecraft.util.Hand;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.world.Explosion;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
@@ -35,6 +35,7 @@ import net.minecraftforge.fml.network.NetworkHooks;
 
 public class CreeperMinionEggEntity extends Entity {
 	private static final DataParameter<Optional<UUID>> OWNER_UNIQUE_ID = EntityDataManager.createKey(CreeperMinionEggEntity.class, DataSerializers.OPTIONAL_UNIQUE_ID);
+	private static final DataParameter<Boolean> CHARGED = EntityDataManager.createKey(CreeperMinionEggEntity.class, DataSerializers.BOOLEAN);
 	private int health = 8;
 	private int age = (60 + this.rand.nextInt(40)) * 1200;
 	private int recentlyHit;
@@ -62,6 +63,7 @@ public class CreeperMinionEggEntity extends Entity {
 	@Override
 	protected void registerData() {
 		this.dataManager.register(OWNER_UNIQUE_ID, Optional.empty());
+		this.dataManager.register(CHARGED, false);
 	}
 
 	@Nullable
@@ -73,13 +75,17 @@ public class CreeperMinionEggEntity extends Entity {
 		this.dataManager.set(OWNER_UNIQUE_ID, Optional.ofNullable(uuid));
 	}
 
+	public boolean isCharged() {
+		return this.dataManager.get(CHARGED);
+	}
+
+	public void setCharged(boolean charged) {
+		this.dataManager.set(CHARGED, charged);
+	}
+
 	@Override
 	public double getYOffset() {
-		if (this.isPassenger()) {
-			return (double)this.getHeight() - (this.getRidingEntity().getPose() == Pose.SNEAKING ? 0.35D : 0.2D);	
-		} else {
-			return 0.0D;
-		}
+		return this.isPassenger() ? (double)this.getHeight() - (this.getRidingEntity().getPose() == Pose.SNEAKING ? 0.35D : 0.2D) : 0.0F;
 	}
 
 	@Override
@@ -143,6 +149,7 @@ public class CreeperMinionEggEntity extends Entity {
 			}
 		}
 
+		minion.setPowered(this.isCharged());
 		minion.setPosition(this.posX, this.posY, this.posZ);
 		this.world.addEntity(minion);
 		this.playSound(MBSoundEvents.ENTITY_CREEPER_MINION_EGG_HATCH, 0.7F, 0.9F + this.rand.nextFloat() * 0.1F);
@@ -233,9 +240,9 @@ public class CreeperMinionEggEntity extends Entity {
 					}
 
 					if (this.health <= 0) {
-						this.world.createExplosion(null, this.posX, this.posY, this.posZ, 0.0F, true, Explosion.Mode.DESTROY);
+						MutatedExplosion.create(this, this.isCharged() ? 2.0F : 0.0F, false, MutatedExplosion.Mode.DESTROY);
 						if (!this.world.isRemote && this.world.getGameRules().getBoolean(GameRules.DO_ENTITY_DROPS)) {
-							if (this.rand.nextInt(3) == 0) {
+							if (this.rand.nextInt(this.isCharged() ? 2 : 3) == 0) {
 								this.entityDropItem(MBItems.CREEPER_SHARD);
 							} else for (int j = 5 + this.rand.nextInt(6); j > 0; --j) {
 								this.entityDropItem(Items.GUNPOWDER);
@@ -258,6 +265,10 @@ public class CreeperMinionEggEntity extends Entity {
 		compound.putInt("Health", this.health);
 		compound.putInt("Age", this.age);
 		compound.putInt("RecentlyHit", this.recentlyHit);
+		if (this.isCharged()) {
+			compound.putBoolean("Charged", true);
+		}
+
 		if (this.getOwnerUniqueId() != null) {
 			compound.putUniqueId("OwnerUUID", this.getOwnerUniqueId());
 		}
@@ -271,6 +282,7 @@ public class CreeperMinionEggEntity extends Entity {
 		}
 
 		this.recentlyHit = compound.getInt("RecentlyHit");
+		this.setCharged(compound.getBoolean("Charged"));
 		if (compound.hasUniqueId("OwnerUUID")) {
 			this.setOwnerUniqueId(compound.getUniqueId("OwnerUUID"));
 		}

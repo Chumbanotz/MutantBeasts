@@ -10,13 +10,15 @@ public class CreeperMinionEggModel extends Model {
     private final RendererModel egg;
 
     public CreeperMinionEggModel() {
-        this.textureWidth = 512;
-        this.textureHeight = 256;
+        this(0.0F);
+    }
+
+    public CreeperMinionEggModel(float scale) {
         this.egg = new RendererModel(this, 0, 0);
-        this.egg.addBox(-2.0F, 1.0F, -2.0F, 4, 1, 4);
-        this.egg.addBox(-3.0F, -3.0F, -3.0F, 6, 4, 6);
-        this.egg.addBox(-1.0F, -6.0F, -1.0F, 2, 1, 2);
-        this.egg.addBox(-2.0F, -5.0F, -2.0F, 4, 2, 4);
+        this.egg.addBox(-2.0F, 1.0F, -2.0F, 4, 1, 4, scale);
+        this.egg.addBox(-3.0F, -3.0F, -3.0F, 6, 4, 6, scale);
+        this.egg.addBox(-1.0F, -6.0F, -1.0F, 2, 1, 2, scale);
+        this.egg.addBox(-2.0F, -5.0F, -2.0F, 4, 2, 4, scale);
     }
 
     public void render() {

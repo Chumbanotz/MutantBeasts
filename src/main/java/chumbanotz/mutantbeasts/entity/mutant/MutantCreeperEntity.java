@@ -44,6 +44,7 @@ import net.minecraft.util.EntityPredicates;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.Explosion;
+import net.minecraft.world.GameRules;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
@@ -146,8 +147,7 @@ public class MutantCreeperEntity extends MonsterEntity {
 		double y = entityIn.posY - this.posY;
 		double z = entityIn.posZ - this.posZ;
 		double d = Math.sqrt(x * x + y * y + z * z);
-		entityIn.setMotion(x / d * 0.5D, y / d * 0.05000000074505806D + 0.15000000596046448D, z / d * 0.5D);
-		EntityUtil.sendPlayerVelocityPacket(entityIn);
+		entityIn.addVelocity(x / d * 0.5D, y / d * 0.05000000074505806D + 0.15000000596046448D, z / d * 0.5D);
 		if (flag) {
 			this.applyEnchantments(this, entityIn);
 		}
@@ -169,7 +169,7 @@ public class MutantCreeperEntity extends MonsterEntity {
 
 				if (this.getHealth() < this.getMaxHealth() && !(source.getTrueSource() instanceof MutantCreeperEntity)) {
 					this.heal(healAmount);
-					if (this.world instanceof ServerWorld) {
+					if (this.isAlive() && this.world instanceof ServerWorld) {
 						for (int i = 0; i < (int)(healAmount / 2.0F); i++) {
 							double d0 = this.rand.nextGaussian() * 0.02D;
 							double d1 = this.rand.nextGaussian() * 0.02D;
@@ -217,12 +217,7 @@ public class MutantCreeperEntity extends MonsterEntity {
 	@OnlyIn(Dist.CLIENT)
 	public void handleStatusUpdate(byte id) {
 		if (id == 6) {
-			for (int i = 0; i < 15; ++i) {
-				double d0 = this.rand.nextGaussian() * 0.02D;
-				double d1 = this.rand.nextGaussian() * 0.02D;
-				double d2 = this.rand.nextGaussian() * 0.02D;
-				this.world.addParticle(ParticleTypes.HEART, this.posX + (double)(this.rand.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(), this.posY + 0.5D + (double)(this.rand.nextFloat() * this.getHeight()), this.posZ + (double)(this.rand.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(), d0, d1, d2);
-			}
+			EntityUtil.spawnParticlesAtEntity(this, ParticleTypes.HEART, 15);
 		} else {
 			super.handleStatusUpdate(id);
 		}
@@ -232,9 +227,15 @@ public class MutantCreeperEntity extends MonsterEntity {
 	public void tick() {
 		super.tick();
 
-		if (!this.world.isRemote && this.isJumpAttacking() && (this.onGround || this.motionMultiplier.lengthSquared() > 0.0D || this.world.containsAnyLiquid(this.getBoundingBox()))) {
-			this.setJumpAttacking(false);
-			MutatedExplosion.create(this, this.getPowered() ? 6.0F : 4.0F, false, MutatedExplosion.Mode.DESTROY);
+		if (!this.world.isRemote) {
+			if (this.isJumpAttacking()) {
+				if (this.onGround || this.motionMultiplier.lengthSquared() > 0.0D || this.world.containsAnyLiquid(this.getBoundingBox())) {
+					this.setJumpAttacking(false);
+					MutatedExplosion.create(this, this.getPowered() ? 6.0F : 4.0F, false, MutatedExplosion.Mode.DESTROY);
+				}
+			} else if (this.isAlive() && !this.isAIDisabled() && this.isEntityInsideOpaqueBlock() && this.ticksExisted % 30 == 0) {
+				this.setJumpAttacking(true);
+			}
 		}
 	}
 
@@ -267,6 +268,7 @@ public class MutantCreeperEntity extends MonsterEntity {
 
 	@Override
 	public void onDeath(DamageSource cause) {
+		EntityUtil.onDeath(this, cause);
 		if (!this.world.isRemote) {
 			this.deathCause = cause;
 			this.setCharging(false);
@@ -305,15 +307,17 @@ public class MutantCreeperEntity extends MonsterEntity {
 			if (!this.world.isRemote) {
 				MutatedExplosion.create(this, power, this.isBurning(), MutatedExplosion.Mode.DESTROY);
 				EntityUtil.spawnLingeringCloud(this);
-				super.onDeath(this.deathCause != null ? this.deathCause : DamageSource.GENERIC);
+				this.spawnDrops(this.deathCause != null ? this.deathCause : DamageSource.GENERIC);
 
-				if (EntityUtil.dropExperience(this, this.recentlyHit, this::getExperiencePoints, this.attackingPlayer) && this.attackingPlayer != null) {
+				if (this.world.getGameRules().getBoolean(GameRules.DO_MOB_LOOT) && this.attackingPlayer != null) {
 					CreeperMinionEggEntity egg = new CreeperMinionEggEntity(this.world, this.attackingPlayer);
+					egg.setCharged(this.getPowered());
 					egg.setPosition(this.posX, this.posY, this.posZ);
 					this.world.addEntity(egg);
 				}
 			}
 
+			EntityUtil.dropExperience(this, this.recentlyHit, this::getExperiencePoints, this.attackingPlayer);
 			this.remove();
 		}
 	}
@@ -416,8 +420,7 @@ public class MutantCreeperEntity extends MonsterEntity {
 		@Override
 		public boolean shouldExecute() {
 			LivingEntity target = getAttackTarget();
-			boolean attemptHeal = !(getMaxHealth() - getHealth() < getMaxHealth() / 6.0F);
-			return target != null && onGround && attemptHeal && getDistanceSq(target) >= 25.0D && getDistanceSq(target) <= 1024.0D ? rand.nextFloat() * 100.0F < 0.7F : isCharging();
+			return target != null && onGround && !(getMaxHealth() - getHealth() < getMaxHealth() / 6.0F) && getDistanceSq(target) >= 25.0D && getDistanceSq(target) <= 1024.0D && rand.nextFloat() * 100.0F < 0.7F || isCharging();
 		}
 
 		@Override
@@ -474,7 +477,7 @@ public class MutantCreeperEntity extends MonsterEntity {
 		@Override
 		public boolean shouldExecute() {
 			LivingEntity target = getAttackTarget();
-			return target != null && getDistanceSq(target) <= 1024.0D && onGround && !isCharging() ? rand.nextFloat() * 100.0F < 0.9F : isEntityInsideOpaqueBlock() && ticksExisted % 30 == 0;
+			return target != null && getDistanceSq(target) <= 1024.0D && onGround && !isCharging() && rand.nextFloat() * 100.0F < 0.9F;
 		}
 
 		@Override
@@ -485,9 +488,7 @@ public class MutantCreeperEntity extends MonsterEntity {
 		@Override
 		public void startExecuting() {
 			setJumpAttacking(true);
-			if (getAttackTarget() != null) {
-				setMotion((getAttackTarget().posX - posX) * 0.2D, 1.4D, (getAttackTarget().posZ - posZ) * 0.2D);
-			}
+			setMotion((getAttackTarget().posX - posX) * 0.2D, 1.4D, (getAttackTarget().posZ - posZ) * 0.2D);
 		}
 	}
 }

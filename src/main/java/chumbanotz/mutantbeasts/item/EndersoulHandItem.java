@@ -68,7 +68,7 @@ public class EndersoulHandItem extends Item {
 		BlockPos pos = context.getPos();
 		if (context.isPlacerSneaking()) {
 			return ActionResultType.FAIL;
-		} else if (!world.getBlockState(pos).isIn(MutantBeasts.THROWABLE_BLOCKS)) {
+		} else if (!world.getBlockState(pos).isIn(MutantBeasts.ENDERSOUL_HAND_HOLDABLE)) {
 			return ActionResultType.FAIL;
 		} else if (!world.canMineBlockBody(context.getPlayer(), pos)) {
 			return ActionResultType.FAIL;
@@ -135,7 +135,7 @@ public class EndersoulHandItem extends Item {
 					}
 
 					worldIn.playSound(null, playerIn.posX, playerIn.posY + (double)playerIn.getHeight() / 2.0D, playerIn.posZ, SoundEvents.ITEM_CHORUS_FRUIT_TELEPORT, playerIn.getSoundCategory(), 1.0F, 1.0F);
-					EntityUtil.spawnLargePortalParticles(playerIn, 256, 1.8F, true);
+					EntityUtil.spawnEndersoulParticles(playerIn);
 					playerIn.getCooldownTracker().setCooldown(this, 40);
 					playerIn.swingArm(handIn);
 					playerIn.addStat(Stats.ITEM_USED.get(this));

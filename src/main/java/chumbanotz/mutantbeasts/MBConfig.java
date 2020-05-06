@@ -1,5 +1,8 @@
 package chumbanotz.mutantbeasts;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.commons.lang3.tuple.Pair;
 
 import net.minecraftforge.common.ForgeConfigSpec;
@@ -7,40 +10,41 @@ import net.minecraftforge.common.ForgeConfigSpec;
 public class MBConfig {
 	static final ForgeConfigSpec COMMON_SPEC;
 	private static final MBConfig.Common COMMON;
-	public static int globalSpawnRate = 10;
-	public static int mutantCreeperSpawnWeight = 1;
-	public static int mutantEndermanSpawnWeight = 1;
-	public static int mutantSkeletonSpawnWeight = 1;
-	public static int mutantZombieSpawnWeight = 1;
+	public static int mutantCreeperSpawnWeight;
+	public static int mutantEndermanSpawnWeight;
+	public static int mutantSkeletonSpawnWeight;
+	public static int mutantZombieSpawnWeight;
+	public static List<String> dimensionBlacklist;
 
 	private static class Common {
-		private final ForgeConfigSpec.IntValue globalSpawnRate;
 		private final ForgeConfigSpec.IntValue mutantCreeperSpawnWeight;
 		private final ForgeConfigSpec.IntValue mutantEndermanSpawnWeight;
 		private final ForgeConfigSpec.IntValue mutantSkeletonSpawnWeight;
 		private final ForgeConfigSpec.IntValue mutantZombieSpawnWeight;
+		private final ForgeConfigSpec.ConfigValue<List<String>> dimensionBlacklist;
 
 		private Common(ForgeConfigSpec.Builder builder) {
 			builder.comment("Common configuration settings").push("common");
-			this.globalSpawnRate = builder
-					.comment("Affects spawn rate of all mutants", "The smaller the number, the lower the chance")
-					.defineInRange("globalSpawnRate", 10, 1, 20);
 			this.mutantCreeperSpawnWeight = builder
-					.comment("Mutant Creeper spawn weight")
+					.comment("Mutant Creeper spawn weight", "Requires game restart")
 					.worldRestart()
-					.defineInRange("mutantCreeperSpawnWeight", 1, 0, 100);
+					.defineInRange("mutantCreeperSpawnWeight", 4, 0, 100);
 			this.mutantEndermanSpawnWeight = builder
-					.comment("Mutant Enderman spawn weight")
+					.comment("Mutant Enderman spawn weight", "Requires game restart")
 					.worldRestart()
-					.defineInRange("mutantEndermanSpawnWeight", 1, 0, 100);
+					.defineInRange("mutantEndermanSpawnWeight", 3, 0, 100);
 			this.mutantSkeletonSpawnWeight = builder
-					.comment("Mutant Skeleton spawn weight")
+					.comment("Mutant Skeleton spawn weight", "Requires game restart")
 					.worldRestart()
-					.defineInRange("mutantSkeletonSpawnWeight", 1, 0, 100);
+					.defineInRange("mutantSkeletonSpawnWeight", 4, 0, 100);
 			this.mutantZombieSpawnWeight = builder
-					.comment("Mutant Zombie spawn weight")
+					.comment("Mutant Zombie spawn weight", "Requires game restart")
 					.worldRestart()
-					.defineInRange("mutantZombieSpawnWeight", 1, 0, 100);
+					.defineInRange("mutantZombieSpawnWeight", 4, 0, 100);
+			this.dimensionBlacklist = builder
+					.comment("Mutants will not spawn in the provided dimensions, using their registry name",
+							"Example - \"minecraft:overworld\", \"minecraft:the_nether\" ")
+					.define("dimensionBlacklist", new ArrayList<>());
 			builder.pop();
 		}
 	}
@@ -53,11 +57,11 @@ public class MBConfig {
 
 	public static void bake(ForgeConfigSpec spec) {
 		if (spec == COMMON_SPEC) {
-			globalSpawnRate = COMMON.globalSpawnRate.get();
 			mutantCreeperSpawnWeight = COMMON.mutantCreeperSpawnWeight.get();
 			mutantEndermanSpawnWeight = COMMON.mutantEndermanSpawnWeight.get();
 			mutantSkeletonSpawnWeight = COMMON.mutantSkeletonSpawnWeight.get();
 			mutantZombieSpawnWeight = COMMON.mutantZombieSpawnWeight.get();
+			dimensionBlacklist = COMMON.dimensionBlacklist.get();
 		}
 	}
 }

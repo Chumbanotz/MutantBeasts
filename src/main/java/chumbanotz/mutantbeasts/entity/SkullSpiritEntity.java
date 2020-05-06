@@ -9,7 +9,6 @@ import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MobEntity;
 import net.minecraft.entity.MoverType;
 import net.minecraft.entity.player.ServerPlayerEntity;
@@ -104,17 +103,16 @@ public class SkullSpiritEntity extends Entity {
 							AxisAlignedBB bb = mutant.getBoundingBox().grow(1.0D);
 							for (BlockPos pos : BlockPos.getAllInBoxMutable(MathHelper.floor(bb.minX), MathHelper.floor(mutant.posY), MathHelper.floor(bb.minZ), MathHelper.floor(bb.maxX), MathHelper.floor(bb.maxY), MathHelper.floor(bb.maxZ))) {
 								BlockState blockState = this.world.getBlockState(pos);
-								if (blockState.getMaterial().isSolid() && !net.minecraft.tags.BlockTags.WITHER_IMMUNE.contains(blockState.getBlock())) {
+								if (blockState.getMaterial().isSolid() && blockState.getBlockHardness(this.world, pos) > -1.0F) {
 									this.world.removeBlock(pos, false);
 								}
 							}
 
-							for (ServerPlayerEntity serverplayerentity : this.world.getEntitiesWithinAABB(ServerPlayerEntity.class, bb.grow(5.0D))) {
+							for (ServerPlayerEntity serverplayerentity : this.world.getEntitiesWithinAABB(ServerPlayerEntity.class, mutant.getBoundingBox().grow(5.0D))) {
 								CriteriaTriggers.SUMMONED_ENTITY.trigger(serverplayerentity, mutant);
 							}
 						} else {
 							MutatedExplosion.create(this, 2.0F, false, MutatedExplosion.Mode.NONE);
-							this.target.attackEntityFrom(DamageSource.causeExplosionDamage((LivingEntity)null), Float.MAX_VALUE);
 						}
 
 						this.remove();
@@ -167,11 +165,6 @@ public class SkullSpiritEntity extends Entity {
 		} else {
 			this.remove();
 		}
-	}
-
-	@Override
-	public boolean isInvisible() {
-		return true;
 	}
 
 	@Override

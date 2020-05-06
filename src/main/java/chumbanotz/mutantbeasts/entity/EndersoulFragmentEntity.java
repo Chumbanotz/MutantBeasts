@@ -31,7 +31,8 @@ import net.minecraftforge.fml.network.NetworkHooks;
 
 public class EndersoulFragmentEntity extends Entity {
 	public static final Predicate<Entity> IS_VALID_TARGET = EntityPredicates.CAN_AI_TARGET.and(entity -> {
-		return entity.canBeCollidedWith() && entity.getType() != MBEntityType.ENDERSOUL_FRAGMENT && entity.getType() != MBEntityType.MUTANT_ENDERMAN && entity.getType() != EntityType.ENDER_DRAGON && entity.getType() != EntityType.ENDERMAN;
+		EntityType<?> type = entity.getType();
+		return type != EntityType.ITEM && type != EntityType.EXPERIENCE_ORB && type != MBEntityType.ENDERSOUL_CLONE && type != MBEntityType.ENDERSOUL_FRAGMENT && type != MBEntityType.MUTANT_ENDERMAN && type != EntityType.ENDER_DRAGON && type != EntityType.ENDERMAN;
 	});
 	private static final DataParameter<Boolean> TAMED = EntityDataManager.createKey(EndersoulFragmentEntity.class, DataSerializers.BOOLEAN);
 	private int explodeTick = 20 + this.rand.nextInt(20);
@@ -48,9 +49,9 @@ public class EndersoulFragmentEntity extends Entity {
 		}
 	}
 
-	public EndersoulFragmentEntity(World world, MutantEndermanEntity owner) {
+	public EndersoulFragmentEntity(World world, MutantEndermanEntity spawner) {
 		this(MBEntityType.ENDERSOUL_FRAGMENT, world);
-		this.spawner = new WeakReference<>(owner);
+		this.spawner = new WeakReference<>(spawner);
 	}
 
 	public EndersoulFragmentEntity(FMLPlayMessages.SpawnEntity packet, World world) {
@@ -90,15 +91,10 @@ public class EndersoulFragmentEntity extends Entity {
 	}
 
 	@Override
-	public boolean canBeAttackedWithItem() {
-		return !this.isTamed();
-	}
-
-	@Override
 	@OnlyIn(Dist.CLIENT)
 	public void handleStatusUpdate(byte id) {
 		if (id == 3) {
-			EntityUtil.spawnLargePortalParticles(this, 64, 0.8F, false);
+			EntityUtil.spawnEndersoulParticles(this, 64, 0.8F);
 		}
 	}
 

@@ -15,7 +15,6 @@ import chumbanotz.mutantbeasts.entity.mutant.SpiderPigEntity;
 import chumbanotz.mutantbeasts.entity.projectile.ChemicalXEntity;
 import chumbanotz.mutantbeasts.entity.projectile.MutantArrowEntity;
 import chumbanotz.mutantbeasts.entity.projectile.ThrowableBlockEntity;
-import chumbanotz.mutantbeasts.util.EntityUtil;
 import net.minecraft.block.DispenserBlock;
 import net.minecraft.dispenser.DefaultDispenseItemBehavior;
 import net.minecraft.dispenser.IBlockSource;
@@ -25,6 +24,7 @@ import net.minecraft.entity.EntitySpawnPlacementRegistry;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.MobEntity;
 import net.minecraft.entity.SpawnReason;
+import net.minecraft.entity.monster.MonsterEntity;
 import net.minecraft.entity.passive.AnimalEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -46,6 +46,7 @@ public class MBEntityType {
 	public static final EntityType<ChemicalXEntity> CHEMICAL_X = null;
 	public static final EntityType<CreeperMinionEntity> CREEPER_MINION = null;
 	public static final EntityType<CreeperMinionEggEntity> CREEPER_MINION_EGG = null;
+	public static final EntityType<EndersoulCloneEntity> ENDERSOUL_CLONE = null;
 	public static final EntityType<EndersoulFragmentEntity> ENDERSOUL_FRAGMENT = null;
 	public static final EntityType<MutantArrowEntity> MUTANT_ARROW = null;
 	public static final EntityType<MutantCreeperEntity> MUTANT_CREEPER = null;
@@ -90,6 +91,7 @@ public class MBEntityType {
 		build("chemical_x", EntityType.Builder.<ChemicalXEntity>create(ChemicalXEntity::new, EntityClassification.MISC).setCustomClientFactory(ChemicalXEntity::new).setTrackingRange(10).setUpdateInterval(10).size(0.25F, 0.25F));
 		build("creeper_minion", EntityType.Builder.create(CreeperMinionEntity::new, EntityClassification.MISC).size(0.3F, 0.84F), 894731, 12040119);
 		build("creeper_minion_egg", EntityType.Builder.<CreeperMinionEggEntity>create(CreeperMinionEggEntity::new, EntityClassification.MISC).setCustomClientFactory(CreeperMinionEggEntity::new).setTrackingRange(10).setUpdateInterval(20).size(0.5625F, 0.75F));
+		build("endersoul_clone", EntityType.Builder.create(EndersoulCloneEntity::new, EntityClassification.MISC).disableSerialization().size(0.6F, 2.9F));
 		build("endersoul_fragment", EntityType.Builder.<EndersoulFragmentEntity>create(EndersoulFragmentEntity::new, EntityClassification.MISC).setCustomClientFactory(EndersoulFragmentEntity::new).setTrackingRange(4).setUpdateInterval(10).size(0.75F, 0.75F));
 		build("mutant_arrow", EntityType.Builder.<MutantArrowEntity>create(MutantArrowEntity::new, EntityClassification.MISC).setCustomClientFactory(MutantArrowEntity::new));
 		build("mutant_creeper", EntityType.Builder.create(MutantCreeperEntity::new, EntityClassification.MONSTER).size(1.6F, 2.8F), 5349438, 11013646);
@@ -105,30 +107,28 @@ public class MBEntityType {
 	public static void addSpawns() {
 		for (Biome biome : ForgeRegistries.BIOMES) {
 			if (biome.getCategory() != Biome.Category.MUSHROOM && biome != Biomes.THE_VOID) {
-				addSpawn(biome, EntityClassification.MONSTER, MUTANT_ENDERMAN, MBConfig.mutantEndermanSpawnWeight, 1, 1);
+				addSpawn(biome, MUTANT_ENDERMAN, MBConfig.mutantEndermanSpawnWeight, 1, 1);
 				if (biome.getCategory() != Biome.Category.THEEND && biome.getCategory() != Biome.Category.NETHER) {
-					addSpawn(biome, EntityClassification.MONSTER, MUTANT_CREEPER, MBConfig.mutantCreeperSpawnWeight, 1, 1);
-					addSpawn(biome, EntityClassification.MONSTER, MUTANT_SKELETON, MBConfig.mutantSkeletonSpawnWeight, 1, 1);
-					addSpawn(biome, EntityClassification.MONSTER, MUTANT_ZOMBIE, MBConfig.mutantZombieSpawnWeight, 1, 1);
+					addSpawn(biome, MUTANT_CREEPER, MBConfig.mutantCreeperSpawnWeight, 1, 1);
+					addSpawn(biome, MUTANT_SKELETON, MBConfig.mutantSkeletonSpawnWeight, 1, 1);
+					addSpawn(biome, MUTANT_ZOMBIE, MBConfig.mutantZombieSpawnWeight, 1, 1);
 				}
 			}
 		}
-	}
 
-	private static void addSpawn(Biome biome, EntityClassification entityClassification, EntityType<? extends MobEntity> entityType, int weight, int min, int max) {
-		if (weight > 0) {
-			biome.getSpawns(entityClassification).add(new Biome.SpawnListEntry(entityType, weight, min, max));
-		}
-	}
-
-	public static void setSpawnPlacement() {
 		EntitySpawnPlacementRegistry.register(CREEPER_MINION, EntitySpawnPlacementRegistry.PlacementType.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, MobEntity::canSpawnOn);
-		EntitySpawnPlacementRegistry.register(MUTANT_CREEPER, EntitySpawnPlacementRegistry.PlacementType.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, EntityUtil::canMutantSpawn);
-		EntitySpawnPlacementRegistry.register(MUTANT_ENDERMAN, EntitySpawnPlacementRegistry.PlacementType.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, EntityUtil::canMutantSpawn);
-		EntitySpawnPlacementRegistry.register(MUTANT_SKELETON, EntitySpawnPlacementRegistry.PlacementType.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, EntityUtil::canMutantSpawn);
+		EntitySpawnPlacementRegistry.register(MUTANT_CREEPER, EntitySpawnPlacementRegistry.PlacementType.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, MonsterEntity::func_223325_c);
+		EntitySpawnPlacementRegistry.register(MUTANT_ENDERMAN, EntitySpawnPlacementRegistry.PlacementType.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, MutantEndermanEntity::canSpawn);
+		EntitySpawnPlacementRegistry.register(MUTANT_SKELETON, EntitySpawnPlacementRegistry.PlacementType.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, MonsterEntity::func_223325_c);
 		EntitySpawnPlacementRegistry.register(MUTANT_SNOW_GOLEM, EntitySpawnPlacementRegistry.PlacementType.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, MobEntity::canSpawnOn);
-		EntitySpawnPlacementRegistry.register(MUTANT_ZOMBIE, EntitySpawnPlacementRegistry.PlacementType.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, EntityUtil::canMutantSpawn);
+		EntitySpawnPlacementRegistry.register(MUTANT_ZOMBIE, EntitySpawnPlacementRegistry.PlacementType.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, MonsterEntity::func_223325_c);
 		EntitySpawnPlacementRegistry.register(SPIDER_PIG, EntitySpawnPlacementRegistry.PlacementType.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, AnimalEntity::func_223316_b);
+	}
+
+	private static void addSpawn(Biome biome, EntityType<? extends MobEntity> entityType, int weight, int min, int max) {
+		if (weight > 0) {
+			biome.getSpawns(entityType.getClassification()).add(new Biome.SpawnListEntry(entityType, weight, min, max));
+		}
 	}
 
 	private static <T extends Entity> EntityType<T> build(String name, EntityType.Builder<T> builder) {

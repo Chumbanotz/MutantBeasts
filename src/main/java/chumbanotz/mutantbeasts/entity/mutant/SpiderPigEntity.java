@@ -390,7 +390,7 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 				this.rotationPitch = pitch;
 				double power = 1.600000023841858D * (double)this.chargePower;
 				this.setMotion(this.getLookVec().x * power, 0.30000001192092896D, this.getLookVec().z * power);
-				this.chargePower = 0;
+				this.chargePower = 0.0F;
 			}
 
 			this.jumpMovementFactor = this.getAIMoveSpeed() * 0.1F;
@@ -488,7 +488,6 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 	@Override
 	public void onDeath(DamageSource cause) {
 		super.onDeath(cause);
-		EntityUtil.alertOthers(this);
 		if (!this.world.isRemote && !this.webList.isEmpty()) {
 			for (SpiderPigEntity.WebPos webPos : this.webList) {
 				this.removeWeb(webPos);

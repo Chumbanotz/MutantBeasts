@@ -30,7 +30,8 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 public class MutantBeasts {
 	public static final String MOD_ID = "mutantbeasts";
 	public static final Logger LOGGER = LogManager.getLogger(MOD_ID);
-	public static final Tag<Block> THROWABLE_BLOCKS = new BlockTags.Wrapper(prefix("throwable_blocks"));
+	public static final Tag<Block> ENDERSOUL_HAND_HOLDABLE = new BlockTags.Wrapper(prefix("endersoul_hand_holdable"));
+	public static final Tag<Block> MUTANT_ENDERMAN_HOLABLE = new BlockTags.Wrapper(prefix("mutant_enderman_holdable"));
 	public static final ItemGroup ITEM_GROUP = new ItemGroup(MOD_ID) {
 		@Override
 		@OnlyIn(Dist.CLIENT)
@@ -50,7 +51,6 @@ public class MutantBeasts {
 		PacketHandler.register();
 		BrewingRecipeRegistry.addRecipe(new ChemicalXItem.BrewingRecipe());
 		CapabilityManager.INSTANCE.register(ISummonable.class, new SummonableCapability.Storage(), SummonableCapability::new);
-		MBEntityType.setSpawnPlacement();
 		net.minecraftforge.fml.DeferredWorkQueue.runLater(() -> {
 			MBEntityType.addSpawns();
 			MBEntityType.registerDispenseBehavior();

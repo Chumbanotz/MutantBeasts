@@ -37,6 +37,7 @@ import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
 import net.minecraft.util.ActionResultType;
 import net.minecraft.util.DamageSource;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.world.World;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
@@ -46,8 +47,10 @@ import net.minecraftforge.event.entity.item.ItemTossEvent;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingDropsEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.event.entity.living.LivingSpawnEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.world.ExplosionEvent;
+import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
@@ -190,7 +193,7 @@ public class EventHandler {
 				}
 
 				if (count > 0) {
-					EntityUtil.spawnLargePortalParticles(player, 256, 1.8F, true);
+					EntityUtil.spawnEndersoulParticles(player);
 					int addDmg = count * 60;
 					if (isHand) {
 						int dmg = stack.getDamage() - addDmg;
@@ -210,6 +213,17 @@ public class EventHandler {
 		event.getAffectedEntities().removeIf(entity -> {
 			return entity instanceof ItemEntity && ((ItemEntity)entity).getItem().getItem() == MBItems.CREEPER_SHARD;
 		});
+	}
+
+	@SubscribeEvent
+	public static void onLivingSpawnCheck(LivingSpawnEvent.CheckSpawn event) {
+		if (!MBConfig.dimensionBlacklist.isEmpty()) {
+			String name = event.getEntityLiving().getEntityString();
+			ResourceLocation dimensionLoc = event.getWorld().getDimension().getType().getRegistryName();
+			if (name != null && name.contains(MutantBeasts.MOD_ID) && dimensionLoc != null && MBConfig.dimensionBlacklist.contains(dimensionLoc.toString())) {
+				event.setResult(Event.Result.DENY);
+			}
+		}
 	}
 
 	private static void playShoulderEntitySound(PlayerEntity player, @Nullable CompoundNBT compoundNBT) {

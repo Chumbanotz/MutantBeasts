@@ -6,6 +6,7 @@ import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
 
 import chumbanotz.mutantbeasts.MutantBeasts;
+import chumbanotz.mutantbeasts.client.renderer.entity.layers.EndersoulLayer;
 import chumbanotz.mutantbeasts.client.renderer.entity.model.MutantEndermanModel;
 import chumbanotz.mutantbeasts.entity.mutant.MutantEndermanEntity;
 import net.minecraft.block.Block;
@@ -27,7 +28,6 @@ public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity,
 	private static final Field RENDER_POS_Y = ObfuscationReflectionHelper.findField(EntityRendererManager.class, "field_78726_c");
 	private static final Field RENDER_POS_Z = ObfuscationReflectionHelper.findField(EntityRendererManager.class, "field_78723_d");
 	private static final ResourceLocation TEXTURE = MutantBeasts.getEntityTexture("mutant_enderman/mutant_enderman");
-	private static final ResourceLocation GLOW_TEXTURE = MutantBeasts.getEntityTexture("mutant_enderman/glow");
 	private static final ResourceLocation EYES_TEXTURE = MutantBeasts.getEntityTexture("mutant_enderman/eyes");
 	private static final ResourceLocation DEATH_TEXTURE = MutantBeasts.getEntityTexture("mutant_enderman/death");
 	private final MutantEndermanModel endermanModel = (MutantEndermanModel)this.entityModel;
@@ -62,8 +62,6 @@ public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity,
 		this.shadowSize = entity.isClone() ? 0.5F : 0.8F;
 		this.shadowOpaque = entity.isClone() ? 0.5F : 1.0F;
 		this.teleportAttack = false;
-		double addX = 0.0D;
-		double addZ = 0.0D;
 		this.entityModel = entity.isClone() ? this.cloneModel : this.endermanModel;
 		this.cloneModel.isAttacking = entity.isAggressive();
 		boolean forcedLook = entity.getAttackID() == MutantEndermanEntity.STARE_ATTACK;
@@ -85,11 +83,11 @@ public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity,
 				shake = entity.getAttackTick() < 80 ? 0.019999999552965164D : 0.05000000074505806D;
 			}
 
-			addX = entity.getRNG().nextGaussian() * shake;
-			addZ = entity.getRNG().nextGaussian() * shake;
+			x += entity.getRNG().nextGaussian() * shake;
+			z += entity.getRNG().nextGaussian() * shake;
 		}
 
-		super.doRender(entity, x + addX, y, z + addZ, entityYaw, partialTicks);
+		super.doRender(entity, x, y, z, entityYaw, partialTicks);
 		if (entity.getAttackID() == MutantEndermanEntity.TELEPORT_ATTACK) {
 			this.teleportAttack = true;
 			try {
@@ -141,7 +139,7 @@ public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity,
 	}
 
 	@OnlyIn(Dist.CLIENT)
-	class GlowLayer extends LayerRenderer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> {
+	class GlowLayer extends EndersoulLayer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> {
 		public GlowLayer(IEntityRenderer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> entityRendererIn) {
 			super(entityRendererIn);
 		}
@@ -153,32 +151,9 @@ public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity,
 			boolean clone = entityIn.isClone();
 
 			if (teleport || scream || clone) {
-				GlStateManager.disableLighting();
-				this.bindTexture(GLOW_TEXTURE);
-				GlStateManager.matrixMode(5890);
-				GlStateManager.loadIdentity();
-				float f = ((float)entityIn.ticksExisted + partialTicks) * 0.008F;
-				GlStateManager.translatef(f, f, 0.0F);
-				GlStateManager.matrixMode(5888);
-				GlStateManager.enableNormalize();
-				GlStateManager.enableBlend();
-				GlStateManager.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
-				int var5 = '\uf0f0';
-				int var6 = var5 % 65536;
-				int var7 = var5 / 65536;
-				GLX.glMultiTexCoord2f(GLX.GL_TEXTURE1, (float)var6, (float)var7);
-				float alpha = 1.0F;
 				float glowScale = 2.0F;
 
 				if (teleport) {
-					if (!teleportAttack && entityIn.getAttackTick() >= 8) {
-						alpha -= ((float)(entityIn.getAttackTick() - 8) + partialTicks) / 2.0F;
-					}
-
-					if (teleportAttack && entityIn.getAttackTick() < 2) {
-						alpha = ((float)entityIn.getAttackTick() + partialTicks) / 2.0F;
-					}
-
 					glowScale = 1.2F + ((float)entityIn.getAttackTick() + partialTicks) / 10.0F;
 					if (teleportAttack) {
 						glowScale = 2.2F - ((float)entityIn.getAttackTick() + partialTicks) / 10.0F;
@@ -186,12 +161,6 @@ public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity,
 				}
 
 				if (scream) {
-					if (entityIn.getAttackTick() < 40) {
-						alpha = ((float)entityIn.getAttackTick() + partialTicks) / 40.0F;
-					} else if (entityIn.getAttackTick() >= 160) {
-						alpha = 1.0F - ((float)entityIn.getAttackTick() + partialTicks) / 40.0F;
-					}
-
 					if (entityIn.getAttackTick() < 40) {
 						glowScale = 1.2F + ((float)entityIn.getAttackTick() + partialTicks) / 40.0F;
 					} else if (entityIn.getAttackTick() < 160) {
@@ -201,29 +170,41 @@ public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity,
 					}
 				}
 
-				GlStateManager.enableLighting();
-				GlStateManager.color4f(0.9F, 0.3F, 1.0F, alpha);
-				Minecraft.getInstance().gameRenderer.setupFogColor(true);
-				if (clone) {
-					this.getEntityModel().render(entityIn, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scale);
-				} else {
+				if (!clone) {
 					GlStateManager.pushMatrix();
 					GlStateManager.scalef(glowScale, glowScale * 0.8F, glowScale);
-					this.getEntityModel().render(entityIn, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scale);
-					GlStateManager.popMatrix();
 				}
 
-				Minecraft.getInstance().gameRenderer.setupFogColor(false);
-				GlStateManager.matrixMode(5890);
-				GlStateManager.loadIdentity();
-				GlStateManager.matrixMode(5888);
-				GlStateManager.disableBlend();
+				super.render(entityIn, limbSwing, limbSwingAmount, partialTicks, ageInTicks, netHeadYaw, headPitch, scale);
+
+				if (!clone) {
+					GlStateManager.popMatrix();
+				}
 			}
 		}
 
 		@Override
-		public boolean shouldCombineTextures() {
-			return false;
+		protected float getAlpha(MutantEndermanEntity entity, float partialTicks) {
+			float alpha = 1.0F;
+			if (entity.getAttackID() == MutantEndermanEntity.TELEPORT_ATTACK) {
+				if (!teleportAttack && entity.getAttackTick() >= 8) {
+					alpha -= ((float)(entity.getAttackTick() - 8) + partialTicks) / 2.0F;
+				}
+
+				if (teleportAttack && entity.getAttackTick() < 2) {
+					alpha = ((float)entity.getAttackTick() + partialTicks) / 2.0F;
+				}
+			}
+
+			if (entity.getAttackID() == MutantEndermanEntity.SCREAM_ATTACK) {
+				if (entity.getAttackTick() < 40) {
+					alpha = ((float)entity.getAttackTick() + partialTicks) / 40.0F;
+				} else if (entity.getAttackTick() >= 160) {
+					alpha = 1.0F - ((float)entity.getAttackTick() + partialTicks) / 40.0F;
+				}
+			}
+
+			return alpha;
 		}
 	}
 

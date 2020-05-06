@@ -4,6 +4,7 @@ import com.mojang.blaze3d.platform.GlStateManager;
 
 import chumbanotz.mutantbeasts.MutantBeasts;
 import chumbanotz.mutantbeasts.entity.CreeperMinionEntity;
+import chumbanotz.mutantbeasts.item.MBItems;
 import chumbanotz.mutantbeasts.packet.CreeperMinionTrackerPacket;
 import chumbanotz.mutantbeasts.packet.PacketHandler;
 import net.minecraft.client.gui.screen.Screen;
@@ -70,7 +71,7 @@ public class CreeperMinionTrackerScreen extends Screen {
 	}
 
 	private String alwaysShowName() {
-		return format("name_visible") + ": " + I18n.format(this.alwaysShowName ? "options.on" : "options.off");
+		return format("show_name") + ": " + I18n.format(this.alwaysShowName ? "options.on" : "options.off");
 	}
 
 	private String canDestroyBlocks() {
@@ -96,7 +97,7 @@ public class CreeperMinionTrackerScreen extends Screen {
 		StringBuilder sb = new StringBuilder();
 		sb.append(this.creeperMinion.getHealth() / 2.0F).append(" / ").append(this.creeperMinion.getMaxHealth() / 2.0F);
 		this.drawCenteredString(this.font, sb.toString(), this.guiX + this.xSize / 2 + 38, this.guiY + 30, 16777215);
-		this.drawCenteredString(this.font, this.creeperMinion.canExplodeContinuously() ? format("explosion.continuous") : format("explosion.once"), this.guiX + this.xSize / 2 + 38, this.guiY + 50, 16777215);
+		this.drawCenteredString(this.font, this.creeperMinion.canExplodeContinuously() ? format("explosion.continuous") : format("explosion.one_time"), this.guiX + this.xSize / 2 + 38, this.guiY + 50, 16777215);
 		int temp = (int)((this.creeperMinion.getExplosionRadius()) * 10.0F);
 		sb = (new StringBuilder()).append((float)temp / 10.0F);
 		this.drawCenteredString(this.font, sb.toString(), this.guiX + this.xSize / 2 + 38, this.guiY + 70, 16777215);
@@ -109,6 +110,6 @@ public class CreeperMinionTrackerScreen extends Screen {
 	}
 
 	private static String format(String key, Object... parameters) {
-		return I18n.format("gui." + MutantBeasts.MOD_ID + ".creeper_minion_tracker." + key, parameters);
+		return I18n.format("gui." + MBItems.CREEPER_MINION_TRACKER.getTranslationKey().replace("item.", "") + "." + key, parameters);
 	}
 }

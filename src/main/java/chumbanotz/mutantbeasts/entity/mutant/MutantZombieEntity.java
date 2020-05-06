@@ -36,6 +36,7 @@ import net.minecraft.entity.monster.MonsterEntity;
 import net.minecraft.entity.monster.ZombieVillagerEntity;
 import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
@@ -46,9 +47,9 @@ import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.particles.ParticleTypes;
 import net.minecraft.pathfinding.PathNavigator;
-import net.minecraft.pathfinding.PathNodeType;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
+import net.minecraft.stats.Stats;
 import net.minecraft.util.ActionResultType;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.EntityPredicates;
@@ -200,10 +201,12 @@ public class MutantZombieEntity extends MonsterEntity {
 
 	@Override
 	public ActionResultType applyPlayerInteraction(PlayerEntity player, Vec3d vec, Hand hand) {
-		if (player.getHeldItem(hand).getItem() == Items.FLINT_AND_STEEL && this.deathTime > 0 && !this.isBurning() && !this.isWet()) {
+		ItemStack itemStack = player.getHeldItem(hand);
+		if (itemStack.getItem() == Items.FLINT_AND_STEEL && !this.isAlive() && !this.isBurning() && !this.isWet()) {
 			this.setFire(8);
 			player.swingArm(hand);
-			player.getHeldItem(hand).damageItem(1, player, livingEntity -> livingEntity.sendBreakAnimation(hand));
+			player.addStat(Stats.ITEM_USED.get(itemStack.getItem()));
+			itemStack.damageItem(1, player, livingEntity -> livingEntity.sendBreakAnimation(hand));
 			this.world.playSound(player, this.getPosition(), SoundEvents.ITEM_FLINTANDSTEEL_USE, SoundCategory.BLOCKS, 1.0F, this.rand.nextFloat() * 0.4F + 0.8F);
 			return ActionResultType.SUCCESS;
 		}
@@ -259,12 +262,14 @@ public class MutantZombieEntity extends MonsterEntity {
 	@Override
 	@OnlyIn(Dist.CLIENT)
 	public void handleStatusUpdate(byte id) {
-		if (id == 3) {
-			EntityUtil.spawnParticlesAtEntity(this, ParticleTypes.FLAME, 30);
-		} else if (id == 0 || id >= 4 && id <= 6) {
+		if (id == 0 || id >= 4 && id <= 6) {
 			this.attackID = id;
 			this.attackTick = 0;
 		} else {
+			if (id == 3) {
+				EntityUtil.spawnParticlesAtEntity(this, ParticleTypes.FLAME, 30);
+			}
+
 			super.handleStatusUpdate(id);
 		}
 	}
@@ -289,7 +294,6 @@ public class MutantZombieEntity extends MonsterEntity {
 		this.fixRotation();
 		this.updateAnimation();
 		this.updateMeleeGrounds();
-		this.setPathPriority(PathNodeType.LEAVES, net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this.world, this) ? 0.0F : -1.0F);
 
 		if (this.isAlive() && this.ticksExisted % 100 == 0 && !this.world.isDaytime() && this.getHealth() < this.getMaxHealth()) {
 			this.heal(2.0F);
@@ -414,7 +418,6 @@ public class MutantZombieEntity extends MonsterEntity {
 	public void onDeath(DamageSource cause) {
 		if (!this.world.isRemote) {
 			this.deathCause = cause;
-			EntityUtil.alertOthers(this);
 			this.setLastAttackedEntity(this.getRevengeTarget());
 
 			if (this.recentlyHit > 0) {
@@ -461,9 +464,9 @@ public class MutantZombieEntity extends MonsterEntity {
 	}
 
 	@Override
-	public void onKillEntity(LivingEntity entityLivingIn) {
-		if ((this.world.getDifficulty() == Difficulty.NORMAL && this.rand.nextBoolean() || this.world.getDifficulty() == Difficulty.HARD) && entityLivingIn instanceof VillagerEntity) {
-			VillagerEntity villagerentity = (VillagerEntity)entityLivingIn;
+	public void onKillEntity(LivingEntity livingEntity) {
+		if ((this.world.getDifficulty() == Difficulty.NORMAL && this.rand.nextBoolean() || this.world.getDifficulty() == Difficulty.HARD) && livingEntity instanceof VillagerEntity) {
+			VillagerEntity villagerentity = (VillagerEntity)livingEntity;
 			ZombieVillagerEntity zombievillagerentity = EntityType.ZOMBIE_VILLAGER.create(this.world);
 			zombievillagerentity.copyLocationAndAnglesFrom(villagerentity);
 			villagerentity.remove();
@@ -484,14 +487,10 @@ public class MutantZombieEntity extends MonsterEntity {
 			}
 
 			zombievillagerentity.setInvulnerable(this.isInvulnerable());
+			SummonableCapability.get(zombievillagerentity).setSummonerUUID(this.entityUniqueID);
 			this.world.addEntity(zombievillagerentity);
 			this.world.playEvent((PlayerEntity)null, 1026, new BlockPos(this), 0);
 		}
-	}
-
-	@Override
-	public void setMotionMultiplier(BlockState blockState, Vec3d motionMultiplier) {
-		super.setMotionMultiplier(blockState, motionMultiplier.scale(5.0D));
 	}
 
 	private boolean canHarm(Entity entity) {
@@ -506,9 +505,9 @@ public class MutantZombieEntity extends MonsterEntity {
 
 		if (!this.resurrectionList.isEmpty()) {
 			ListNBT listnbt = new ListNBT();
-			for (ZombieResurrection resurrect : this.resurrectionList) {
-				CompoundNBT compound1 = NBTUtil.writeBlockPos(resurrect.getPosition());
-				compound1.putInt("Tick", resurrect.getTick());
+			for (ZombieResurrection resurrection : this.resurrectionList) {
+				CompoundNBT compound1 = NBTUtil.writeBlockPos(resurrection);
+				compound1.putInt("Tick", resurrection.getTick());
 				listnbt.add(compound1);
 			}
 
@@ -624,7 +623,7 @@ public class MutantZombieEntity extends MonsterEntity {
 		@Override
 		public boolean shouldExecute() {
 			this.attackTarget = getAttackTarget();
-			return this.attackTarget != null && onGround && getDistanceSq(this.attackTarget) > 16.0D ? rand.nextFloat() * 100.0F < 0.35F : false;
+			return this.attackTarget != null && onGround && getDistanceSq(this.attackTarget) > 16.0D && rand.nextFloat() * 100.0F < 0.35F;
 		}
 
 		@Override
@@ -649,16 +648,16 @@ public class MutantZombieEntity extends MonsterEntity {
 			if (attackTick == 10) {
 				playSound(MBSoundEvents.ENTITY_MUTANT_ZOMBIE_ROAR, 3.0F, 0.7F + rand.nextFloat() * 0.2F);
 
-				for (LivingEntity livingEntity : world.getEntitiesWithinAABB(LivingEntity.class, getBoundingBox().grow(12.0D, 8.0D, 12.0D))) {
-					if (getDistanceSq(livingEntity) <= 196.0D) {
-						if (canHarm(livingEntity)) {
-							double x = livingEntity.posX - posX;
-							double z = livingEntity.posZ - posZ;
+				for (Entity entity : world.getEntitiesWithinAABB(Entity.class, getBoundingBox().grow(12.0D, 8.0D, 12.0D))) {
+					if (getDistanceSq(entity) <= 196.0D) {
+						if (canHarm(entity)) {
+							double x = entity.posX - posX;
+							double z = entity.posZ - posZ;
 							double d = Math.sqrt(x * x + z * z);
-							livingEntity.setMotion(x / d * 0.699999988079071D, 0.30000001192092896D, z / d * 0.699999988079071D);
-							livingEntity.attackEntityFrom(DamageSource.causeMobDamage(MutantZombieEntity.this).setDamageBypassesArmor().setDamageIsAbsolute(), (float)(2 + rand.nextInt(2)));
+							entity.setMotion(x / d * 0.699999988079071D, 0.30000001192092896D, z / d * 0.699999988079071D);
+							entity.attackEntityFrom(DamageSource.causeMobDamage(MutantZombieEntity.this).setDamageBypassesArmor().setDamageIsAbsolute(), (float)(2 + rand.nextInt(2)));
 						} else {
-							SummonableCapability.getLazy(livingEntity).ifPresent(summonable -> {
+							SummonableCapability.getLazy(entity).ifPresent(summonable -> {
 								summonable.setSummonerUUID(entityUniqueID);
 							});
 						}
