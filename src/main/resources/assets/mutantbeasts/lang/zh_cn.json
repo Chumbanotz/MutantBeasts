@@ -1,93 +1,184 @@
 {
 	"advancements.mutantbeasts.frosty_the_snow_golem.title": "雪傀儡结冰",
+	
 	"advancements.mutantbeasts.frosty_the_snow_golem.description": "创造一个雪傀儡变异体",
+	
 	"advancements.mutantbeasts.gunpowder_spice.title": "火药, 再加上……",
+	
 	"advancements.mutantbeasts.gunpowder_spice.description": "……所有的好东西. 酿造一种化学物 X.",
+	
 	"advancements.mutantbeasts.hulk_smash.title": "绿巨人冲击!",
+	
 	"advancements.mutantbeasts.hulk_smash.description": "使用浩克之锤杀死一只突变僵尸",
+	
 	"advancements.mutantbeasts.no_bones_about_it.title": "没有骨气",
+	
 	"advancements.mutantbeasts.no_bones_about_it.description": "穿戴全套突变骷髅盔甲并用弩杀死一只突变骷髅",
+	
 	"advancements.mutantbeasts.overpowered.title": "过载",
+	
 	"advancements.mutantbeasts.overpowered.description": "在一次突变高压苦力怕的死亡自爆中幸存下来",
+	
 	"advancements.mutantbeasts.return_to_sender.title": "礼尚往来：续",
+	
 	"advancements.mutantbeasts.return_to_sender.description": "用突变末影人扔给你的方块杀死一只末影人变异体",
+	
 	"advancements.mutantbeasts.spider_pig_spider_pig.title": "蜘猪, 蜘猪……",
+	
 	"advancements.mutantbeasts.spider_pig_spider_pig.description": "给猪喂下发酵蛛眼后向它扔化学试剂X",
+	
 	"advancements.mutantbeasts.you_da_bomby.title": "傻得可爱",
+	
 	"advancements.mutantbeasts.you_da_bomby.description": "从苦力怕仆从的蛋中孵化出一只驯服的苦力怕仆从",
+	
 	"block.mutantbeasts.mutant_skeleton_skull": "突变骷髅颅骨",
+	
 	"block.mutantbeasts.mutant_skeleton_wall_skull": "墙上的突变骷髅颅骨",
+	
 	"entity.mutantbeasts.body_part": "骨骼",
+	
 	"entity.mutantbeasts.chemical_x": "化学试剂X",
+	
 	"entity.mutantbeasts.creeper_minion": "苦力怕仆从",
+	
 	"entity.mutantbeasts.creeper_minion_egg": "苦力怕仆从蛋",	
+	
 	"entity.mutantbeasts.endersoul_fragment": "末影魂片",
+	
 	"entity.mutantbeasts.mutant_arrow": "突变箭",
+	
 	"entity.mutantbeasts.mutant_creeper": "突变苦力怕",
+	
 	"entity.mutantbeasts.mutant_enderman": "突变末影人",
+	
+	
 	"entity.mutantbeasts.mutant_skeleton": "突变骷髅",
+	
 	"entity.mutantbeasts.mutant_snow_golem": "突变雪傀儡",
+	
 	"entity.mutantbeasts.mutant_zombie": "突变僵尸",
+	
 	"entity.mutantbeasts.mutant_zombie_villager": "突变僵尸村民",
+	
 	"entity.mutantbeasts.skull_spirit": "头颅碎片",
+	
 	"entity.mutantbeasts.spider_pig": "蜘猪",
+	
 	"entity.mutantbeasts.throwable_block": "抛掷方块",
+	
 	"itemGroup.mutantbeasts": "突变生物重置版",
+	
 	"item.mutantbeasts.creeper_minion_spawn_egg": "生成 苦力怕仆从",
+	
 	"item.mutantbeasts.mutant_creeper_spawn_egg": "生成 突变苦力怕",
+	
 	"item.mutantbeasts.mutant_enderman_spawn_egg": "生成 突变末影人",
+	
 	"item.mutantbeasts.mutant_skeleton_spawn_egg": "生成 突变骷髅",
+	
 	"item.mutantbeasts.mutant_snow_golem_spawn_egg": "生成 突变雪傀儡",
+	
 	"item.mutantbeasts.mutant_zombie_spawn_egg": "生成 突变僵尸",
+	
 	"item.mutantbeasts.mutant_zombie_villager_spawn_egg": "生成 突变僵尸村民",
+	
 	"item.mutantbeasts.spider_pig_spawn_egg": "生成 蜘猪",
+	
 	"item.mutantbeasts.creeper_minion_tracker": "苦力怕仆从信息查看器",
+	
 	"item.mutantbeasts.creeper_minion_tracker.tame_success": "%1$s 成功被 %2$s 驯服",
+	
 	"item.mutantbeasts.creeper_shard": "苦力怕碎片",
+	
 	"item.mutantbeasts.hulk_hammer": "巨人之锤",
+	
 	"item.mutantbeasts.chemical_x": "化学物 X",
+	
 	"item.mutantbeasts.endersoul_hand": "末影之手",
+	
 	"item.mutantbeasts.endersoul_hand.teleport_failed": "无法传送到指定位置",
-	"item.mutantbeasts.mutant_skeleton_arms": "突变骷髅的手臂",
-	"item.mutantbeasts.mutant_skeleton_limb": "突变骷髅的肢体",
-	"item.mutantbeasts.mutant_skeleton_pelvis": "突变骷髅的骨盆",
-	"item.mutantbeasts.mutant_skeleton_rib_cage": "突变骷髅的胸廓",
-	"item.mutantbeasts.mutant_skeleton_rib": "突变骷髅的肋骨",
-	"item.mutantbeasts.mutant_skeleton_shoulder_pad": "突变骷髅的肩胛骨",
-	"item.mutantbeasts.mutant_skeleton_skull": "突变骷髅的颅骨",
+	
+	"item.mutantbeasts.mutant_skeleton_arms": "突变骷髅手臂",
+	
+	"item.mutantbeasts.mutant_skeleton_limb": "突变骷髅肢体",
+	
+	"item.mutantbeasts.mutant_skeleton_pelvis": "突变骷髅骨盆",
+	
+	"item.mutantbeasts.mutant_skeleton_rib_cage": "突变骷髅胸廓",
+	
+	"item.mutantbeasts.mutant_skeleton_rib": "突变骷髅肋骨",
+	
+	"item.mutantbeasts.mutant_skeleton_shoulder_pad": "突变骷髅肩胛骨",
+	
+	"item.mutantbeasts.mutant_skeleton_skull": "突变骷髅颅骨",
+	
 	"item.mutantbeasts.mutant_skeleton_chestplate": "突变骷髅胸甲",
+	
 	"item.mutantbeasts.mutant_skeleton_leggings": "突变骷髅护腿",
+	
 	"item.mutantbeasts.mutant_skeleton_boots": "突变骷髅鞋子",
+	
 	"subtitles.mutantbeasts.entity.creeper_minion.ambient": "苦力怕仆从：嘶嘶声",
+	
 	"subtitles.mutantbeasts.entity.creeper_minion.death": "苦力怕仆从：死亡",
+	
 	"subtitles.mutantbeasts.entity.creeper_minion.hurt": "苦力怕仆从：受伤",
+	
 	"subtitles.mutantbeasts.entity.creeper_minion.primed": "苦力怕仆从：点燃",
+	
 	"subtitles.mutantbeasts.entity.creeper_minion_egg.hatch": "苦力怕仆从蛋：孵化",
+	
 	"subtitles.mutantbeasts.entity.endersoul_fragment.explode": "末影魂片：爆炸",
+	
 	"subtitles.mutantbeasts.entity.mutant_creeper.ambient": "突变苦力怕：嘶嘶声",
+	
 	"subtitles.mutantbeasts.entity.mutant_creeper.charge": "突变苦力怕：充能",
+	
 	"subtitles.mutantbeasts.entity.mutant_creeper.death": "突变苦力怕：死亡",
+	
 	"subtitles.mutantbeasts.entity.mutant_creeper.hurt": "突变苦力怕：受伤",
+	
 	"subtitles.mutantbeasts.entity.mutant_enderman.ambient": "突变末影人：呼吸",
+	
 	"subtitles.mutantbeasts.entity.mutant_enderman.death": "突变末影人：死亡",
+	
 	"subtitles.mutantbeasts.entity.mutant_enderman.hurt": "突变末影人：受伤",
+	
 	"subtitles.mutantbeasts.entity.mutant_enderman.scream": "突变末影人：尖叫",
-	"subtitles.mutantbeasts.entity.mutant_enderman.stare": "突变末影人：喊叫",
+	
+	"subtitles.mutantbeasts.entity.mutant_enderman.stare": "突变末影人：喊叫"
+	,
 	"subtitles.mutantbeasts.entity.mutant_enderman.teleport": "突变末影人：传送",
+	
 	"subtitles.mutantbeasts.entity.mutant_skeleton.ambient": "突变骷髅：咔嗒声",
+	
 	"subtitles.mutantbeasts.entity.mutant_skeleton.death": "突变骷髅：死亡",
+	
 	"subtitles.mutantbeasts.entity.mutant_skeleton.hurt": "突变骷髅：受伤",
-	"subtitles.mutantbeasts.entity.mutant_skeleton.step": "突变骷髅：脚步声",	
+	
+	"subtitles.mutantbeasts.entity.mutant_skeleton.step": "突变骷髅：脚步声",
+	
 	"subtitles.mutantbeasts.entity.mutant_snow_golem.death": "突变雪傀儡：死亡",
+	
 	"subtitles.mutantbeasts.entity.mutant_snow_golem.hurt": "突变雪傀儡：受伤",
+	
 	"subtitles.mutantbeasts.entity.mutant_zombie.ambient": "突变僵尸：嘟隆",
+	
 	"subtitles.mutantbeasts.entity.mutant_zombie.attack": "突变僵尸：攻击",
+	
 	"subtitles.mutantbeasts.entity.mutant_zombie.death": "突变僵尸：死亡",
+	
 	"subtitles.mutantbeasts.entity.mutant_zombie.grunt": "突变僵尸：咕哝声",
+	
 	"subtitles.mutantbeasts.entity.mutant_zombie.hurt": "突变僵尸：受伤",
+	
 	"subtitles.mutantbeasts.entity.mutant_zombie.roar": "突变僵尸：咆哮",
+	
 	"subtitles.mutantbeasts.entity.spider_pig.ambient": "蜘猪： 猪叫声",
+	
 	"subtitles.mutantbeasts.entity.spider_pig.charge": "蜘猪： 充能",
+	
 	"subtitles.mutantbeasts.entity.spider_pig.death": "蜘猪： 死亡",
+	
 	"subtitles.mutantbeasts.entity.spider_pig.hurt": "蜘猪： 受伤"
 }
