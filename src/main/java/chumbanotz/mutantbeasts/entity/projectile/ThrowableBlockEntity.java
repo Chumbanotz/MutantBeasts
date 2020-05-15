@@ -76,9 +76,9 @@ public class ThrowableBlockEntity extends ThrowableEntity implements IEntityAddi
 		this.posY += (outer ? 2.8F : 1.1F) - 4.8D;
 		this.posZ += forward.z + strafe.z;
 		if (attackTarget != null) {
-			this.shoot(attackTarget.posX - this.posX, attackTarget.posY - this.posY, attackTarget.posZ - this.posZ, 1.4F, 1.0F);
+			this.shoot(attackTarget.posX - this.posX, attackTarget.posY + (double)attackTarget.getEyeHeight() - this.posY, attackTarget.posZ - this.posZ, 1.4F, 1.0F);
 		} else {
-			this.shoot(enderman, enderman.rotationPitch, enderman.rotationYaw, 0.0F, 1.0F, 0.8F);
+			this.throwBlock(enderman);
 		}
 	}
 
@@ -199,7 +199,7 @@ public class ThrowableBlockEntity extends ThrowableEntity implements IEntityAddi
 				double motx = (double)((this.rand.nextFloat() - this.rand.nextFloat()) * 3.0F);
 				double moty = (double)(0.5F + this.rand.nextFloat() * 2.0F);
 				double motz = (double)((this.rand.nextFloat() - this.rand.nextFloat()) * 3.0F);
-				this.world.addParticle(new BlockParticleData(ParticleTypes.BLOCK, this.getBlockState()), x, y, z, motx, moty, motz);
+				this.world.addParticle(new BlockParticleData(ParticleTypes.BLOCK, this.blockState), x, y, z, motx, moty, motz);
 			}
 		}
 	}
@@ -244,16 +244,16 @@ public class ThrowableBlockEntity extends ThrowableEntity implements IEntityAddi
 				this.onImpact(raytraceresult);
 			}
 
-			Vec3d vec3d = this.getMotion();
-			this.posX += vec3d.x;
-			this.posY += vec3d.y;
-			this.posZ += vec3d.z;
+			Vec3d motion = this.getMotion();
+			this.posX += motion.x;
+			this.posY += motion.y;
+			this.posZ += motion.z;
 			ProjectileHelper.rotateTowardsMovement(this, 0.2F);
 			float f;
 
 			if (this.isInWater()) {
 				for (int i = 0; i < 4; ++i) {
-					this.world.addParticle(ParticleTypes.BUBBLE, this.posX - vec3d.x * 0.25D, this.posY - vec3d.y * 0.25D, this.posZ - vec3d.z * 0.25D, vec3d.x, vec3d.y, vec3d.z);
+					this.world.addParticle(ParticleTypes.BUBBLE, this.posX - motion.x * 0.25D, this.posY - motion.y * 0.25D, this.posZ - motion.z * 0.25D, motion.x, motion.y, motion.z);
 				}
 
 				f = 0.8F;
@@ -261,7 +261,7 @@ public class ThrowableBlockEntity extends ThrowableEntity implements IEntityAddi
 				f = 0.99F;
 			}
 
-			this.setMotion(vec3d.scale((double)f));
+			this.setMotion(motion.scale((double)f));
 
 			if (!this.hasNoGravity()) {
 				Vec3d vec3d1 = this.getMotion();
@@ -311,17 +311,18 @@ public class ThrowableBlockEntity extends ThrowableEntity implements IEntityAddi
 	@Override
 	protected void onImpact(RayTraceResult result) {
 		LivingEntity thrower = this.getThrower();
+		DamageSource source = DamageSource.causeThrownDamage(this, thrower);
 		if (this.getThrowerByID() instanceof MutantSnowGolemEntity) {
-			for (LivingEntity livingEntity : this.world.getEntitiesWithinAABB(LivingEntity.class, this.getBoundingBox().grow(2.5D, 2.0D, 2.5D), entity -> MutantSnowGolemEntity.canHarm(thrower, entity))) {
-				if (this.getDistanceSq(livingEntity) <= 6.25D) {
-					livingEntity.attackEntityFrom(DamageSource.causeIndirectDamage(this, thrower), 4.0F + (float)(this.rand.nextInt(3)));
+			for (LivingEntity livingEntity : this.world.getEntitiesWithinAABB(LivingEntity.class, this.getBoundingBox().grow(2.5D, 2.0D, 2.5D))) {
+				if (MutantSnowGolemEntity.canHarm(thrower, livingEntity) && this.getDistanceSq(livingEntity) <= 6.25D) {
+					livingEntity.attackEntityFrom(source, 4.0F + (float)(this.rand.nextInt(3)));
 				}
 			}
 
 			if (result.getType() == RayTraceResult.Type.ENTITY) {
 				Entity entity = ((EntityRayTraceResult)result).getEntity();
 				if (MutantSnowGolemEntity.canHarm(thrower, entity)) {
-					entity.attackEntityFrom(DamageSource.causeThrownDamage(this, thrower), 4.0F);
+					entity.attackEntityFrom(source, 4.0F);
 				}
 			}
 
@@ -330,34 +331,33 @@ public class ThrowableBlockEntity extends ThrowableEntity implements IEntityAddi
 				this.remove();
 			}
 
-			this.playSound(this.getBlockState().getSoundType().getBreakSound(), 0.8F, (this.rand.nextFloat() - this.rand.nextFloat()) * 0.2F + 0.8F);
+			this.playSound(this.blockState.getSoundType().getBreakSound(), 0.8F, (this.rand.nextFloat() - this.rand.nextFloat()) * 0.2F + 0.8F);
 		} else {
-			BlockState blockState = this.getBlockState();
 			BlockPos pos = this.getPosition();
 			if (result.getType() == RayTraceResult.Type.BLOCK) {
 				if (!this.world.isRemote) {
-					if (canPlaceBlock(this.world, blockState, pos, thrower)) {
-						SoundType soundType = blockState.getSoundType(this.world, pos, thrower);
+					if (canPlaceBlock(this.world, this.blockState, pos, thrower)) {
+						SoundType soundType = this.blockState.getSoundType(this.world, pos, thrower);
 						this.playSound(soundType.getPlaceSound(), (soundType.getVolume() + 1.0F) / 2.0F, soundType.getPitch() * 0.8F);
 					} else {
-						this.world.playEvent(2001, pos, Block.getStateId(blockState));
+						this.world.playEvent(2001, pos, Block.getStateId(this.blockState));
 						if (this.world.getGameRules().getBoolean(GameRules.DO_ENTITY_DROPS)) {
-							Block.spawnDrops(blockState, this.world, pos);
+							Block.spawnDrops(this.blockState, this.world, pos);
 						}
 					}
 				}
 			} else if (result.getType() == RayTraceResult.Type.ENTITY && !this.world.isRemote) {
-				this.world.playEvent(2001, pos, Block.getStateId(blockState));
-				((EntityRayTraceResult)result).getEntity().attackEntityFrom(DamageSource.causeThrownDamage(this, thrower), 4.0F);
+				this.world.playEvent(2001, pos, Block.getStateId(this.blockState));
+				((EntityRayTraceResult)result).getEntity().attackEntityFrom(source, 4.0F);
 			}
 
 			for (Entity entity : this.world.getEntitiesInAABBexcluding(thrower, this.getBoundingBox().grow(2.0D), EntityPredicates.CAN_AI_TARGET.and(Entity::canBeCollidedWith))) {
-				if (this.getDistanceSq(entity) <= 4.0D && entity.getType() != this.getType()) {
+				if (this.getDistanceSq(entity) <= 4.0D && entity.getType() != this.getType() && !entity.isEntityEqual(thrower)) {
 					double x = entity.posX - this.posX;
 					double z = entity.posZ - this.posZ;
 					double d = Math.sqrt(x * x + z * z);
 					entity.setMotion(x / d * 0.6000000238418579D, 0.20000000298023224D, z / d * 0.6000000238418579D);
-					entity.attackEntityFrom(DamageSource.causeIndirectDamage(this, thrower), (float)(6 + this.rand.nextInt(3)));
+					entity.attackEntityFrom(source, (float)(6 + this.rand.nextInt(3)));
 				}
 			}
 
@@ -367,7 +367,7 @@ public class ThrowableBlockEntity extends ThrowableEntity implements IEntityAddi
 		}
 	}
 
-	private static boolean canPlaceBlock(World world, BlockState blockState, BlockPos pos, LivingEntity thrower) {
+	private static boolean canPlaceBlock(World world, BlockState blockState, BlockPos pos, @Nullable LivingEntity thrower) {
 		if (thrower instanceof PlayerEntity && !((PlayerEntity)thrower).isAllowEdit()) {
 			return false;
 		} else if (thrower instanceof MobEntity && !net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(world, thrower)) {
@@ -379,7 +379,7 @@ public class ThrowableBlockEntity extends ThrowableEntity implements IEntityAddi
 
 	@Override
 	public void writeAdditional(CompoundNBT compound) {
-		compound.put("BlockState", NBTUtil.writeBlockState(this.getBlockState()));
+		compound.put("BlockState", NBTUtil.writeBlockState(this.blockState));
 		compound.putBoolean("Held", this.isHeld());
 		if (this.ownerUUID != null) {
 			compound.putUniqueId("OwnerUUID", this.ownerUUID);

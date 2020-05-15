@@ -21,6 +21,12 @@ public class MBSoundEvents {
 	@ObjectHolder("entity.creeper_minion_egg.hatch")
 	public static final SoundEvent ENTITY_CREEPER_MINION_EGG_HATCH = null;
 
+	@ObjectHolder("entity.endersoul_clone.teleport")
+	public static final SoundEvent ENTITY_ENDERSOUL_CLONE_TELEPORT = null;
+
+	@ObjectHolder("entity.endersoul_clone.death")
+	public static final SoundEvent ENTITY_ENDERSOUL_CLONE_DEATH = null;
+
 	@ObjectHolder("entity.endersoul_fragment.explode")
 	public static final SoundEvent ENTITY_ENDERSOUL_FRAGMENT_EXPLODE = null;
 
@@ -44,6 +50,9 @@ public class MBSoundEvents {
 
 	@ObjectHolder("entity.mutant_enderman.hurt")
 	public static final SoundEvent ENTITY_MUTANT_ENDERMAN_HURT = null;
+
+	@ObjectHolder("entity.mutant_enderman.morph")
+	public static final SoundEvent ENTITY_MUTANT_ENDERMAN_MORPH = null;
 
 	@ObjectHolder("entity.mutant_enderman.scream")
 	public static final SoundEvent ENTITY_MUTANT_ENDERMAN_SCREAM = null;

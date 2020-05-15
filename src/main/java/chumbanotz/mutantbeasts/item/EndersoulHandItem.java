@@ -6,9 +6,13 @@ import chumbanotz.mutantbeasts.MutantBeasts;
 import chumbanotz.mutantbeasts.client.MBItemStackTileEntityRenderer;
 import chumbanotz.mutantbeasts.entity.mutant.MutantEndermanEntity;
 import chumbanotz.mutantbeasts.entity.projectile.ThrowableBlockEntity;
+import chumbanotz.mutantbeasts.util.EntityUtil;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.EnchantmentType;
+import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.attributes.AttributeModifier;
@@ -49,12 +53,22 @@ public class EndersoulHandItem extends Item {
 	}
 
 	@Override
+	public int getItemEnchantability() {
+		return 16;
+	}
+
+	@Override
+	public boolean canApplyAtEnchantingTable(ItemStack stack, Enchantment enchantment) {
+		return super.canApplyAtEnchantingTable(stack, enchantment) || enchantment.type == EnchantmentType.WEAPON && enchantment != Enchantments.SWEEPING;
+	}
+
+	@Override
 	public ActionResultType onItemUse(ItemUseContext context) {
 		World world = context.getWorld();
 		BlockPos pos = context.getPos();
 		if (context.isPlacerSneaking()) {
 			return ActionResultType.FAIL;
-		} else if (!world.getBlockState(pos).isIn(MutantBeasts.THROWABLE_BLOCKS)) {
+		} else if (!world.getBlockState(pos).isIn(MutantBeasts.ENDERSOUL_HAND_HOLDABLE)) {
 			return ActionResultType.FAIL;
 		} else if (!world.canMineBlockBody(context.getPlayer(), pos)) {
 			return ActionResultType.FAIL;
@@ -121,16 +135,17 @@ public class EndersoulHandItem extends Item {
 					}
 
 					worldIn.playSound(null, playerIn.posX, playerIn.posY + (double)playerIn.getHeight() / 2.0D, playerIn.posZ, SoundEvents.ITEM_CHORUS_FRUIT_TELEPORT, playerIn.getSoundCategory(), 1.0F, 1.0F);
+					EntityUtil.spawnEndersoulParticles(playerIn);
 					playerIn.getCooldownTracker().setCooldown(this, 40);
 					playerIn.swingArm(handIn);
 					playerIn.addStat(Stats.ITEM_USED.get(this));
 					stack.damageItem(4, playerIn, e -> e.sendBreakAnimation(handIn));
 					return new ActionResult<>(ActionResultType.SUCCESS, stack);
 				}
+
+				return super.onItemRightClick(worldIn, playerIn, handIn);
 			}
 		}
-
-		return super.onItemRightClick(worldIn, playerIn, handIn);
 	}
 
 	@Override
@@ -146,20 +161,19 @@ public class EndersoulHandItem extends Item {
 	}
 
 	public static RayTraceResult rayTrace(World world, PlayerEntity player, float maxDist) {
-		float f1 = player.prevRotationPitch + (player.rotationPitch - player.prevRotationPitch);
-		float f2 = player.prevRotationYaw + (player.rotationYaw - player.prevRotationYaw);
+		float pitch = player.prevRotationPitch + (player.rotationPitch - player.prevRotationPitch);
+		float yaw = player.prevRotationYaw + (player.rotationYaw - player.prevRotationYaw);
 		double d0 = player.prevPosX + (player.posX - player.prevPosX);
 		double d1 = player.prevPosY + (player.posY - player.prevPosY) + (double)player.getEyeHeight();
 		double d2 = player.prevPosZ + (player.posZ - player.prevPosZ);
-		Vec3d vec3 = new Vec3d(d0, d1, d2);
-		float f3 = MathHelper.cos(-f2 * 0.017453292F - 3.1415927F);
-		float f4 = MathHelper.sin(-f2 * 0.017453292F - 3.1415927F);
-		float f5 = -MathHelper.cos(-f1 * 0.017453292F);
-		float f6 = MathHelper.sin(-f1 * 0.017453292F);
+		Vec3d start = new Vec3d(d0, d1, d2);
+		float f3 = MathHelper.cos(-yaw * 0.017453292F - (float)Math.PI);
+		float f4 = MathHelper.sin(-yaw * 0.017453292F - (float)Math.PI);
+		float f5 = -MathHelper.cos(-pitch * 0.017453292F);
+		float f6 = MathHelper.sin(-pitch * 0.017453292F);
 		float f7 = f4 * f5;
 		float f8 = f3 * f5;
-		double d3 = (double)maxDist;
-		Vec3d vec31 = vec3.add(f7 * d3, f6 * d3, f8 * d3);
-		return world.rayTraceBlocks(new RayTraceContext(vec3, vec31, RayTraceContext.BlockMode.COLLIDER, RayTraceContext.FluidMode.NONE, player));
+		Vec3d end = start.add(f7 * maxDist, f6 * maxDist, f8 * maxDist);
+		return world.rayTraceBlocks(new RayTraceContext(start, end, RayTraceContext.BlockMode.COLLIDER, RayTraceContext.FluidMode.NONE, player));
 	}
 }

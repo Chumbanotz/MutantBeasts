@@ -73,7 +73,7 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 		this.goalSelector.addGoal(8, new LookRandomlyGoal(this));
 		this.targetSelector.addGoal(1, new MBHurtByTargetGoal(this));
 		this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, MobEntity.class, 10, true, false, entity -> {
-			return entity instanceof IMob && (!(entity instanceof CreeperEntity) || ((CreeperEntity)entity).getAttackTarget() == this);
+			return entity instanceof IMob && !(entity instanceof MutantCreeperEntity) && (!(entity instanceof CreeperEntity) || ((CreeperEntity)entity).getAttackTarget() == this);
 		}));
 	}
 
@@ -229,7 +229,9 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 
 	@Override
 	public boolean attackEntityFrom(DamageSource source, float amount) {
-		if (source.getImmediateSource() instanceof SnowballEntity) {
+		if (this.isInvulnerableTo(source)) {
+			return false;
+		} else if (source.getImmediateSource() instanceof SnowballEntity) {
 			if (this.getHealth() < this.getMaxHealth()) {
 				this.heal(1.0F);
 				this.world.setEntityState(this, (byte)5);

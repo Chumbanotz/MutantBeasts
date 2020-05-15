@@ -1,28 +1,28 @@
+
 package chumbanotz.mutantbeasts.util;
 
+import java.lang.reflect.Field;
 import java.util.Collection;
-import java.util.Random;
 import java.util.function.Function;
 
-import chumbanotz.mutantbeasts.MBConfig;
+import javax.annotation.Nullable;
+
+import chumbanotz.mutantbeasts.MutantBeasts;
 import chumbanotz.mutantbeasts.particles.MBParticleTypes;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.AreaEffectCloudEntity;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MobEntity;
 import net.minecraft.entity.SharedMonsterAttributes;
-import net.minecraft.entity.SpawnReason;
-import net.minecraft.entity.ai.goal.HurtByTargetGoal;
 import net.minecraft.entity.boss.WitherEntity;
 import net.minecraft.entity.item.ExperienceOrbEntity;
 import net.minecraft.entity.item.ItemEntity;
 import net.minecraft.entity.monster.CreeperEntity;
 import net.minecraft.entity.monster.IMob;
-import net.minecraft.entity.monster.MonsterEntity;
+import net.minecraft.entity.monster.RavagerEntity;
 import net.minecraft.entity.passive.CatEntity;
 import net.minecraft.entity.passive.GolemEntity;
 import net.minecraft.entity.passive.OcelotEntity;
@@ -40,17 +40,19 @@ import net.minecraft.network.play.server.SEntityVelocityPacket;
 import net.minecraft.particles.IParticleData;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.util.DamageSource;
-import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameRules;
-import net.minecraft.world.IWorld;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 
 public final class EntityUtil {
+	private static final Field STUN_TICK = ObfuscationReflectionHelper.findField(RavagerEntity.class, "field_213692_bA");
+
 	/** Copied exactly from {@link LivingEntity#canBlockDamageSource(DamageSource)}. */
 	public static boolean canBlockDamageSource(LivingEntity livingEntity, DamageSource damageSource) {
 		Entity entity = damageSource.getImmediateSource();
@@ -97,6 +99,18 @@ public final class EntityUtil {
 		}
 	}
 
+	public static void stunRavager(LivingEntity livingEntity) {
+		if (livingEntity instanceof RavagerEntity) {
+			try {
+				STUN_TICK.setInt(livingEntity, 40);
+				livingEntity.playSound(SoundEvents.ENTITY_RAVAGER_STUNNED, 1.0F, 1.0F);
+				livingEntity.world.setEntityState(livingEntity, (byte)39);
+			} catch (IllegalArgumentException | IllegalAccessException e) {
+				MutantBeasts.LOGGER.error("Failed to access ravager stunTick", e);
+			}
+		}
+	}
+
 	public static boolean isHolding(LivingEntity livingEntity, Item item) {
 		return livingEntity.getHeldItemMainhand().getItem() == item || livingEntity.getHeldItemOffhand().getItem() == item;
 	}
@@ -113,10 +127,6 @@ public final class EntityUtil {
 		if (entity instanceof ServerPlayerEntity) {
 			((ServerPlayerEntity)entity).connection.sendPacket(new SEntityVelocityPacket(entity));
 		}
-	}
-
-	public static boolean requireDarknessAndSky(EntityType<? extends MonsterEntity> entityType, IWorld world, SpawnReason spawnReason, BlockPos pos, Random random) {
-		return spawnReason != SpawnReason.SPAWNER && random.nextInt(50 / Math.min(20, Math.max(1, MBConfig.globalSpawnRate))) == 0 && MonsterEntity.func_223325_c(entityType, world, spawnReason, pos, random) && world.isSkyLightMax(pos);
 	}
 
 	public static boolean isFeline(LivingEntity livingEntity) {
@@ -142,31 +152,32 @@ public final class EntityUtil {
 		}
 	}
 
-	public static boolean isFacing(LivingEntity livingEntity, double x, double z, float maxDifference) {
+	public static boolean isFacing(float rotationYawHead, double x, double z, float maxDifference) {
 		float rot;
 
-		for (rot = (float)(Math.atan2(z, x) * 180.0D / Math.PI) + 90.0F; rot > livingEntity.rotationYawHead + 180.0F; rot -= 360.0F) {
+		for (rot = (float)(Math.atan2(z, x) * 180.0D / Math.PI) + 90.0F; rot > rotationYawHead + 180.0F; rot -= 360.0F) {
 			;
 		}
 
-		while (rot <= livingEntity.rotationYawHead - 180.0F) {
+		while (rot <= rotationYawHead - 180.0F) {
 			rot += 360.0F;
 		}
 
-		return Math.abs(livingEntity.rotationYawHead - rot) < maxDifference;
+		return Math.abs(rotationYawHead - rot) < maxDifference;
 	}
 
-	/** Returns true if the mob is able to drop experience, and then does so. Based off of {@link LivingEntity#onDeathUpdate()} */
-	public static boolean dropExperience(MobEntity mob, int recentlyHit, Function<PlayerEntity, Integer> experiencePoints, PlayerEntity attackingPlayer) {
+	/** Based off of {@link LivingEntity#onDeathUpdate()} */
+	public static void dropExperience(MobEntity mob, int recentlyHit, Function<PlayerEntity, Integer> experiencePoints, PlayerEntity attackingPlayer) {
 		if (!mob.world.isRemote && recentlyHit > 0 && mob.world.getGameRules().getBoolean(GameRules.DO_MOB_LOOT)) {
-			for (int i = net.minecraftforge.event.ForgeEventFactory.getExperienceDrop(mob, attackingPlayer, experiencePoints.apply(attackingPlayer)), j; i > 0; i -= j) {
-				mob.world.addEntity(new ExperienceOrbEntity(mob.world, mob.posX, mob.posY, mob.posZ, j = ExperienceOrbEntity.getXPSplit(i)));
-			}
+            int i = experiencePoints.apply(attackingPlayer);
 
-			return true;
+            i = net.minecraftforge.event.ForgeEventFactory.getExperienceDrop(mob, attackingPlayer, i);
+            while(i > 0) {
+               int j = ExperienceOrbEntity.getXPSplit(i);
+               i -= j;
+               mob.world.addEntity(new ExperienceOrbEntity(mob.world, mob.posX, mob.posY, mob.posZ, j));
+            }
 		}
-
-		return false;
 	}
 
 	/** Same as {@link LivingEntity#onDeath(DamageSource)} except no drops are spawned */
@@ -209,31 +220,7 @@ public final class EntityUtil {
 		mobEntity.world.setEntityState(mobEntity, (byte)3);
 	}
 
-	/** {@link HurtByTargetGoal#alertOthers()} */
-	public static void alertOthers(MobEntity alertingMob, Class<?>... excludedReinforcementTypes) {
-		if (alertingMob.isAIDisabled() || alertingMob.getRevengeTarget() == null) {
-			return;
-		}
-
-		double d0 = (double)alertingMob.getNavigator().getPathSearchRange();
-		for (MobEntity otherMob : alertingMob.world.getEntitiesWithinAABB(alertingMob.getClass(), new AxisAlignedBB(alertingMob.posX, alertingMob.posY, alertingMob.posZ, alertingMob.posX + 1.0D, alertingMob.posY + 1.0D, alertingMob.posZ + 1.0D).grow(d0, 10.0D, d0))) {
-			if (otherMob != null && alertingMob != otherMob && (!(alertingMob instanceof TameableEntity) || ((TameableEntity)alertingMob).getOwner() == ((TameableEntity)otherMob).getOwner()) && !otherMob.isOnSameTeam(alertingMob.getRevengeTarget())) {
-				boolean flag = false;
-				for (Class<?> oclass : excludedReinforcementTypes) {
-					if (otherMob.getClass() == oclass) {
-						flag = true;
-						break;
-					}
-				}
-
-				if (!flag) {
-					otherMob.setRevengeTarget(alertingMob.getRevengeTarget());
-				}
-			}
-		}
-	}
-
-	public static void copyNBT(Entity oldEntity, Entity newEntity, boolean resetHealth) {
+	public static void copyNBT(Entity oldEntity, Entity newEntity, boolean resetAttributes) {
 		if (oldEntity == newEntity) {
 			throw new IllegalArgumentException("Old entity is the same as the new entity");
 		}
@@ -243,7 +230,7 @@ public final class EntityUtil {
 
 		if (oldEntity instanceof LivingEntity && newEntity instanceof LivingEntity) {
 			LivingEntity newLiving = (LivingEntity)newEntity;
-			if (resetHealth) {
+			if (resetAttributes) {
 				copiedNBT.put("Attributes", SharedMonsterAttributes.writeAttributes(newLiving.getAttributes()));
 				copiedNBT.putFloat("Health", newLiving.getHealth());
 			}
@@ -279,20 +266,29 @@ public final class EntityUtil {
 		}
 	}
 
-	public static void spawnLargePortalParticles(Entity entity, int amount, float speed, boolean serverSide) {
-		if (!serverSide || entity.world instanceof ServerWorld) {
-			for (int i = 0; i < amount; i++) {
-				float f = (entity.world.rand.nextFloat() - 0.5F) * speed;
-				float f1 = (entity.world.rand.nextFloat() - 0.5F) * speed;
-				float f2 = (entity.world.rand.nextFloat() - 0.5F) * speed;
+	@OnlyIn(Dist.CLIENT)
+	public static void spawnEndersoulParticles(Entity entity, int amount, float speed) {
+		for (int i = 0; i < amount; i++) {
+			float f = (entity.world.rand.nextFloat() - 0.5F) * speed;
+			float f1 = (entity.world.rand.nextFloat() - 0.5F) * speed;
+			float f2 = (entity.world.rand.nextFloat() - 0.5F) * speed;
+			double tempX = entity.posX + ((entity.world.rand.nextFloat() - 0.5F) * entity.getWidth());
+			double tempY = entity.posY + ((entity.world.rand.nextFloat() - 0.5F) * entity.getHeight()) + 0.5D;
+			double tempZ = entity.posZ + ((entity.world.rand.nextFloat() - 0.5F) * entity.getWidth());
+			entity.world.addParticle(MBParticleTypes.ENDERSOUL, tempX, tempY, tempZ, (double)f, (double)f1, (double)f2);
+		}
+	}
+
+	public static void spawnEndersoulParticles(Entity entity) {
+		if (entity.world instanceof ServerWorld) {
+			for (int i = 0; i < 256; i++) {
+				float f = (entity.world.rand.nextFloat() - 0.5F) * 1.8F;
+				float f1 = (entity.world.rand.nextFloat() - 0.5F) * 1.8F;
+				float f2 = (entity.world.rand.nextFloat() - 0.5F) * 1.8F;
 				double tempX = entity.posX + ((entity.world.rand.nextFloat() - 0.5F) * entity.getWidth());
 				double tempY = entity.posY + ((entity.world.rand.nextFloat() - 0.5F) * entity.getHeight()) + 0.5D;
 				double tempZ = entity.posZ + ((entity.world.rand.nextFloat() - 0.5F) * entity.getWidth());
-				if (serverSide) {
-					((ServerWorld)entity.world).spawnParticle(MBParticleTypes.LARGE_PORTAL, tempX, tempY, tempZ, 0, (double)f, (double)f1, (double)f2, 1.0D);
-				} else {
-					entity.world.addParticle(MBParticleTypes.LARGE_PORTAL, tempX, tempY, tempZ, (double)f, (double)f1, (double)f2);
-				}
+				((ServerWorld)entity.world).spawnParticle(MBParticleTypes.ENDERSOUL, tempX, tempY, tempZ, 0, (double)f, (double)f1, (double)f2, 1.0D);
 			}
 		}
 	}
@@ -343,22 +339,18 @@ public final class EntityUtil {
 		}
 	}
 
-	public static void divertAttackers(MobEntity targetedMob, LivingEntity newTarget) {
+	public static void divertAttackers(MobEntity targetedMob, @Nullable LivingEntity newTarget) {
 		if (targetedMob == newTarget) {
 			return;
 		}
 
-		for (LivingEntity attacker : targetedMob.world.getEntitiesWithinAABB(LivingEntity.class, targetedMob.getBoundingBox().grow(16.0D, 10.0D, 16.0D), e -> e != targetedMob && e.attackable())) {
+		for (MobEntity attacker : targetedMob.world.getEntitiesWithinAABB(MobEntity.class, targetedMob.getBoundingBox().grow(16.0D, 10.0D, 16.0D))) {
 			if (attacker.getRevengeTarget() == targetedMob) {
 				attacker.setRevengeTarget(newTarget);
 			}
 
-			if (attacker.getLastAttackedEntity() == targetedMob) {
-				attacker.setLastAttackedEntity(newTarget);
-			}
-
-			if (attacker instanceof MobEntity && ((MobEntity)attacker).getAttackTarget() == targetedMob) {
-				((MobEntity)attacker).setAttackTarget(newTarget);
+			if (attacker.getAttackTarget() == targetedMob) {
+				attacker.setAttackTarget(newTarget);
 			}
 		}
 	}

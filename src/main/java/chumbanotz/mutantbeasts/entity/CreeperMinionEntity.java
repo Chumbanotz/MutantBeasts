@@ -5,7 +5,7 @@ import java.util.UUID;
 
 import javax.annotation.Nullable;
 
-import chumbanotz.mutantbeasts.client.gui.CreeperMinionTrackerScreen;
+import chumbanotz.mutantbeasts.client.gui.screen.CreeperMinionTrackerScreen;
 import chumbanotz.mutantbeasts.entity.ai.goal.AvoidDamageGoal;
 import chumbanotz.mutantbeasts.entity.ai.goal.CopyAttackTargetGoal;
 import chumbanotz.mutantbeasts.item.MBItems;
@@ -48,6 +48,7 @@ import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.particles.ParticleTypes;
 import net.minecraft.pathfinding.PathNavigator;
+import net.minecraft.scoreboard.Team;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.Hand;
 import net.minecraft.util.SoundCategory;
@@ -254,17 +255,6 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 	}
 
 	@Override
-	public void fall(float distance, float damageMultiplier) {
-		super.fall(distance, damageMultiplier);
-		this.timeSinceIgnited += ((int)distance * 1.5F);
-
-		if (this.timeSinceIgnited > this.fuseTime - 15) {
-			distance = 0.0F;
-			this.timeSinceIgnited = this.fuseTime - 15;
-		}
-	}
-
-	@Override
 	public void tick() {
 		if (!this.isTamed() && !this.world.isRemote && this.world.getDifficulty() == Difficulty.PEACEFUL) {
 			this.remove();
@@ -327,11 +317,13 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 		}
 
 		if (this.isTamed()) {
+			if (itemstack.getItem() == MBItems.CREEPER_MINION_TRACKER) {
+				DistExecutor.runWhenOn(Dist.CLIENT, () -> this::openGui);
+				return true;
+			}
+
 			if (this.isOwner(player)) {
-				if (itemstack.getItem() == MBItems.CREEPER_MINION_TRACKER) {
-					DistExecutor.runWhenOn(Dist.CLIENT, () -> this::openGui);
-					return true;
-				} else if (itemstack.getItem() instanceof DyeItem) {
+				if (itemstack.getItem() instanceof DyeItem) {
 					DyeColor dyecolor = ((DyeItem)itemstack.getItem()).getDyeColor();
 					if (dyecolor != this.getCollarColor()) {
 						this.setCollarColor(dyecolor);
@@ -462,6 +454,19 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 	}
 
 	@Override
+	@Nullable
+	public Team getTeam() {
+        LivingEntity owner = this.getOwner();
+		return owner != null ? owner.getTeam() : super.getTeam();
+	}
+
+	@Override
+	public boolean isOnSameTeam(Entity entityIn) {
+        LivingEntity owner = this.getOwner();
+		return owner != null && (entityIn == owner || owner.isOnSameTeam(entityIn)) || super.isOnSameTeam(entityIn);
+	}
+
+	@Override
 	public AgeableEntity createChild(AgeableEntity ageable) {
 		return null;
 	}
@@ -490,7 +495,7 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 
 	@Override
 	public SoundCategory getSoundCategory() {
-		return this.isTamed() ? SoundCategory.NEUTRAL : SoundCategory.HOSTILE;
+		return !this.isTamed() ? SoundCategory.HOSTILE : SoundCategory.NEUTRAL;
 	}
 
 	@Override
@@ -565,7 +570,7 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 
 	static class FollowOwnerGoal extends net.minecraft.entity.ai.goal.FollowOwnerGoal {
 		public FollowOwnerGoal(CreeperMinionEntity tameableIn) {
-			super(tameableIn, 1.2D, 10.0F, 5.0F);
+			super(tameableIn, 1.2D, 4.0F, 20.0F);
 		}
 
 		@Override

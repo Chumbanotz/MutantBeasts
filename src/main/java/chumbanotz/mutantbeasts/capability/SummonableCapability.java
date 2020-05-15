@@ -1,46 +1,32 @@
 package chumbanotz.mutantbeasts.capability;
 
 import java.util.UUID;
-import java.util.concurrent.Callable;
 
-import chumbanotz.mutantbeasts.entity.mutant.MutantZombieEntity;
+import javax.annotation.Nullable;
+
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.MobEntity;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.INBT;
 import net.minecraft.util.Direction;
-import net.minecraft.world.World;
-import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.CapabilityInject;
 import net.minecraftforge.common.capabilities.ICapabilitySerializable;
 import net.minecraftforge.common.util.LazyOptional;
 
 public class SummonableCapability implements ISummonable {
-	private MobEntity summoner;
 	private UUID summonerUUID;
 	private boolean spawnedBySummoner;
 
 	@Override
-	public MobEntity getSummoner() {
-		return this.summoner;
-	}
-
-	@Override
-	public void setSummoner(MobEntity summoner) {
-		this.summoner = summoner;
-		this.summonerUUID = summoner == null ? null : summoner.getUniqueID();
-	}
-
-	@Override
+	@Nullable
 	public UUID getSummonerUUID() {
 		return this.summonerUUID;
 	}
 
 	@Override
-	public void setSummonerUUID(UUID uuid) {
-		this.summonerUUID = uuid;
+	public void setSummonerUUID(@Nullable UUID summonerUUID) {
+		this.summonerUUID = summonerUUID;
 	}
 
 	@Override
@@ -53,26 +39,12 @@ public class SummonableCapability implements ISummonable {
 		this.spawnedBySummoner = spawnedBySummoner;
 	}
 
-	@Override
-	public MobEntity findSummoner(World world) {
-		if (summoner == null && summonerUUID != null && world instanceof ServerWorld) {
-			Entity entity = ((ServerWorld)world).getEntityByUuid(summonerUUID);
-			if (entity instanceof MutantZombieEntity) {
-				summoner = (MobEntity)entity;
-			} else {
-				summonerUUID = null;
-			}
-		}
-
-		return summoner;
-	}
-
 	public static LazyOptional<ISummonable> getLazy(Entity entity) {
 		return entity.getCapability(Provider.SUMMONABLE);
 	}
 
 	public static ISummonable get(Entity entity) {
-		return entity.getCapability(Provider.SUMMONABLE).orElseThrow(() -> new IllegalStateException("Invalid LazyOptional for " + ID + " capability, must not be empty"));
+		return getLazy(entity).orElseThrow(() -> new IllegalStateException("Invalid LazyOptional for capability, must not be empty"));
 	}
 
 	public static boolean isEntityEligible(EntityType<?> type) {
@@ -91,12 +63,12 @@ public class SummonableCapability implements ISummonable {
 
 		@Override
 		public INBT serializeNBT() {
-			return SUMMONABLE.getStorage().writeNBT(SUMMONABLE, this.holder.orElseThrow(() -> new IllegalStateException("Invalid LazyOptional for " + ID + " capability, must not be empty")), null);
+			return SUMMONABLE.getStorage().writeNBT(SUMMONABLE, this.holder.orElseThrow(() -> new IllegalStateException("Invalid LazyOptional for capability, must not be empty")), null);
 		}
 
 		@Override
 		public void deserializeNBT(INBT nbt) {
-			SUMMONABLE.getStorage().readNBT(SUMMONABLE, this.holder.orElseThrow(() -> new IllegalStateException("Invalid LazyOptional for " + ID + " capability, must not be empty")), null, nbt);
+			SUMMONABLE.getStorage().readNBT(SUMMONABLE, this.holder.orElseThrow(() -> new IllegalStateException("Invalid LazyOptional for capability, must not be empty")), null, nbt);
 		}
 	}
 
@@ -104,12 +76,12 @@ public class SummonableCapability implements ISummonable {
 		@Override
 		public INBT writeNBT(Capability<ISummonable> capability, ISummonable instance, Direction side) {
 			CompoundNBT tag = new CompoundNBT();
-			tag.putBoolean("SpawnedBySummoner", instance.isSpawnedBySummoner());
 			UUID uuid = instance.getSummonerUUID();
 			if (uuid != null) {
 				tag.putUniqueId("SummonerUUID", uuid);
 			}
 
+			tag.putBoolean("SpawnedBySummoner", instance.isSpawnedBySummoner());
 			return tag;
 		}
 
@@ -117,19 +89,9 @@ public class SummonableCapability implements ISummonable {
 		public void readNBT(Capability<ISummonable> capability, ISummonable instance, Direction side, INBT nbt) {
 			if (nbt instanceof CompoundNBT) {
 				CompoundNBT tag = (CompoundNBT)nbt;
+				instance.setSummonerUUID(tag.getUniqueId("SummonerUUID"));
 				instance.setSpawnedBySummoner(tag.getBoolean("SpawnedBySummoner"));
-				UUID uuid = tag.getUniqueId("SummonerUUID");
-				if (uuid != null) {
-					instance.setSummonerUUID(uuid);
-				}
 			}
-		}
-	}
-
-	public static class Factory implements Callable<ISummonable> {
-		@Override
-		public ISummonable call() throws Exception {
-			return new SummonableCapability();
 		}
 	}
 }

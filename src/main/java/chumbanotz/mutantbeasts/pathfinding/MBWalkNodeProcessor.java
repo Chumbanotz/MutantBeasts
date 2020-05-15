@@ -42,14 +42,17 @@ public class MBWalkNodeProcessor extends WalkNodeProcessor {
 						if (i != 0 || j != 0) {
 							BlockPos newPos = pos.setPos(i + x, y, j + z);
 							PathNodeType pathNodeType = this.getPathNodeTypeRaw(blockaccessIn, newPos.getX(), newPos.getY(), newPos.getZ());
-							if (pathNodeType == PathNodeType.DAMAGE_CACTUS) {
-								nodeType = PathNodeType.DANGER_CACTUS;
-							} else if (pathNodeType == PathNodeType.DAMAGE_FIRE) {
-								nodeType = PathNodeType.DANGER_FIRE;
-							} else if (pathNodeType == PathNodeType.LAVA) {
-								nodeType = PathNodeType.LAVA;
-							} else if (pathNodeType == PathNodeType.DANGER_OTHER) {
-								nodeType = PathNodeType.DANGER_OTHER;
+							switch (pathNodeType) {
+							case LAVA:
+							case DAMAGE_FIRE:
+							case DANGER_FIRE:
+							case DAMAGE_CACTUS:
+							case DAMAGE_OTHER:
+							case DANGER_OTHER:
+								nodeType = pathNodeType;
+								break;
+							default:
+								break;
 							}
 						}
 					}
@@ -65,27 +68,21 @@ public class MBWalkNodeProcessor extends WalkNodeProcessor {
 		PathNodeType pathNode = this.getPathNodeTypeRaw(blockaccessIn, x, y, z);
 		if (pathNode == PathNodeType.OPEN && y >= 1) {
 			BlockState blockStateBelow = blockaccessIn.getBlockState(new BlockPos(x, y - 1, z));
-			Block blockBelow = blockStateBelow.getBlock();
 			PathNodeType pathNodeBelow = this.getPathNodeTypeRaw(blockaccessIn, x, y - 1, z);
 			pathNode = pathNodeBelow != PathNodeType.WALKABLE && pathNodeBelow != PathNodeType.OPEN && pathNodeBelow != PathNodeType.WATER && pathNodeBelow != PathNodeType.LAVA ? PathNodeType.WALKABLE : PathNodeType.OPEN;
 
-			if (pathNodeBelow == PathNodeType.DAMAGE_FIRE) {
-				pathNode = PathNodeType.DAMAGE_FIRE;
+			switch (pathNodeBelow) {
+			case DAMAGE_FIRE:
+			case DAMAGE_CACTUS:
+			case DAMAGE_OTHER:
+			case DANGER_OTHER:
+				pathNode = pathNodeBelow;
+				break;
+			default:
+				break;
 			}
 
-			if (pathNodeBelow == PathNodeType.DAMAGE_CACTUS) {
-				pathNode = PathNodeType.DAMAGE_CACTUS;
-			}
-
-			if (pathNodeBelow == PathNodeType.DAMAGE_OTHER) {
-				pathNode = PathNodeType.DAMAGE_OTHER;
-			}
-
-			if (pathNodeBelow == PathNodeType.DANGER_OTHER) {
-				pathNode = PathNodeType.DANGER_OTHER;
-			}
-
-			if (blockBelow instanceof TrapDoorBlock && blockStateBelow.get(TrapDoorBlock.OPEN) || blockBelow instanceof FenceGateBlock && blockStateBelow.get(FenceGateBlock.OPEN)) {
+			if (blockStateBelow.getBlock() instanceof TrapDoorBlock && blockStateBelow.get(TrapDoorBlock.OPEN)) {
 				pathNode = PathNodeType.BLOCKED;
 			}
 		}
@@ -109,9 +106,9 @@ public class MBWalkNodeProcessor extends WalkNodeProcessor {
 				return PathNodeType.DAMAGE_FIRE;
 			} else if (block instanceof CactusBlock) {
 				return PathNodeType.DAMAGE_CACTUS;
-			} else if (block instanceof SweetBerryBushBlock || block instanceof WitherRoseBlock || block instanceof EndPortalBlock || block instanceof NetherPortalBlock) {
+			} else if (block instanceof SweetBerryBushBlock && blockState.get(SweetBerryBushBlock.AGE) > 0 || block instanceof WitherRoseBlock || block instanceof EndPortalBlock || block instanceof NetherPortalBlock) {
 				return PathNodeType.DAMAGE_OTHER;
-			} else if (block instanceof WebBlock || block instanceof AbstractPressurePlateBlock || block instanceof SoulSandBlock) {
+			} else if (block instanceof SweetBerryBushBlock && blockState.get(SweetBerryBushBlock.AGE) == 0 || block instanceof WebBlock || block instanceof AbstractPressurePlateBlock || block instanceof SoulSandBlock) {
 				return PathNodeType.DANGER_OTHER;
 			} else if (block instanceof DoorBlock && material == Material.WOOD && !blockState.get(DoorBlock.OPEN)) {
 				return PathNodeType.DOOR_WOOD_CLOSED;

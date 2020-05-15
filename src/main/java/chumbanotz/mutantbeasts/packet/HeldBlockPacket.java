@@ -27,7 +27,6 @@ public class HeldBlockPacket {
 		buffer.writeByte(this.blockIndex);
 	}
 
-	/** decode */
 	HeldBlockPacket(PacketBuffer buffer) {
 		this.entityId = buffer.readInt();
 		this.blockId = buffer.readShort();

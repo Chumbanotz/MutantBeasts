@@ -6,6 +6,9 @@ import com.google.common.collect.Multimap;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.DispenserBlock;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.EnchantmentType;
+import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.attributes.AttributeModifier;
 import net.minecraft.inventory.EquipmentSlotType;
@@ -25,8 +28,23 @@ public class ArmorBlockItem extends WallOrFloorItem {
 	}
 
 	@Override
+	public EquipmentSlotType getEquipmentSlot(ItemStack stack) {
+		return EquipmentSlotType.HEAD;
+	}
+
+	@Override
 	public int getItemEnchantability(ItemStack stack) {
 		return this.material.getEnchantability();
+	}
+
+	@Override
+	public boolean getIsRepairable(ItemStack toRepair, ItemStack repair) {
+		return this.material.getRepairMaterial().test(repair);
+	}
+
+	@Override
+	public boolean canApplyAtEnchantingTable(ItemStack stack, Enchantment enchantment) {
+		return super.canApplyAtEnchantingTable(stack, enchantment) || enchantment.type == EnchantmentType.ARMOR || enchantment.type == EnchantmentType.ARMOR_HEAD;
 	}
 
 	@Override

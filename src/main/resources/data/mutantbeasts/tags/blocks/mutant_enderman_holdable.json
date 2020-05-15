@@ -1,0 +1,29 @@
+{
+	"replace": false,
+	"values": [
+		"#forge:cobblestone",
+		"#forge:dirt",
+		"#forge:end_stones",
+		"#forge:glass",
+		"#forge:gravel",
+		"#forge:netherrack",
+		"#forge:ores",
+		"#forge:sandstone",
+		"#forge:sand",
+		"#forge:stone",
+		"#forge:storage_blocks",
+		"#minecraft:ice",
+		"#minecraft:leaves",
+		"#minecraft:logs",
+		"#minecraft:planks",
+		"#minecraft:sand",
+		"#minecraft:stone_bricks",
+		"#minecraft:wool",
+		"minecraft:tnt",
+		"minecraft:cactus",
+		"minecraft:clay",
+		"minecraft:pumpkin",
+		"minecraft:carved_pumpkin",
+		"minecraft:melon"
+	]
+}

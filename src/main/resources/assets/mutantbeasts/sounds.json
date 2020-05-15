@@ -42,6 +42,21 @@
 		],
 		"subtitle": "subtitles.mutantbeasts.entity.creeper_minion_egg.hatch"
 	},
+	"entity.endersoul_clone.death": {
+		"sounds": [
+			"minecraft:mob/illusion_illager/mirror_move1"
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.endersoul_clone.death"
+	},
+	"entity.endersoul_clone.teleport": {
+		"sounds": [
+			{
+				"name": "entity.enderman.teleport",
+				"type": "event"
+			}
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.endersoul_clone.teleport"
+	},
 	"entity.endersoul_fragment.explode": {
 		"sounds": [
 			{
@@ -99,6 +114,12 @@
 			"mutantbeasts:entity/mutant_enderman/hurt3"
 		],
 		"subtitle": "subtitles.mutantbeasts.entity.mutant_enderman.hurt"
+	},
+	"entity.mutant_enderman.morph": {
+		"sounds": [
+			"minecraft:mob/illusion_illager/mirror_move2"
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.mutant_enderman.morph"
 	},
 	"entity.mutant_enderman.scream": {
 		"sounds": [

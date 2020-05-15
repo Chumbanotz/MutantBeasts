@@ -6,18 +6,16 @@ import net.minecraft.block.BellBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.BreakableBlock;
 import net.minecraft.block.DoorBlock;
-import net.minecraft.block.FarmlandBlock;
-import net.minecraft.block.GrassPathBlock;
-import net.minecraft.block.LeavesBlock;
-import net.minecraft.block.RedstoneOreBlock;
-import net.minecraft.block.SnowyDirtBlock;
+import net.minecraft.block.SilverfishBlock;
 import net.minecraft.block.TNTBlock;
+import net.minecraft.block.TurtleEggBlock;
 import net.minecraft.block.material.Material;
-import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.particles.ParticleTypes;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.util.Direction;
 import net.minecraft.util.SoundCategory;
@@ -25,11 +23,11 @@ import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Vec3i;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
+import net.minecraftforge.common.Tags;
 
-public class SeismicWave extends Vec3i {
+public class SeismicWave extends BlockPos {
 	private boolean first;
 	private final boolean spawnParticles;
 
@@ -108,20 +106,19 @@ public class SeismicWave extends Vec3i {
 		return wave;
 	}
 
-	public void affectBlocks(World world, Entity entity) {
-		boolean isPlayer = entity instanceof PlayerEntity;
-		final BlockPos pos = new BlockPos(this);
-		final BlockPos posAbove = pos.up();
-		BlockState blockstate = world.getBlockState(pos);
-		Block block = world.getBlockState(pos).getBlock();
+	public void affectBlocks(World world, LivingEntity livingEntity) {
+		BlockPos posAbove = this.up();
+		BlockState blockstate = world.getBlockState(this);
+		Block block = blockstate.getBlock();
+        PlayerEntity playerEntity = livingEntity instanceof PlayerEntity ? (PlayerEntity)livingEntity : null;
 
-		if (isPlayer && ((PlayerEntity)entity).isAllowEdit() || net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(world, entity)) {
-			if (block instanceof SnowyDirtBlock || block instanceof GrassPathBlock || block instanceof FarmlandBlock) {
-				world.setBlockState(pos, Blocks.DIRT.getDefaultState(), 2);
+		if (playerEntity != null && playerEntity.isAllowEdit() || net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(world, livingEntity)) {
+			if (block != Blocks.DIRT && (block == Blocks.GRASS_BLOCK || block == Blocks.FARMLAND || block == Blocks.PODZOL || block == Blocks.MYCELIUM || block == Blocks.GRASS_PATH)) {
+				world.setBlockState(this, Blocks.DIRT.getDefaultState(), 2);
 			}
 
-			if (block instanceof BreakableBlock || block instanceof LeavesBlock) {
-				world.destroyBlock(pos, false);
+			if (block.isIn(BlockTags.ICE) || block.isIn(BlockTags.LEAVES) || block.isIn(Tags.Blocks.GLASS)) {
+				world.destroyBlock(this, false);
 			}
 
 			if (world.getBlockState(posAbove).getBlockHardness(world, posAbove) <= 1.0F && !net.minecraft.tags.BlockTags.WITHER_IMMUNE.contains(block)) {
@@ -137,35 +134,43 @@ public class SeismicWave extends Vec3i {
 				}
 			}
 
+			if (block instanceof SilverfishBlock) {
+				blockstate.spawnAdditionalDrops(world, this, ItemStack.EMPTY);
+				world.removeBlock(this, false);
+			}
+
 			if (block instanceof TNTBlock) {
-				block.catchFire(blockstate, world, pos, null, null);
-				world.removeBlock(pos, false);
+				block.catchFire(blockstate, world, this, null, playerEntity);
+				world.removeBlock(this, false);
+			}
+
+			if (block instanceof TurtleEggBlock) {
+				block.onFallenUpon(world, this, livingEntity, 0.0F);
 			}
 		}
 
 		if (block instanceof BellBlock) {
 			for (Direction direction : Direction.Plane.HORIZONTAL) {
-				if (((BellBlock)block).ring(world, blockstate, world.getTileEntity(pos), new BlockRayTraceResult(new Vec3d(0.5D, 0.5D, 0.5D), direction, pos, false), isPlayer ? (PlayerEntity)entity : null, false)) {
+				if (((BellBlock)block).ring(world, blockstate, world.getTileEntity(this), new BlockRayTraceResult(new Vec3d(0.5D, 0.5D, 0.5D), direction, this, false), playerEntity, false)) {
 					break;
 				}
 			}
 		}
 
-		if (block instanceof RedstoneOreBlock) {
-			block.onEntityWalk(world, pos, entity);
+		if (block == Blocks.REDSTONE_ORE) {
+			block.onEntityWalk(world, this, livingEntity);
 		}
 
 		if (this.spawnParticles) {
 			if (blockstate.getFluidState().isEmpty()) {
-				int id = Block.getStateId(world.getBlockState(pos));
-				world.playEvent(2001, posAbove, id);
+				world.playEvent(2001, posAbove, Block.getStateId(blockstate));
 			} else if (world instanceof ServerWorld) {
-				if (world.getFluidState(pos).isTagged(FluidTags.WATER)) {
+				if (world.getFluidState(this).isTagged(FluidTags.WATER)) {
 					world.playSound(null, posAbove, SoundEvents.ENTITY_GENERIC_SPLASH, SoundCategory.BLOCKS, 1.0F, 1.0F + (world.rand.nextFloat() - world.rand.nextFloat()) * 0.4F);
-					((ServerWorld)world).spawnParticle(ParticleTypes.SPLASH, posAbove.getX(), posAbove.getY(), posAbove.getZ(), 100, 0.5D, 0.5D, 0.5D, 10);
-				} else if (world.getFluidState(pos).isTagged(FluidTags.LAVA)) {
+					((ServerWorld)world).spawnParticle(ParticleTypes.SPLASH, posAbove.getX() + 0.5D, posAbove.getY(), posAbove.getZ() + 0.5D, 100, 0.5D, 0.5D, 0.5D, 10);
+				} else if (world.getFluidState(this).isTagged(FluidTags.LAVA)) {
 					world.playSound(null, posAbove, SoundEvents.BLOCK_LAVA_POP, SoundCategory.BLOCKS, 1.0F, 0.9F + world.rand.nextFloat() * 0.15F);
-					((ServerWorld)world).spawnParticle(ParticleTypes.FALLING_LAVA, posAbove.getX(), posAbove.getY(), posAbove.getZ(), 100, 0.5, 0.5, 0.5, 10);
+					((ServerWorld)world).spawnParticle(ParticleTypes.FALLING_LAVA, posAbove.getX() + 0.5D, posAbove.getY(), posAbove.getZ() + 0.5D, 100, 0.5, 0.5, 0.5, 10);
 				}
 			}
 		}

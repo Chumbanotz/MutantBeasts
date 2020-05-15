@@ -20,7 +20,6 @@ import net.minecraft.entity.CreatureAttribute;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntitySize;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.ILivingEntityData;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.Pose;
 import net.minecraft.entity.SharedMonsterAttributes;
@@ -32,21 +31,25 @@ import net.minecraft.entity.ai.goal.MoveThroughVillageGoal;
 import net.minecraft.entity.ai.goal.NearestAttackableTargetGoal;
 import net.minecraft.entity.ai.goal.WaterAvoidingRandomWalkingGoal;
 import net.minecraft.entity.merchant.villager.AbstractVillagerEntity;
+import net.minecraft.entity.merchant.villager.VillagerEntity;
 import net.minecraft.entity.monster.MonsterEntity;
+import net.minecraft.entity.monster.ZombieVillagerEntity;
 import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.nbt.ListNBT;
+import net.minecraft.nbt.NBTDynamicOps;
 import net.minecraft.nbt.NBTUtil;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.particles.ParticleTypes;
 import net.minecraft.pathfinding.PathNavigator;
-import net.minecraft.pathfinding.PathNodeType;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
+import net.minecraft.stats.Stats;
 import net.minecraft.util.ActionResultType;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.EntityPredicates;
@@ -58,8 +61,7 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.DifficultyInstance;
-import net.minecraft.world.IWorld;
+import net.minecraft.world.Difficulty;
 import net.minecraft.world.World;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -76,8 +78,7 @@ public class MutantZombieEntity extends MonsterEntity {
 	public int vanishTime;
 	private final List<SeismicWave> seismicWaveList = new ArrayList<>();
 	private final List<ZombieResurrection> resurrectionList = new ArrayList<>();
-	private LivingEntity killer;
-	private DamageSource deathCause = DamageSource.GENERIC;
+	private DamageSource deathCause;
 
 	public MutantZombieEntity(EntityType<? extends MutantZombieEntity> type, World worldIn) {
 		super(type, worldIn);
@@ -148,6 +149,7 @@ public class MutantZombieEntity extends MonsterEntity {
 		this.dataManager.set(THROW_ATTACK_STATE, flag ? (byte)(b0 | 2) : (byte)(b0 & -3));
 	}
 
+	@OnlyIn(Dist.CLIENT)
 	public int getAttackID() {
 		return this.attackID;
 	}
@@ -158,6 +160,7 @@ public class MutantZombieEntity extends MonsterEntity {
 		this.world.setEntityState(this, (byte)attackID);
 	}
 
+	@OnlyIn(Dist.CLIENT)
 	public int getAttackTick() {
 		return this.attackTick;
 	}
@@ -179,7 +182,7 @@ public class MutantZombieEntity extends MonsterEntity {
 
 	@Override
 	protected float updateDistance(float renderYawOffset, float distance) {
-		return this.isAlive() ? super.updateDistance(renderYawOffset, distance) : distance;
+		return !this.isAlive() ? distance : super.updateDistance(renderYawOffset, distance);
 	}
 
 	@Override
@@ -198,10 +201,12 @@ public class MutantZombieEntity extends MonsterEntity {
 
 	@Override
 	public ActionResultType applyPlayerInteraction(PlayerEntity player, Vec3d vec, Hand hand) {
-		if (player.getHeldItem(hand).getItem() == Items.FLINT_AND_STEEL && this.deathTime > 0 && !this.isBurning() && !this.isWet()) {
+		ItemStack itemStack = player.getHeldItem(hand);
+		if (itemStack.getItem() == Items.FLINT_AND_STEEL && !this.isAlive() && !this.isBurning() && !this.isWet()) {
 			this.setFire(8);
 			player.swingArm(hand);
-			player.getHeldItem(hand).damageItem(1, player, livingEntity -> livingEntity.sendBreakAnimation(hand));
+			player.addStat(Stats.ITEM_USED.get(itemStack.getItem()));
+			itemStack.damageItem(1, player, livingEntity -> livingEntity.sendBreakAnimation(hand));
 			this.world.playSound(player, this.getPosition(), SoundEvents.ITEM_FLINTANDSTEEL_USE, SoundCategory.BLOCKS, 1.0F, this.rand.nextFloat() * 0.4F + 0.8F);
 			return ActionResultType.SUCCESS;
 		}
@@ -257,12 +262,14 @@ public class MutantZombieEntity extends MonsterEntity {
 	@Override
 	@OnlyIn(Dist.CLIENT)
 	public void handleStatusUpdate(byte id) {
-		if (id == 3) {
-			EntityUtil.spawnParticlesAtEntity(this, ParticleTypes.FLAME, 30);
-		} else if (id == 0 || id >= 4 && id <= 6) {
+		if (id == 0 || id >= 4 && id <= 6) {
 			this.attackID = id;
 			this.attackTick = 0;
 		} else {
+			if (id == 3) {
+				EntityUtil.spawnParticlesAtEntity(this, ParticleTypes.FLAME, 30);
+			}
+
 			super.handleStatusUpdate(id);
 		}
 	}
@@ -287,7 +294,6 @@ public class MutantZombieEntity extends MonsterEntity {
 		this.fixRotation();
 		this.updateAnimation();
 		this.updateMeleeGrounds();
-		this.setPathPriority(PathNodeType.LEAVES, net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this.world, this) ? 0.0F : -1.0F);
 
 		if (this.isAlive() && this.ticksExisted % 100 == 0 && !this.world.isDaytime() && this.getHealth() < this.getMaxHealth()) {
 			this.heal(2.0F);
@@ -409,19 +415,10 @@ public class MutantZombieEntity extends MonsterEntity {
 	}
 
 	@Override
-	public ILivingEntityData onInitialSpawn(IWorld worldIn, DifficultyInstance difficultyIn, SpawnReason reason, ILivingEntityData spawnDataIn, CompoundNBT dataTag) {
-		return spawnDataIn;
-	}
-
-	@Override
 	public void onDeath(DamageSource cause) {
 		if (!this.world.isRemote) {
 			this.deathCause = cause;
-			EntityUtil.alertOthers(this);
-
-			if (cause.getTrueSource() instanceof LivingEntity) {
-				this.killer = (LivingEntity)cause.getTrueSource();
-			}
+			this.setLastAttackedEntity(this.getRevengeTarget());
 
 			if (this.recentlyHit > 0) {
 				this.recentlyHit += MAX_DEATH_TIME;
@@ -440,13 +437,13 @@ public class MutantZombieEntity extends MonsterEntity {
 		if (++this.deathTime >= MAX_DEATH_TIME) {
 			this.deathTime = 0;
 			this.vanishTime = 0;
+			this.deathCause = null;
 
 			if (!this.world.isRemote) {
 				this.setLives(this.getLives() - 1);
 
-				if (this.killer != null) {
-					this.setRevengeTarget(this.killer);
-					this.killer.setRevengeTarget(this);
+				if (this.getLastAttackedEntity() != null) {
+					this.getLastAttackedEntity().setRevengeTarget(this);
 				}
 			}
 
@@ -455,7 +452,7 @@ public class MutantZombieEntity extends MonsterEntity {
 
 		if (this.vanishTime >= MAX_VANISH_TIME || this.getLives() <= 0 && this.deathTime > 25) {
 			EntityUtil.dropExperience(this, this.recentlyHit, this::getExperiencePoints, this.attackingPlayer);
-			super.onDeath(this.deathCause);
+			super.onDeath(this.deathCause != null ? this.deathCause : DamageSource.GENERIC);
 			this.remove();
 		}
 	}
@@ -467,8 +464,33 @@ public class MutantZombieEntity extends MonsterEntity {
 	}
 
 	@Override
-	public void setMotionMultiplier(BlockState blockState, Vec3d motionMultiplier) {
-		super.setMotionMultiplier(blockState, motionMultiplier.scale(5.0D));
+	public void onKillEntity(LivingEntity livingEntity) {
+		if ((this.world.getDifficulty() == Difficulty.NORMAL && this.rand.nextBoolean() || this.world.getDifficulty() == Difficulty.HARD) && livingEntity instanceof VillagerEntity) {
+			VillagerEntity villagerentity = (VillagerEntity)livingEntity;
+			ZombieVillagerEntity zombievillagerentity = EntityType.ZOMBIE_VILLAGER.create(this.world);
+			zombievillagerentity.copyLocationAndAnglesFrom(villagerentity);
+			villagerentity.remove();
+			zombievillagerentity.onInitialSpawn(this.world, this.world.getDifficultyForLocation(new BlockPos(zombievillagerentity)), SpawnReason.CONVERSION, null, null);
+			zombievillagerentity.func_213792_a(villagerentity.getVillagerData());
+			zombievillagerentity.func_223727_a(villagerentity.func_223722_es().serialize(NBTDynamicOps.INSTANCE).getValue());
+			zombievillagerentity.func_213790_g(villagerentity.getOffers().write());
+			zombievillagerentity.func_213789_a(villagerentity.getXp());
+			zombievillagerentity.setChild(villagerentity.isChild());
+			zombievillagerentity.setNoAI(villagerentity.isAIDisabled());
+			if (villagerentity.hasCustomName()) {
+				zombievillagerentity.setCustomName(villagerentity.getCustomName());
+				zombievillagerentity.setCustomNameVisible(villagerentity.isCustomNameVisible());
+			}
+
+			if (this.isNoDespawnRequired()) {
+				zombievillagerentity.enablePersistence();
+			}
+
+			zombievillagerentity.setInvulnerable(this.isInvulnerable());
+			SummonableCapability.get(zombievillagerentity).setSummonerUUID(this.entityUniqueID);
+			this.world.addEntity(zombievillagerentity);
+			this.world.playEvent((PlayerEntity)null, 1026, new BlockPos(this), 0);
+		}
 	}
 
 	private boolean canHarm(Entity entity) {
@@ -483,9 +505,9 @@ public class MutantZombieEntity extends MonsterEntity {
 
 		if (!this.resurrectionList.isEmpty()) {
 			ListNBT listnbt = new ListNBT();
-			for (ZombieResurrection resurrect : this.resurrectionList) {
-				CompoundNBT compound1 = NBTUtil.writeBlockPos(resurrect.getPosition());
-				compound1.putInt("Tick", resurrect.getTick());
+			for (ZombieResurrection resurrection : this.resurrectionList) {
+				CompoundNBT compound1 = NBTUtil.writeBlockPos(resurrection);
+				compound1.putInt("Tick", resurrection.getTick());
 				listnbt.add(compound1);
 			}
 
@@ -601,7 +623,7 @@ public class MutantZombieEntity extends MonsterEntity {
 		@Override
 		public boolean shouldExecute() {
 			this.attackTarget = getAttackTarget();
-			return this.attackTarget != null && onGround && getDistanceSq(this.attackTarget) > 16.0D ? rand.nextFloat() * 100.0F < 0.35F : false;
+			return this.attackTarget != null && onGround && getDistanceSq(this.attackTarget) > 16.0D && rand.nextFloat() * 100.0F < 0.35F;
 		}
 
 		@Override
@@ -626,16 +648,18 @@ public class MutantZombieEntity extends MonsterEntity {
 			if (attackTick == 10) {
 				playSound(MBSoundEvents.ENTITY_MUTANT_ZOMBIE_ROAR, 3.0F, 0.7F + rand.nextFloat() * 0.2F);
 
-				for (LivingEntity livingEntity : world.getEntitiesWithinAABB(LivingEntity.class, getBoundingBox().grow(12.0D, 8.0D, 12.0D))) {
-					if (getDistanceSq(livingEntity) <= 196.0D) {
-						if (SummonableCapability.getLazy(livingEntity).isPresent() && !SummonableCapability.get(livingEntity).isSpawnedBySummoner() && SummonableCapability.get(livingEntity).getSummoner() == null) {
-							SummonableCapability.get(livingEntity).setSummoner(MutantZombieEntity.this);
-						} else if (canHarm(livingEntity)) {
-							double x = livingEntity.posX - posX;
-							double z = livingEntity.posZ - posZ;
+				for (Entity entity : world.getEntitiesWithinAABB(Entity.class, getBoundingBox().grow(12.0D, 8.0D, 12.0D))) {
+					if (getDistanceSq(entity) <= 196.0D) {
+						if (canHarm(entity)) {
+							double x = entity.posX - posX;
+							double z = entity.posZ - posZ;
 							double d = Math.sqrt(x * x + z * z);
-							livingEntity.setMotion(x / d * 0.699999988079071D, 0.30000001192092896D, z / d * 0.699999988079071D);
-							livingEntity.attackEntityFrom(DamageSource.causeMobDamage(MutantZombieEntity.this).setDamageBypassesArmor().setDamageIsAbsolute(), (float)(2 + rand.nextInt(2)));
+							entity.setMotion(x / d * 0.699999988079071D, 0.30000001192092896D, z / d * 0.699999988079071D);
+							entity.attackEntityFrom(DamageSource.causeMobDamage(MutantZombieEntity.this).setDamageBypassesArmor().setDamageIsAbsolute(), (float)(2 + rand.nextInt(2)));
+						} else {
+							SummonableCapability.getLazy(entity).ifPresent(summonable -> {
+								summonable.setSummonerUUID(entityUniqueID);
+							});
 						}
 					}
 				}
@@ -658,6 +682,7 @@ public class MutantZombieEntity extends MonsterEntity {
 		@Override
 		public void resetTask() {
 			setAttackID(0);
+			this.attackTarget = null;
 		}
 	}
 
@@ -721,6 +746,7 @@ public class MutantZombieEntity extends MonsterEntity {
 					this.attackTarget.setMotion(x / d * 0.6000000238418579D, -1.2000000476837158D, z / d * 0.6000000238418579D);
 					this.attackTarget.velocityChanged = true;
 					this.attackTarget.hurtResistantTime = 10;
+					EntityUtil.stunRavager(this.attackTarget);
 					EntityUtil.disableShield(this.attackTarget, DamageSource.causeMobDamage(MutantZombieEntity.this), 150);
 					playSound(MBSoundEvents.ENTITY_MUTANT_ZOMBIE_GRUNT, 0.3F, 0.8F + rand.nextFloat() * 0.4F);
 				}

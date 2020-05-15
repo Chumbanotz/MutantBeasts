@@ -11,6 +11,7 @@ import chumbanotz.mutantbeasts.item.EndersoulHandItem;
 import chumbanotz.mutantbeasts.item.HulkHammerItem;
 import chumbanotz.mutantbeasts.item.MBArmorMaterial;
 import chumbanotz.mutantbeasts.item.SkeletonArmorItem;
+import chumbanotz.mutantbeasts.particles.MBParticleTypes;
 import chumbanotz.mutantbeasts.tileentity.MBSkullTileEntity;
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
@@ -71,14 +72,13 @@ public class RegistryHandler {
 		event.getRegistry().register(
 				setRegistryName("skull", TileEntityType.Builder.create(MBSkullTileEntity::new, MBBlocks.MUTANT_SKELETON_SKULL, MBBlocks.MUTANT_SKELETON_WALL_SKULL).build(null))
 				);
-		
 	}
 
 	@SubscribeEvent
 	public static void registerParticleTypes(RegistryEvent.Register<ParticleType<?>> event) {
 		event.getRegistry().registerAll(
-				setRegistryName("skull_spirit", new BasicParticleType(true)),
-				setRegistryName("large_portal", new BasicParticleType(false))
+				setRegistryName("endersoul", new BasicParticleType(false)),
+				setRegistryName("skull_spirit", new BasicParticleType(true))
 				);
 	}
 
@@ -90,6 +90,8 @@ public class RegistryHandler {
 				createSoundEvent("entity.creeper_minion.hurt"),
 				createSoundEvent("entity.creeper_minion.primed"),
 				createSoundEvent("entity.creeper_minion_egg.hatch"),
+				createSoundEvent("entity.endersoul_clone.death"),
+				createSoundEvent("entity.endersoul_clone.teleport"),
 				createSoundEvent("entity.endersoul_fragment.explode"),
 				createSoundEvent("entity.mutant_creeper.ambient"),
 				createSoundEvent("entity.mutant_creeper.charge"),
@@ -98,6 +100,7 @@ public class RegistryHandler {
 				createSoundEvent("entity.mutant_enderman.ambient"),
 				createSoundEvent("entity.mutant_enderman.death"),
 				createSoundEvent("entity.mutant_enderman.hurt"),
+				createSoundEvent("entity.mutant_enderman.morph"),
 				createSoundEvent("entity.mutant_enderman.scream"),
 				createSoundEvent("entity.mutant_enderman.stare"),
 				createSoundEvent("entity.mutant_enderman.teleport"),
@@ -117,6 +120,15 @@ public class RegistryHandler {
 				createSoundEvent("entity.spider_pig.death"),
 				createSoundEvent("entity.spider_pig.hurt")
 				);
+	}
+
+	@SubscribeEvent
+	public static void remapParticleTypes(RegistryEvent.MissingMappings<ParticleType<?>> event) {
+		for (RegistryEvent.MissingMappings.Mapping<ParticleType<?>> mapping : event.getMappings()) {
+			if (mapping.key.toString().equals("mutantbeasts:large_portal")) {
+				mapping.remap(MBParticleTypes.ENDERSOUL);
+			}
+		}
 	}
 
 	private static SoundEvent createSoundEvent(String name) {
