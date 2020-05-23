@@ -18,11 +18,8 @@ import net.minecraft.client.renderer.entity.model.EndermanModel;
 import net.minecraft.client.renderer.entity.model.EntityModel;
 import net.minecraft.client.renderer.texture.AtlasTexture;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 
-@OnlyIn(Dist.CLIENT)
 public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> {
 	private static final Field RENDER_POS_X = ObfuscationReflectionHelper.findField(EntityRendererManager.class, "field_78725_b");
 	private static final Field RENDER_POS_Y = ObfuscationReflectionHelper.findField(EntityRendererManager.class, "field_78726_c");
@@ -111,7 +108,6 @@ public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity,
 		return entity.isClone() ? null : TEXTURE;
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	static class EyesLayer extends LayerRenderer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> {
 		public EyesLayer(IEntityRenderer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> entityRendererIn) {
 			super(entityRendererIn);
@@ -138,7 +134,6 @@ public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity,
 		}
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	class GlowLayer extends EndersoulLayer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> {
 		public GlowLayer(IEntityRenderer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> entityRendererIn) {
 			super(entityRendererIn);
@@ -208,7 +203,6 @@ public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity,
 		}
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	static class HeldBlocksLayer extends LayerRenderer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> {
 		public HeldBlocksLayer(IEntityRenderer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> entityRendererIn) {
 			super(entityRendererIn);

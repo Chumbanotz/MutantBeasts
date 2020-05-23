@@ -3,10 +3,7 @@ package chumbanotz.mutantbeasts.client.renderer.entity.model;
 import chumbanotz.mutantbeasts.client.renderer.model.JointRendererModel;
 import net.minecraft.client.renderer.entity.model.RendererModel;
 import net.minecraft.client.renderer.model.Model;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
-@OnlyIn(Dist.CLIENT)
 public class MutantSkeletonPartModel extends Model {
 	private final RendererModel pelvis;
 	private final MutantSkeletonModel.Spine[] spine;

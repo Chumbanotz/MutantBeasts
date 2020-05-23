@@ -33,11 +33,8 @@ public class BodyPartEntity extends Entity {
 	private final boolean yawPositive;
 	private final boolean pitchPositive;
 	private WeakReference<MobEntity> owner;
-	@OnlyIn(Dist.CLIENT)
 	private double velocityX;
-	@OnlyIn(Dist.CLIENT)
 	private double velocityY;
-	@OnlyIn(Dist.CLIENT)
 	private double velocityZ;
 	private int despawnTimer;
 

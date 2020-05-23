@@ -46,8 +46,6 @@ import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.server.ServerWorld;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 
 public final class EntityUtil {
@@ -253,7 +251,6 @@ public final class EntityUtil {
 		newEntity.deserializeNBT(copiedNBT);
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	public static void spawnParticlesAtEntity(Entity entity, IParticleData particleData, int amount) {
 		for (int i = 0; i < amount; ++i) {
 			double posX = entity.posX + (double)(entity.world.rand.nextFloat() * entity.getWidth() * 2.0F) - (double)entity.getWidth();
@@ -266,7 +263,6 @@ public final class EntityUtil {
 		}
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	public static void spawnEndersoulParticles(Entity entity, int amount, float speed) {
 		for (int i = 0; i < amount; i++) {
 			float f = (entity.world.rand.nextFloat() - 0.5F) * speed;

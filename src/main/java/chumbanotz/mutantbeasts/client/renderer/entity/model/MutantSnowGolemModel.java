@@ -5,10 +5,7 @@ import chumbanotz.mutantbeasts.entity.mutant.MutantSnowGolemEntity;
 import net.minecraft.client.renderer.entity.model.EntityModel;
 import net.minecraft.client.renderer.entity.model.RendererModel;
 import net.minecraft.util.math.MathHelper;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
-@OnlyIn(Dist.CLIENT)
 public class MutantSnowGolemModel extends EntityModel<MutantSnowGolemEntity> {
 	private final RendererModel pelvis;
 	private final RendererModel abdomen;

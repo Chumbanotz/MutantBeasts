@@ -149,7 +149,6 @@ public class MutantZombieEntity extends MonsterEntity {
 		this.dataManager.set(THROW_ATTACK_STATE, flag ? (byte)(b0 | 2) : (byte)(b0 & -3));
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	public int getAttackID() {
 		return this.attackID;
 	}
@@ -160,7 +159,6 @@ public class MutantZombieEntity extends MonsterEntity {
 		this.world.setEntityState(this, (byte)attackID);
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	public int getAttackTick() {
 		return this.attackTick;
 	}

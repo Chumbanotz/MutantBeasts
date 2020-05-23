@@ -9,10 +9,7 @@ import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.client.renderer.entity.model.RendererModel;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
-@OnlyIn(Dist.CLIENT)
 public class BodyPartRenderer extends EntityRenderer<BodyPartEntity> {
 	private final MutantSkeletonPartModel modelSkelePart = new MutantSkeletonPartModel();
 

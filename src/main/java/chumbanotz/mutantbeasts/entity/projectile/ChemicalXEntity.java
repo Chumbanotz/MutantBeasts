@@ -33,16 +33,16 @@ import net.minecraftforge.fml.network.NetworkHooks;
 
 public class ChemicalXEntity extends ProjectileItemEntity {
 	public static final Predicate<LivingEntity> IS_APPLICABLE = target -> {
-		return target.isNonBoss() && !ChemicalXEntity.MUTATIONS.containsValue(target.getType()) && target.getType() != MBEntityType.CREEPER_MINION && target.getType() != MBEntityType.ENDERSOUL_CLONE;
+		return target.isNonBoss() && !ChemicalXEntity.MUTATIONS.containsValue(target.getType()) && target.getType() != MBEntityType.CREEPER_MINION;
 	};
-	public static final EntityPredicate PREDICATE = new EntityPredicate().setDistance(12.0D).setSkipAttackChecks().allowInvulnerable().setCustomPredicate(IS_APPLICABLE);
+	public static final EntityPredicate PREDICATE = new EntityPredicate().allowInvulnerable().setCustomPredicate(IS_APPLICABLE);
 	private static final Map<EntityType<? extends MobEntity>, EntityType<? extends MobEntity>> MUTATIONS = Util.make(new HashMap<>(), map -> {
-		 map.put(EntityType.CREEPER, MBEntityType.MUTANT_CREEPER);
-		 map.put(EntityType.ENDERMAN, MBEntityType.MUTANT_ENDERMAN);
-		 map.put(EntityType.PIG, MBEntityType.SPIDER_PIG);
-		 map.put(EntityType.SKELETON, MBEntityType.MUTANT_SKELETON);
-		 map.put(EntityType.SNOW_GOLEM, MBEntityType.MUTANT_SNOW_GOLEM);
-		 map.put(EntityType.ZOMBIE, MBEntityType.MUTANT_ZOMBIE);
+		map.put(EntityType.CREEPER, MBEntityType.MUTANT_CREEPER);
+		map.put(EntityType.ENDERMAN, MBEntityType.MUTANT_ENDERMAN);
+		map.put(EntityType.PIG, MBEntityType.SPIDER_PIG);
+		map.put(EntityType.SKELETON, MBEntityType.MUTANT_SKELETON);
+		map.put(EntityType.SNOW_GOLEM, MBEntityType.MUTANT_SNOW_GOLEM);
+		map.put(EntityType.ZOMBIE, MBEntityType.MUTANT_ZOMBIE);
 	});
 
 	public ChemicalXEntity(EntityType<? extends ChemicalXEntity> type, World worldIn) {
@@ -95,24 +95,31 @@ public class ChemicalXEntity extends ProjectileItemEntity {
 	protected void onImpact(RayTraceResult result) {
 		if (!this.world.isRemote) {
 			MobEntity target = null;
-			boolean directHit = false;
 
-			if (result.getType() == RayTraceResult.Type.ENTITY) {
-				Entity entity = ((EntityRayTraceResult)result).getEntity();
-				if (entity instanceof MobEntity && PREDICATE.canTarget(this.getThrower(), (MobEntity)entity)) {
-					target = (MobEntity)entity;
-					directHit = true;
-				}
-			}
-
-			if (!directHit) {
+			if (result.getType() == RayTraceResult.Type.ENTITY && ((EntityRayTraceResult)result).getEntity() instanceof MobEntity && IS_APPLICABLE.test((MobEntity)((EntityRayTraceResult)result).getEntity())) {
+				target = (MobEntity)((EntityRayTraceResult)result).getEntity();
+			} else {
 				target = this.world.getClosestEntityWithinAABB(MobEntity.class, PREDICATE, this.getThrower(), this.posX, this.posY, this.posZ, this.getBoundingBox().grow(12.0D, 8.0D, 12.0D));
-			}
 
-			if (target != null) {
-				SkullSpiritEntity spirit = new SkullSpiritEntity(this.world, target);
-				spirit.setPosition(this.posX, this.posY, this.posZ);
-				this.world.addEntity(spirit);
+				boolean directHit = false;
+
+				if (result.getType() == RayTraceResult.Type.ENTITY) {
+					Entity entity = ((EntityRayTraceResult)result).getEntity();
+					if (entity instanceof MobEntity && PREDICATE.canTarget(null, (MobEntity)entity)) {
+						target = (MobEntity)entity;
+						directHit = true;
+					}
+				}
+
+				if (!directHit) {
+					target = this.world.getClosestEntityWithinAABB(MobEntity.class, PREDICATE, null, this.posX, this.posY, this.posZ, this.getBoundingBox().grow(12.0D, 8.0D, 12.0D));
+				}
+
+				if (target != null) {
+					SkullSpiritEntity spirit = new SkullSpiritEntity(this.world, target);
+					spirit.setPosition(this.posX, this.posY, this.posZ);
+					this.world.addEntity(spirit);
+				}
 			}
 
 			this.world.setEntityState(this, (byte)3);
@@ -124,7 +131,7 @@ public class ChemicalXEntity extends ProjectileItemEntity {
 
 	@Nullable
 	public static MobEntity getMutantOf(MobEntity target) {
-		if (!MUTATIONS.keySet().contains(target.getType())) {
+		if (!MUTATIONS.containsValue(target.getType())) {
 			return null;
 		} else if (target.getType() == EntityType.PIG && (!target.isPotionActive(Effects.UNLUCK) || target.getActivePotionEffect(Effects.UNLUCK).getAmplifier() != 13)) {
 			return null;

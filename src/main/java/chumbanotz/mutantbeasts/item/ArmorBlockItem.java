@@ -8,14 +8,21 @@ import net.minecraft.block.Block;
 import net.minecraft.block.DispenserBlock;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentType;
-import net.minecraft.enchantment.Enchantments;
+import net.minecraft.entity.MobEntity;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.attributes.AttributeModifier;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.EquipmentSlotType;
 import net.minecraft.item.ArmorItem;
+import net.minecraft.item.BlockItemUseContext;
 import net.minecraft.item.IArmorMaterial;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUseContext;
 import net.minecraft.item.WallOrFloorItem;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.ActionResultType;
+import net.minecraft.util.Hand;
+import net.minecraft.world.World;
 
 public class ArmorBlockItem extends WallOrFloorItem {
 	private static final UUID ARMOR_MODIFIER = UUID.fromString("2AD3F246-FEE1-4E67-B886-69FD380BB150");
@@ -56,5 +63,25 @@ public class ArmorBlockItem extends WallOrFloorItem {
 		}
 
 		return multimap;
+	}
+
+	@Override
+	public ActionResultType onItemUse(ItemUseContext context) {
+		ActionResultType actionresulttype = this.tryPlace(new BlockItemUseContext(context));
+		return actionresulttype != ActionResultType.SUCCESS ? this.onItemRightClick(context.getWorld(), context.getPlayer(), context.getHand()).getType() : actionresulttype;
+	}
+
+	@Override
+	public ActionResult<ItemStack> onItemRightClick(World worldIn, PlayerEntity playerIn, Hand handIn) {
+		ItemStack itemstack = playerIn.getHeldItem(handIn);
+		EquipmentSlotType equipmentslottype = MobEntity.getSlotForItemStack(itemstack);
+		ItemStack itemstack1 = playerIn.getItemStackFromSlot(equipmentslottype);
+		if (itemstack1.isEmpty()) {
+			playerIn.setItemStackToSlot(equipmentslottype, itemstack.copy());
+			itemstack.setCount(0);
+			return new ActionResult<>(ActionResultType.SUCCESS, itemstack);
+		} else {
+			return new ActionResult<>(ActionResultType.FAIL, itemstack);
+		}
 	}
 }

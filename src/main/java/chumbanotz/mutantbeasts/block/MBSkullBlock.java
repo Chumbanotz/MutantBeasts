@@ -4,9 +4,7 @@ import chumbanotz.mutantbeasts.tileentity.MBSkullTileEntity;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.SkullBlock;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockReader;
@@ -30,17 +28,8 @@ public class MBSkullBlock extends SkullBlock {
 	@Override
 	public void onBlockPlacedBy(World worldIn, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {
 		TileEntity tileentity = worldIn.getTileEntity(pos);
-		if (tileentity instanceof MBSkullTileEntity) {
-			((MBSkullTileEntity)tileentity).setItemData(stack.write(new CompoundNBT()));
-		}
-	}
-
-	@Override
-	public void onBlockHarvested(World worldIn, BlockPos pos, BlockState state, PlayerEntity player) {
-		super.onBlockHarvested(worldIn, pos, state, player);
-		TileEntity tileentity = worldIn.getTileEntity(pos);
-		if (tileentity instanceof MBSkullTileEntity && !player.isCreative()) {
-			spawnAsEntity(worldIn, pos, ItemStack.read(((MBSkullTileEntity)tileentity).getItemData()));
+		if (tileentity instanceof MBSkullTileEntity && stack.hasTag()) {
+			((MBSkullTileEntity)tileentity).setItemData(stack.getTag());
 		}
 	}
 

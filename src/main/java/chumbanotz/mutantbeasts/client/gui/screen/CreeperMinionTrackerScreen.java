@@ -12,10 +12,7 @@ import net.minecraft.client.gui.widget.Widget;
 import net.minecraft.client.gui.widget.button.Button;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
-@OnlyIn(Dist.CLIENT)
 public class CreeperMinionTrackerScreen extends Screen {
 	private static final ResourceLocation TEXTURE = MutantBeasts.prefix("textures/gui/creeper_minion_tracker.png");
 	private final int xSize = 176;

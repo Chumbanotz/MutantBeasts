@@ -1,5 +1,6 @@
 package chumbanotz.mutantbeasts.util;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import chumbanotz.mutantbeasts.capability.SummonableCapability;
@@ -12,6 +13,7 @@ import net.minecraft.block.TrapDoorBlock;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityClassification;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.ILivingEntityData;
 import net.minecraft.entity.MobEntity;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.state.properties.Half;
@@ -32,13 +34,13 @@ public class ZombieResurrection extends BlockPos {
 	}
 
 	public ZombieResurrection(World world, BlockPos pos, int tick) {
-		super(pos.getX(), pos.getY(), pos.getZ());
+		super(pos);
 		this.world = world;
 		this.tick = tick;
 	}
 
 	public int getTick() {
-		return this.tick;
+		return tick;
 	}
 
 	public boolean update(MutantZombieEntity mutantZombie) {
@@ -47,20 +49,20 @@ public class ZombieResurrection extends BlockPos {
 		}
 
 		if (mutantZombie.getRNG().nextInt(15) == 0) {
-			this.world.playEvent(2001, this.up(), Block.getStateId(this.world.getBlockState(this)));
+			this.world.playEvent(2001, this.up(), Block.getStateId(this.world.getBlockState(this.up())));
 		}
 
 		if (--this.tick <= 0) {
 			Entity entity = getZombieByLocation(this.world, this).create(this.world);
 			if (entity instanceof MobEntity) {
 				MobEntity mobEntity = (MobEntity)entity;
-				mobEntity.onInitialSpawn(this.world, this.world.getDifficultyForLocation(this), SpawnReason.MOB_SUMMONED, null, null);
+				ILivingEntityData livingEntityData = null;
+				livingEntityData = mobEntity.onInitialSpawn(this.world, this.world.getDifficultyForLocation(this), SpawnReason.MOB_SUMMONED, livingEntityData, null);
 				mobEntity.setHealth(mobEntity.getMaxHealth() * (0.6F + 0.4F * mobEntity.getRNG().nextFloat()));
 				mobEntity.playAmbientSound();
-				mobEntity.stopRiding();
 			}
 
-			this.world.playEvent(2001, this.up(), Block.getStateId(this.world.getBlockState(this)));
+			this.world.playEvent(2001, this.up(), Block.getStateId(this.world.getBlockState(this.up())));
 
 			if (!this.world.isRemote) {
 				SummonableCapability.getLazy(entity).ifPresent(summonable -> {
@@ -133,7 +135,7 @@ public class ZombieResurrection extends BlockPos {
 	}
 
 	public static EntityType<?> getZombieByLocation(World world, BlockPos pos) {
-		List<Biome.SpawnListEntry> entries = world.getBiome(pos).getSpawns(EntityClassification.MONSTER);
+		List<Biome.SpawnListEntry> entries = new ArrayList<>(world.getBiome(pos).getSpawns(EntityClassification.MONSTER));
 		entries.removeIf(entry -> !SummonableCapability.isEntityEligible(entry.entityType));
 		return entries.isEmpty() ? EntityType.ZOMBIE : WeightedRandom.getRandomItem(world.rand, entries).entityType;
 	}

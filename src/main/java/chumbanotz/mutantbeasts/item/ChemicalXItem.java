@@ -58,10 +58,10 @@ public class ChemicalXItem extends Item {
 		ItemStack itemstack1 = playerIn.abilities.isCreativeMode ? itemstack.copy() : itemstack.split(1);
 		worldIn.playSound(null, playerIn.posX, playerIn.posY, playerIn.posZ, SoundEvents.ENTITY_SPLASH_POTION_THROW, SoundCategory.PLAYERS, 0.5F, 0.4F / (random.nextFloat() * 0.4F + 0.8F));
 		if (!worldIn.isRemote) {
-			ChemicalXEntity potionentity = new ChemicalXEntity(playerIn, worldIn);
-			potionentity.setItem(itemstack1);
-			potionentity.shoot(playerIn, playerIn.rotationPitch, playerIn.rotationYaw, -20.0F, 0.5F, 1.0F);
-			worldIn.addEntity(potionentity);
+			ChemicalXEntity chemicalXEntity = new ChemicalXEntity(playerIn, worldIn);
+			chemicalXEntity.setItem(itemstack1);
+			chemicalXEntity.shoot(playerIn, playerIn.rotationPitch, playerIn.rotationYaw, -20.0F, 0.5F, 1.0F);
+			worldIn.addEntity(chemicalXEntity);
 		}
 
 		playerIn.addStat(Stats.ITEM_USED.get(this));

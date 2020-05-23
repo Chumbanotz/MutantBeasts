@@ -196,12 +196,10 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 		return false;
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	public boolean isThrowing() {
 		return this.isThrowing;
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	public int getThrowingTick() {
 		return this.throwingTick;
 	}

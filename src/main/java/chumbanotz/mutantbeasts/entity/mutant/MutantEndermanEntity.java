@@ -157,7 +157,6 @@ public class MutantEndermanEntity extends MonsterEntity {
 		this.setAttackID(clone ? CLONE_ATTACK : 0);
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	public int getAttackID() {
 		return this.attackID;
 	}
@@ -167,7 +166,6 @@ public class MutantEndermanEntity extends MonsterEntity {
 		this.world.setEntityState(this, (byte)attackID);
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	public int getAttackTick() {
 		return this.attackTick;
 	}
@@ -226,7 +224,6 @@ public class MutantEndermanEntity extends MonsterEntity {
 		this.setAggroed(entitylivingbaseIn != null);
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	public float getArmScale(float partialTicks) {
 		return MathHelper.lerp(partialTicks, (float)this.prevArmScale, (float)this.armScale) / 10.0F;
 	}
@@ -669,7 +666,6 @@ public class MutantEndermanEntity extends MonsterEntity {
 		}
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	private void spawnBigParticles() {
 		int temp = 256;
 		if (this.attackID == TELEPORT_ATTACK) {

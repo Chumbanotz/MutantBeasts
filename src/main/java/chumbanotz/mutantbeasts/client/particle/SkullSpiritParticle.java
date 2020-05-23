@@ -9,10 +9,7 @@ import net.minecraft.client.renderer.ActiveRenderInfo;
 import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.particles.BasicParticleType;
 import net.minecraft.world.World;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
-@OnlyIn(Dist.CLIENT)
 public class SkullSpiritParticle extends SpriteTexturedParticle {
 	private float particleScale = (this.rand.nextFloat() * 0.5F + 0.5F) * 2.0F;
 	private float skullScale;
@@ -83,7 +80,6 @@ public class SkullSpiritParticle extends SpriteTexturedParticle {
 		return IParticleRenderType.PARTICLE_SHEET_OPAQUE;
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	public static class Factory implements IParticleFactory<BasicParticleType> {
 		private final IAnimatedSprite spriteSet;
 

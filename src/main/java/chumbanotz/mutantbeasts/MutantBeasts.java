@@ -53,7 +53,7 @@ public class MutantBeasts {
 		CapabilityManager.INSTANCE.register(ISummonable.class, new SummonableCapability.Storage(), SummonableCapability::new);
 		net.minecraftforge.fml.DeferredWorkQueue.runLater(() -> {
 			MBEntityType.addSpawns();
-			MBEntityType.registerDispenseBehavior();
+			RegistryHandler.registerDispenseBehavior();
 		});
 	}
 

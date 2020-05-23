@@ -3,10 +3,7 @@ package chumbanotz.mutantbeasts.client.renderer.entity.model;
 import chumbanotz.mutantbeasts.entity.EndersoulFragmentEntity;
 import net.minecraft.client.renderer.entity.model.RendererModel;
 import net.minecraft.client.renderer.model.Model;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
-@OnlyIn(Dist.CLIENT)
 public class EndersoulFragmentModel extends Model {
    private final RendererModel base = new RendererModel(this);
    private final RendererModel[] sticks = new RendererModel[8];

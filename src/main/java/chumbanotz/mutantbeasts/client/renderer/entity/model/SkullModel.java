@@ -2,10 +2,7 @@ package chumbanotz.mutantbeasts.client.renderer.entity.model;
 
 import net.minecraft.client.renderer.entity.model.GenericHeadModel;
 import net.minecraft.client.renderer.entity.model.RendererModel;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
-@OnlyIn(Dist.CLIENT)
 public class SkullModel extends GenericHeadModel {
 	private final RendererModel head;
 	private final RendererModel jaw;

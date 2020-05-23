@@ -7,10 +7,7 @@ import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.SpriteTexturedParticle;
 import net.minecraft.particles.BasicParticleType;
 import net.minecraft.world.World;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
-@OnlyIn(Dist.CLIENT)
 public class EndersoulParticle extends SpriteTexturedParticle {
 	private EndersoulParticle(World worldIn, double xCoordIn, double yCoordIn, double zCoordIn, double xSpeedIn, double ySpeedIn, double zSpeedIn) {
 		super(worldIn, xCoordIn, yCoordIn, zCoordIn, 0.0D, 0.0D, 0.0D);
@@ -68,7 +65,6 @@ public class EndersoulParticle extends SpriteTexturedParticle {
 		return IParticleRenderType.PARTICLE_SHEET_OPAQUE;
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	public static class Factory implements IParticleFactory<BasicParticleType> {
 		private final IAnimatedSprite spriteSet;
 

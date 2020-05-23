@@ -5,10 +5,7 @@ import chumbanotz.mutantbeasts.entity.mutant.SpiderPigEntity;
 import net.minecraft.client.renderer.entity.model.EntityModel;
 import net.minecraft.client.renderer.entity.model.RendererModel;
 import net.minecraft.util.math.MathHelper;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
-@OnlyIn(Dist.CLIENT)
 public class SpiderPigModel extends EntityModel<SpiderPigEntity> {
 	private final RendererModel snout;
 	private final JointRendererModel head;
@@ -29,14 +26,14 @@ public class SpiderPigModel extends EntityModel<SpiderPigEntity> {
 	private final JointRendererModel backLeg2;
 	private final JointRendererModel backLegF2;
 
-	public SpiderPigModel(float scale) {
+	public SpiderPigModel() {
 		this.textureWidth = 128;
 		this.textureHeight = 64;
 		this.base = new RendererModel(this);
 		this.base.setRotationPoint(0.0F, 14.5F, -2.0F);
 		this.body2 = new RendererModel(this, 32, 0);
 		this.body2.addBox(-3.0F, -3.0F, 0.0F, 6, 6, 10);
-		this.body2.setTextureOffset(44, 16).addBox(-5.0F, -5.0F, -4.0F, 10, 8, 12, scale);
+		this.body2.setTextureOffset(44, 16).addBox(-5.0F, -5.0F, -4.0F, 10, 8, 12, -0.6F);
 		this.base.addChild(this.body2);
 		this.body1 = new JointRendererModel(this, 64, 0);
 		this.body1.addBox(-3.5F, -3.5F, -9.0F, 7, 7, 9);

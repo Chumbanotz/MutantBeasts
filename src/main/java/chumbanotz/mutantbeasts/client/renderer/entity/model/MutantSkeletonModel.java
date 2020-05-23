@@ -8,10 +8,7 @@ import net.minecraft.client.renderer.entity.model.EntityModel;
 import net.minecraft.client.renderer.entity.model.RendererModel;
 import net.minecraft.client.renderer.model.Model;
 import net.minecraft.util.math.MathHelper;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
-@OnlyIn(Dist.CLIENT)
 public class MutantSkeletonModel extends EntityModel<MutantSkeletonEntity> {
 	private final RendererModel skeleBase;
 	private final RendererModel pelvis;
@@ -595,7 +592,6 @@ public class MutantSkeletonModel extends EntityModel<MutantSkeletonEntity> {
 		this.partialTick = partialTick;
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	static class Spine {
 		public final RendererModel middle;
 		public final ScalableRendererModel[] side1;

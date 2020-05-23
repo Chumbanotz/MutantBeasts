@@ -13,10 +13,7 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.DyeColor;
 import net.minecraft.nbt.CompoundNBT;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
-@OnlyIn(Dist.CLIENT)
 public class CreeperMinionShoulderLayer<T extends PlayerEntity> extends LayerRenderer<T, PlayerModel<T>> {
 	private final CreeperMinionModel creeperMinionModel = new CreeperMinionModel();
 	private final CreeperMinionModel chargedModel = new CreeperMinionModel(2.0F);

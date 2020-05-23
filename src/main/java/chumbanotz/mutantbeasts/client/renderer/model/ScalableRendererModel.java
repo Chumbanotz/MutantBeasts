@@ -4,10 +4,7 @@ import com.mojang.blaze3d.platform.GlStateManager;
 
 import net.minecraft.client.renderer.entity.model.RendererModel;
 import net.minecraft.client.renderer.model.Model;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
-@OnlyIn(Dist.CLIENT)
 public class ScalableRendererModel extends RendererModel {
 	private float scale = 1.0F;
 

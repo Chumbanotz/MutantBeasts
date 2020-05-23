@@ -39,11 +39,8 @@ public class CreeperMinionEggEntity extends Entity {
 	private int health = 8;
 	private int age = (60 + this.rand.nextInt(40)) * 1200;
 	private int recentlyHit;
-	@OnlyIn(Dist.CLIENT)
 	private double velocityX;
-	@OnlyIn(Dist.CLIENT)
 	private double velocityY;
-	@OnlyIn(Dist.CLIENT)
 	private double velocityZ;
 
 	public CreeperMinionEggEntity(EntityType<? extends CreeperMinionEggEntity> type, World world) {

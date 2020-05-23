@@ -14,10 +14,7 @@ import net.minecraft.client.renderer.entity.layers.LayerRenderer;
 import net.minecraft.client.renderer.texture.AtlasTexture;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
-@OnlyIn(Dist.CLIENT)
 public class MutantSnowGolemRenderer extends MutantRenderer<MutantSnowGolemEntity, MutantSnowGolemModel> {
 	static final ResourceLocation TEXTURE = MutantBeasts.getEntityTexture("mutant_snow_golem/mutant_snow_golem");
 	private static final ResourceLocation PUMPKIN_TEXTURE = MutantBeasts.getEntityTexture("mutant_snow_golem/pumpkin");
@@ -43,7 +40,6 @@ public class MutantSnowGolemRenderer extends MutantRenderer<MutantSnowGolemEntit
 		return TEXTURE;
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	static class GlowLayer extends LayerRenderer<MutantSnowGolemEntity, MutantSnowGolemModel> {
 		public GlowLayer(IEntityRenderer<MutantSnowGolemEntity, MutantSnowGolemModel> entityRendererIn) {
 			super(entityRendererIn);
@@ -73,7 +69,6 @@ public class MutantSnowGolemRenderer extends MutantRenderer<MutantSnowGolemEntit
 		}
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	static class ThrownBlockLayer extends LayerRenderer<MutantSnowGolemEntity, MutantSnowGolemModel> {
 		public ThrownBlockLayer(IEntityRenderer<MutantSnowGolemEntity, MutantSnowGolemModel> entityRendererIn) {
 			super(entityRendererIn);

@@ -1,10 +1,13 @@
 package chumbanotz.mutantbeasts.tileentity;
 
+import javax.annotation.Nullable;
+
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.tileentity.SkullTileEntity;
 import net.minecraft.tileentity.TileEntityType;
 
 public class MBSkullTileEntity extends SkullTileEntity {
+	@Nullable
 	private CompoundNBT itemData;
 
 	@Override
@@ -16,11 +19,12 @@ public class MBSkullTileEntity extends SkullTileEntity {
 	public void tick() {
 	}
 
+	@Nullable
 	public CompoundNBT getItemData() {
 		return this.itemData;
 	}
 
-	public void setItemData(CompoundNBT skullData) {
+	public void setItemData(@Nullable CompoundNBT skullData) {
 		this.itemData = skullData;
 		this.markDirty();
 	}
@@ -29,7 +33,7 @@ public class MBSkullTileEntity extends SkullTileEntity {
 	public CompoundNBT write(CompoundNBT compound) {
 		super.write(compound);
 		if (this.itemData != null) {
-			compound.put("Item", this.itemData);
+			compound.put("ItemTag", this.itemData);
 		}
 
 		return compound;
@@ -38,8 +42,11 @@ public class MBSkullTileEntity extends SkullTileEntity {
 	@Override
 	public void read(CompoundNBT compound) {
 		super.read(compound);
+
 		if (compound.contains("Item", 10)) {
 			this.itemData = compound.getCompound("Item");
+		} else if (compound.contains("ItemTag", 10)) {
+			this.itemData = compound.getCompound("ItemTag");
 		}
 	}
 }

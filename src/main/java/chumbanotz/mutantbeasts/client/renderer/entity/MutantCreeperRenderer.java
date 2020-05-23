@@ -8,10 +8,7 @@ import chumbanotz.mutantbeasts.client.renderer.entity.model.MutantCreeperModel;
 import chumbanotz.mutantbeasts.entity.mutant.MutantCreeperEntity;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
-@OnlyIn(Dist.CLIENT)
 public class MutantCreeperRenderer extends MutantRenderer<MutantCreeperEntity, MutantCreeperModel> {
 	private static final ResourceLocation TEXTURE = MutantBeasts.getEntityTexture("mutant_creeper");
 

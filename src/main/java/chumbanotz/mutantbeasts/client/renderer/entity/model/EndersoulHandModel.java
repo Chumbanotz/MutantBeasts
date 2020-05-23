@@ -7,11 +7,8 @@ import org.apache.commons.lang3.tuple.Pair;
 import net.minecraft.client.renderer.entity.model.RendererModel;
 import net.minecraft.client.renderer.model.IBakedModel;
 import net.minecraft.client.renderer.model.Model;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.model.BakedModelWrapper;
 
-@OnlyIn(Dist.CLIENT)
 public class EndersoulHandModel extends Model {
 //	public static final ResourceLocation GUI_LOCATION = new ModelResourceLocation(MutantBeasts.prefix("endersoul_hand_gui"), "inventory");
 //	public static final ResourceLocation MODEL_LOCATION = new ModelResourceLocation(MutantBeasts.prefix("endersoul_hand_model"), "inventory");
@@ -101,7 +98,7 @@ public class EndersoulHandModel extends Model {
 //		}
 //	}
 //
-//	@OnlyIn(Dist.CLIENT)
+
 //	static class Unbaked implements IUnbakedModel {
 //		@Override
 //		public IBakedModel bake(ModelBakery bakery, Function<ResourceLocation, TextureAtlasSprite> spriteGetter, ISprite sprite, VertexFormat format) {
@@ -126,7 +123,6 @@ public class EndersoulHandModel extends Model {
 //		}
 //	}
 
-	@OnlyIn(Dist.CLIENT)
 	public static class Baked extends BakedModelWrapper<IBakedModel> {
 		private final IBakedModel bakedModel;
 

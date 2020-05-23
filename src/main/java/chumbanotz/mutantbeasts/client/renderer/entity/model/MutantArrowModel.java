@@ -3,10 +3,7 @@ package chumbanotz.mutantbeasts.client.renderer.entity.model;
 import chumbanotz.mutantbeasts.entity.projectile.MutantArrowEntity;
 import net.minecraft.client.renderer.entity.model.EntityModel;
 import net.minecraft.client.renderer.entity.model.RendererModel;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
-@OnlyIn(Dist.CLIENT)
 public class MutantArrowModel extends EntityModel<MutantArrowEntity> {
 	private final RendererModel stick = new RendererModel(this, 0, 0);
 	private final RendererModel point1;

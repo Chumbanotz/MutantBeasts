@@ -255,7 +255,6 @@ public class MutantCreeperEntity extends MonsterEntity {
 		livingEntity.velocityChanged = true;
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	public int getExplosionColor() {
 		float f = (float)this.deathTime / (float)MAX_DEATH_TIME;
 
