@@ -48,7 +48,7 @@ import net.minecraft.world.GameRules;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 
-public final class EntityUtil {
+public class EntityUtil {
 	private static final Field STUN_TICK = ObfuscationReflectionHelper.findField(RavagerEntity.class, "field_213692_bA");
 
 	/** Copied exactly from {@link LivingEntity#canBlockDamageSource(DamageSource)}. */
@@ -275,6 +275,7 @@ public final class EntityUtil {
 		}
 	}
 
+	@Deprecated
 	public static void spawnEndersoulParticles(Entity entity) {
 		if (entity.world instanceof ServerWorld) {
 			for (int i = 0; i < 256; i++) {

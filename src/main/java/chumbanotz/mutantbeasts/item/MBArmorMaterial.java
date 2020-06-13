@@ -9,8 +9,6 @@ import net.minecraft.item.crafting.Ingredient;
 import net.minecraft.util.LazyLoadBase;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.util.SoundEvents;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
 public enum MBArmorMaterial implements IArmorMaterial {
 	MUTANT_SKELETON("mutant_skeleton", 15, new int[]{2, 5, 6, 2}, 9, SoundEvents.ITEM_ARMOR_EQUIP_GENERIC, 0.0F, () -> {
@@ -62,7 +60,6 @@ public enum MBArmorMaterial implements IArmorMaterial {
 	}
 
 	@Override
-	@OnlyIn(Dist.CLIENT)
 	public String getName() {
 		return MutantBeasts.MOD_ID + ':' + this.name;
 	}

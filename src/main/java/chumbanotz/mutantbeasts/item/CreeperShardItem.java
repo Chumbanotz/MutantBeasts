@@ -21,8 +21,6 @@ import net.minecraft.util.SoundCategory;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
 public class CreeperShardItem extends Item {
 	public CreeperShardItem(Item.Properties properties) {
@@ -35,7 +33,6 @@ public class CreeperShardItem extends Item {
 	}
 
 	@Override
-	@OnlyIn(Dist.CLIENT)
 	public boolean hasEffect(ItemStack stack) {
 		return super.hasEffect(stack) || stack.getDamage() == 0;
 	}

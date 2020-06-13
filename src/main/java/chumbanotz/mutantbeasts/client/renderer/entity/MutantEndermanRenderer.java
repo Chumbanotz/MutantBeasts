@@ -34,7 +34,7 @@ public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity,
 	public MutantEndermanRenderer(EntityRendererManager manager) {
 		super(manager, new MutantEndermanModel(), 0.8F);
 		this.addLayer(new MutantEndermanRenderer.EyesLayer(this));
-		this.addLayer(new MutantEndermanRenderer.GlowLayer(this));
+		this.addLayer(new MutantEndermanRenderer.SoulLayer(this));
 		this.addLayer(new MutantEndermanRenderer.HeldBlocksLayer(this));
 	}
 
@@ -134,8 +134,8 @@ public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity,
 		}
 	}
 
-	class GlowLayer extends EndersoulLayer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> {
-		public GlowLayer(IEntityRenderer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> entityRendererIn) {
+	class SoulLayer extends EndersoulLayer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> {
+		public SoulLayer(IEntityRenderer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> entityRendererIn) {
 			super(entityRendererIn);
 		}
 

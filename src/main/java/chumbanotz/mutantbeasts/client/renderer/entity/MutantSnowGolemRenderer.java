@@ -17,22 +17,13 @@ import net.minecraft.util.math.MathHelper;
 
 public class MutantSnowGolemRenderer extends MutantRenderer<MutantSnowGolemEntity, MutantSnowGolemModel> {
 	static final ResourceLocation TEXTURE = MutantBeasts.getEntityTexture("mutant_snow_golem/mutant_snow_golem");
-	private static final ResourceLocation PUMPKIN_TEXTURE = MutantBeasts.getEntityTexture("mutant_snow_golem/pumpkin");
+	private static final ResourceLocation JACK_O_LANTERN_TEXTURE = MutantBeasts.getEntityTexture("mutant_snow_golem/jack_o_lantern");
 	private static final ResourceLocation GLOW_TEXTURE = MutantBeasts.getEntityTexture("mutant_snow_golem/glow");
 
 	public MutantSnowGolemRenderer(EntityRendererManager manager) {
 		super(manager, new MutantSnowGolemModel(), 0.7F);
-		this.addLayer(new MutantSnowGolemRenderer.GlowLayer(this));
-		this.addLayer(new MutantSnowGolemRenderer.ThrownBlockLayer(this));
-	}
-
-	@Override
-	protected void renderModel(MutantSnowGolemEntity entitylivingbaseIn, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch, float scaleFactor) {
-		super.renderModel(entitylivingbaseIn, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scaleFactor);
-		if (!entitylivingbaseIn.isInvisible() && entitylivingbaseIn.isPumpkinEquipped()) {
-			this.bindTexture(PUMPKIN_TEXTURE);
-			this.entityModel.render(entitylivingbaseIn, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scaleFactor);
-		}
+		this.addLayer(new MutantSnowGolemRenderer.JackOLanternLayer(this));
+		this.addLayer(new MutantSnowGolemRenderer.HeldBlockLayer(this));
 	}
 
 	@Override
@@ -40,14 +31,19 @@ public class MutantSnowGolemRenderer extends MutantRenderer<MutantSnowGolemEntit
 		return TEXTURE;
 	}
 
-	static class GlowLayer extends LayerRenderer<MutantSnowGolemEntity, MutantSnowGolemModel> {
-		public GlowLayer(IEntityRenderer<MutantSnowGolemEntity, MutantSnowGolemModel> entityRendererIn) {
+	static class JackOLanternLayer extends LayerRenderer<MutantSnowGolemEntity, MutantSnowGolemModel> {
+		public JackOLanternLayer(IEntityRenderer<MutantSnowGolemEntity, MutantSnowGolemModel> entityRendererIn) {
 			super(entityRendererIn);
 		}
 
 		@Override
 		public void render(MutantSnowGolemEntity entityIn, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch, float scale) {
 			if (entityIn.isPumpkinEquipped()) {
+				if (!entityIn.isInvisible()) {
+					this.bindTexture(JACK_O_LANTERN_TEXTURE);
+					this.getEntityModel().render(entityIn, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scale);
+				}
+
 				this.bindTexture(GLOW_TEXTURE);
 				GlStateManager.disableLighting();
 				GLX.glMultiTexCoord2f(GLX.GL_TEXTURE1, 61680.0F, 0.0F);
@@ -69,8 +65,8 @@ public class MutantSnowGolemRenderer extends MutantRenderer<MutantSnowGolemEntit
 		}
 	}
 
-	static class ThrownBlockLayer extends LayerRenderer<MutantSnowGolemEntity, MutantSnowGolemModel> {
-		public ThrownBlockLayer(IEntityRenderer<MutantSnowGolemEntity, MutantSnowGolemModel> entityRendererIn) {
+	static class HeldBlockLayer extends LayerRenderer<MutantSnowGolemEntity, MutantSnowGolemModel> {
+		public HeldBlockLayer(IEntityRenderer<MutantSnowGolemEntity, MutantSnowGolemModel> entityRendererIn) {
 			super(entityRendererIn);
 		}
 

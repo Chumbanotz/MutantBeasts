@@ -19,8 +19,6 @@ import net.minecraft.util.SoundCategory;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.Util;
 import net.minecraft.world.World;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.brewing.IBrewingRecipe;
 
 public class ChemicalXItem extends Item {
@@ -47,7 +45,6 @@ public class ChemicalXItem extends Item {
 	}
 
 	@Override
-	@OnlyIn(Dist.CLIENT)
 	public boolean hasEffect(ItemStack stack) {
 		return true;
 	}

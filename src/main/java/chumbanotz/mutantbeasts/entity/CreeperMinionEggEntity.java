@@ -28,8 +28,6 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.network.FMLPlayMessages;
 import net.minecraftforge.fml.network.NetworkHooks;
 
@@ -117,14 +115,12 @@ public class CreeperMinionEggEntity extends Entity {
 	}
 
 	@Override
-	@OnlyIn(Dist.CLIENT)
 	public void setPositionAndRotationDirect(double x, double y, double z, float yaw, float pitch, int posRotationIncrements, boolean teleport) {
 		super.setPositionAndRotationDirect(x, y, z, yaw, pitch, posRotationIncrements, teleport);
 		this.setMotion(this.velocityX, this.velocityY, this.velocityZ);
 	}
 
 	@Override
-	@OnlyIn(Dist.CLIENT)
 	public void setVelocity(double x, double y, double z) {
 		super.setVelocity(x, y, z);
 		this.velocityX = x;

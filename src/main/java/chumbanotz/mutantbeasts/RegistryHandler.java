@@ -143,8 +143,8 @@ public class RegistryHandler {
 	@SubscribeEvent
 	public static void registerParticleTypes(RegistryEvent.Register<ParticleType<?>> event) {
 		event.getRegistry().registerAll(
-				setRegistryName("skull_spirit", new BasicParticleType(true)),
-				setRegistryName("large_portal", new BasicParticleType(false))
+				setRegistryName("endersoul", new BasicParticleType(false)),
+				setRegistryName("skull_spirit", new BasicParticleType(true))
 				);
 	}
 
@@ -156,6 +156,8 @@ public class RegistryHandler {
 				createSoundEvent("entity.creeper_minion.hurt"),
 				createSoundEvent("entity.creeper_minion.primed"),
 				createSoundEvent("entity.creeper_minion_egg.hatch"),
+				createSoundEvent("entity.endersoul_clone.death"),
+				createSoundEvent("entity.endersoul_clone.teleport"),
 				createSoundEvent("entity.endersoul_fragment.explode"),
 				createSoundEvent("entity.mutant_creeper.ambient"),
 				createSoundEvent("entity.mutant_creeper.charge"),
@@ -164,6 +166,7 @@ public class RegistryHandler {
 				createSoundEvent("entity.mutant_enderman.ambient"),
 				createSoundEvent("entity.mutant_enderman.death"),
 				createSoundEvent("entity.mutant_enderman.hurt"),
+				createSoundEvent("entity.mutant_enderman.morph"),
 				createSoundEvent("entity.mutant_enderman.scream"),
 				createSoundEvent("entity.mutant_enderman.stare"),
 				createSoundEvent("entity.mutant_enderman.teleport"),

@@ -48,8 +48,6 @@ import net.minecraft.world.GameRules;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
 public class MutantCreeperEntity extends MonsterEntity {
 	private static final DataParameter<Byte> STATUS = EntityDataManager.createKey(MutantCreeperEntity.class, DataSerializers.BYTE);
@@ -214,7 +212,6 @@ public class MutantCreeperEntity extends MonsterEntity {
 	}
 
 	@Override
-	@OnlyIn(Dist.CLIENT)
 	public void handleStatusUpdate(byte id) {
 		if (id == 6) {
 			EntityUtil.spawnParticlesAtEntity(this, ParticleTypes.HEART, 15);

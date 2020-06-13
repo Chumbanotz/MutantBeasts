@@ -6,7 +6,7 @@ import chumbanotz.mutantbeasts.MutantBeasts;
 import chumbanotz.mutantbeasts.entity.CreeperMinionEntity;
 import chumbanotz.mutantbeasts.item.MBItems;
 import chumbanotz.mutantbeasts.packet.CreeperMinionTrackerPacket;
-import chumbanotz.mutantbeasts.packet.PacketHandler;
+import chumbanotz.mutantbeasts.packet.MBPacketHandler;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.Widget;
 import net.minecraft.client.gui.widget.button.Button;
@@ -39,17 +39,17 @@ public class CreeperMinionTrackerScreen extends Screen {
 		int buttonWidth = this.xSize / 2 - 10;
 		this.addButton(new Button(this.guiX + 8, this.guiY + this.ySize - 78, buttonWidth * 2 + 4, 20, this.canDestroyBlocks(), button -> {
 			this.canDestroyBlocks = !this.canDestroyBlocks;
-			PacketHandler.sendToServer(new CreeperMinionTrackerPacket(this.creeperMinion, 0, this.canDestroyBlocks));
+			MBPacketHandler.INSTANCE.sendToServer(new CreeperMinionTrackerPacket(this.creeperMinion, 0, this.canDestroyBlocks));
 			button.setMessage(this.canDestroyBlocks());
 		}));
 		this.addButton(new Button(this.guiX + 8, this.guiY + this.ySize - 54, buttonWidth * 2 + 4, 20, this.alwaysShowName(), button -> {
 			this.alwaysShowName = !this.alwaysShowName;
-			PacketHandler.sendToServer(new CreeperMinionTrackerPacket(this.creeperMinion, 1, this.alwaysShowName));
+			MBPacketHandler.INSTANCE.sendToServer(new CreeperMinionTrackerPacket(this.creeperMinion, 1, this.alwaysShowName));
 			button.setMessage(this.alwaysShowName());
 		}));
 		this.addButton(new Button(this.guiX + 8, this.guiY + this.ySize - 30, buttonWidth * 2 + 4, 20, this.canRideOnShoulder(), button -> {
 			this.canRideOnShoulder = !this.canRideOnShoulder;
-			PacketHandler.sendToServer(new CreeperMinionTrackerPacket(this.creeperMinion, 2, this.canRideOnShoulder));
+			MBPacketHandler.INSTANCE.sendToServer(new CreeperMinionTrackerPacket(this.creeperMinion, 2, this.canRideOnShoulder));
 			button.setMessage(this.canRideOnShoulder());
 		}));
 

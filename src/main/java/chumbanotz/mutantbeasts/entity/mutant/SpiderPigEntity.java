@@ -65,8 +65,6 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
 public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 	private static final DataParameter<Boolean> CLIMBING = EntityDataManager.createKey(SpiderPigEntity.class, DataSerializers.BOOLEAN);
@@ -331,7 +329,6 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 	}
 
 	@Override
-	@OnlyIn(Dist.CLIENT)
 	public void setJumpPower(int jumpPowerIn) {
 		this.chargeExhaustion += 50 * jumpPowerIn / 100;
 		this.chargePower = 1.0F * (float)jumpPowerIn / 100.0F;

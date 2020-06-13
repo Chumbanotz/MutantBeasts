@@ -22,8 +22,6 @@ import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.network.FMLPlayMessages;
 import net.minecraftforge.fml.network.NetworkHooks;
 
@@ -96,14 +94,12 @@ public class BodyPartEntity extends Entity {
 	}
 
 	@Override
-	@OnlyIn(Dist.CLIENT)
 	public void setPositionAndRotationDirect(double x, double y, double z, float yaw, float pitch, int posRotationIncrements, boolean teleport) {
 		this.setPosition(x, y, z);
 		this.setMotion(this.velocityX, this.velocityY, this.velocityZ);
 	}
 
 	@Override
-	@OnlyIn(Dist.CLIENT)
 	public void setVelocity(double x, double y, double z) {
 		this.velocityX = x;
 		this.velocityY = y;
@@ -129,7 +125,7 @@ public class BodyPartEntity extends Entity {
 			this.rotationYaw += 10.0F * (float)(this.yawPositive ? 1 : -1);
 			this.rotationPitch += 15.0F * (float)(this.pitchPositive ? 1 : -1);
 			for (Entity entity : this.world.getEntitiesInAABBexcluding(this, this.getBoundingBox(), this::canHarm)) {
-				entity.setFireTimer(this.getFireTimer());
+				entity.setFire(this.getFireTimer() / 20);
 				entity.attackEntityFrom(DamageSource.causeThrownDamage(this, this.owner != null ? this.owner.get() : this), 4.0F + (float)this.rand.nextInt(4));
 			}
 

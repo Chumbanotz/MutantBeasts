@@ -94,32 +94,32 @@ public class MutantSnowGolemModel extends EntityModel<MutantSnowGolemEntity> {
 		this.chest.rotateAngleX = 0.1308997F;
 		this.chest.rotateAngleY = 0.0F;
 		this.head.rotateAngleX = -0.2617994F;
-		this.head.getJoint().rotateAngleX = 0.0F;
-		this.head.getJoint().rotateAngleY = 0.0F;
+		this.head.getModel().rotateAngleX = 0.0F;
+		this.head.getModel().rotateAngleY = 0.0F;
 		this.arm1.rotateAngleX = -0.31415927F;
 		this.arm1.rotateAngleZ = 0.0F;
-		this.arm1.getJoint().rotateAngleX = 0.0F;
-		this.arm1.getJoint().rotateAngleY = 0.5235988F;
-		this.arm1.getJoint().rotateAngleZ = 0.5235988F;
+		this.arm1.getModel().rotateAngleX = 0.0F;
+		this.arm1.getModel().rotateAngleY = 0.5235988F;
+		this.arm1.getModel().rotateAngleZ = 0.5235988F;
 		this.forearm1.rotateAngleY = -0.5235988F;
 		this.forearm1.rotateAngleZ = -0.2617994F;
-		this.forearm1.getJoint().rotateAngleX = -0.5235988F;
+		this.forearm1.getModel().rotateAngleX = -0.5235988F;
 		this.arm2.rotateAngleX = -0.31415927F;
 		this.arm2.rotateAngleZ = 0.0F;
-		this.arm2.getJoint().rotateAngleX = 0.0F;
-		this.arm2.getJoint().rotateAngleY = -0.5235988F;
-		this.arm2.getJoint().rotateAngleZ = -0.5235988F;
+		this.arm2.getModel().rotateAngleX = 0.0F;
+		this.arm2.getModel().rotateAngleY = -0.5235988F;
+		this.arm2.getModel().rotateAngleZ = -0.5235988F;
 		this.forearm2.rotateAngleY = 0.5235988F;
 		this.forearm2.rotateAngleZ = 0.2617994F;
-		this.forearm2.getJoint().rotateAngleX = -0.5235988F;
+		this.forearm2.getModel().rotateAngleX = -0.5235988F;
 		this.leg1.rotateAngleX = -0.62831855F;
-		this.leg1.getJoint().rotateAngleZ = 0.5235988F;
+		this.leg1.getModel().rotateAngleZ = 0.5235988F;
 		this.foreleg1.rotateAngleZ = -0.5235988F;
-		this.foreleg1.getJoint().rotateAngleX = 0.69813174F;
+		this.foreleg1.getModel().rotateAngleX = 0.69813174F;
 		this.leg2.rotateAngleX = -0.62831855F;
-		this.leg2.getJoint().rotateAngleZ = -0.5235988F;
+		this.leg2.getModel().rotateAngleZ = -0.5235988F;
 		this.foreleg2.rotateAngleZ = 0.5235988F;
-		this.foreleg2.getJoint().rotateAngleX = 0.69813174F;
+		this.foreleg2.getModel().rotateAngleX = 0.69813174F;
 		this.animate(entityIn, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scaleFactor);
 	}
 
@@ -138,24 +138,24 @@ public class MutantSnowGolemModel extends EntityModel<MutantSnowGolemEntity> {
 			walkAnim *= scale1;
 		}
 
-		this.head.getJoint().rotateAngleX -= breatheAnim * 0.01F;
+		this.head.getModel().rotateAngleX -= breatheAnim * 0.01F;
 		this.chest.rotateAngleX -= breatheAnim * 0.01F;
 		this.arm1.rotateAngleZ += breatheAnim * 0.03F;
 		this.arm2.rotateAngleZ -= breatheAnim * 0.03F;
-		this.head.getJoint().rotateAngleX += facePitch;
-		this.head.getJoint().rotateAngleY += faceYaw;
+		this.head.getModel().rotateAngleX += facePitch;
+		this.head.getModel().rotateAngleY += faceYaw;
 		this.pelvis.rotationPointY += Math.abs(walkAnim) * 1.5F;
 		this.abdomen.rotateAngleX += limbSwingAmount * 0.2F;
 		this.chest.rotateAngleY -= walkAnim * 0.1F;
 		this.head.rotateAngleX -= limbSwingAmount * 0.2F;
 		this.arm1.rotateAngleX -= walkAnim * 0.6F;
 		this.arm2.rotateAngleX += walkAnim * 0.6F;
-		this.forearm1.getJoint().rotateAngleX -= walkAnim * 0.2F;
-		this.forearm2.getJoint().rotateAngleX += walkAnim * 0.2F;
+		this.forearm1.getModel().rotateAngleX -= walkAnim * 0.2F;
+		this.forearm2.getModel().rotateAngleX += walkAnim * 0.2F;
 		this.leg1.rotateAngleX += walkAnim1 * 1.1F;
 		this.leg2.rotateAngleX += walkAnim2 * 1.1F;
-		this.foreleg1.getJoint().rotateAngleX += walkAnim * 0.2F;
-		this.foreleg2.getJoint().rotateAngleX -= walkAnim * 0.2F;
+		this.foreleg1.getModel().rotateAngleX += walkAnim * 0.2F;
+		this.foreleg2.getModel().rotateAngleX -= walkAnim * 0.2F;
 	}
 
 	private void animateThrow(int fullTick) {
@@ -204,9 +204,9 @@ public class MutantSnowGolemModel extends EntityModel<MutantSnowGolemEntity> {
 		this.abdomen.postRender(scale);
 		this.chest.postRender(scale);
 		this.arm1.postRender(scale);
-		this.arm1.getJoint().postRender(scale);
+		this.arm1.getModel().postRender(scale);
 		this.forearm1.postRender(scale);
-		this.forearm1.getJoint().postRender(scale);
+		this.forearm1.getModel().postRender(scale);
 	}
 
 	@Override

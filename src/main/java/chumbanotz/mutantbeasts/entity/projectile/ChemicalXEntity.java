@@ -26,14 +26,12 @@ import net.minecraft.util.Util;
 import net.minecraft.util.math.EntityRayTraceResult;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.world.World;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.network.FMLPlayMessages;
 import net.minecraftforge.fml.network.NetworkHooks;
 
 public class ChemicalXEntity extends ProjectileItemEntity {
 	public static final Predicate<LivingEntity> IS_APPLICABLE = target -> {
-		return target.isNonBoss() && !ChemicalXEntity.MUTATIONS.containsValue(target.getType()) && target.getType() != MBEntityType.CREEPER_MINION;
+		return target.isNonBoss() && !ChemicalXEntity.MUTATIONS.containsValue(target.getType()) && target.getType() != MBEntityType.CREEPER_MINION && target.getType() != MBEntityType.ENDERSOUL_CLONE;
 	};
 	public static final EntityPredicate PREDICATE = new EntityPredicate().allowInvulnerable().setCustomPredicate(IS_APPLICABLE);
 	private static final Map<EntityType<? extends MobEntity>, EntityType<? extends MobEntity>> MUTATIONS = Util.make(new HashMap<>(), map -> {
@@ -72,7 +70,6 @@ public class ChemicalXEntity extends ProjectileItemEntity {
 	}
 
 	@Override
-	@OnlyIn(Dist.CLIENT)
 	public void handleStatusUpdate(byte id) {
 		if (id == 3) {
 			for (int i = 5 + this.rand.nextInt(3); i >= 0; --i) {
@@ -95,31 +92,24 @@ public class ChemicalXEntity extends ProjectileItemEntity {
 	protected void onImpact(RayTraceResult result) {
 		if (!this.world.isRemote) {
 			MobEntity target = null;
+			boolean directHit = false;
 
-			if (result.getType() == RayTraceResult.Type.ENTITY && ((EntityRayTraceResult)result).getEntity() instanceof MobEntity && IS_APPLICABLE.test((MobEntity)((EntityRayTraceResult)result).getEntity())) {
-				target = (MobEntity)((EntityRayTraceResult)result).getEntity();
-			} else {
-				target = this.world.getClosestEntityWithinAABB(MobEntity.class, PREDICATE, this.getThrower(), this.posX, this.posY, this.posZ, this.getBoundingBox().grow(12.0D, 8.0D, 12.0D));
-
-				boolean directHit = false;
-
-				if (result.getType() == RayTraceResult.Type.ENTITY) {
-					Entity entity = ((EntityRayTraceResult)result).getEntity();
-					if (entity instanceof MobEntity && PREDICATE.canTarget(null, (MobEntity)entity)) {
-						target = (MobEntity)entity;
-						directHit = true;
-					}
+			if (result.getType() == RayTraceResult.Type.ENTITY) {
+				Entity entity = ((EntityRayTraceResult)result).getEntity();
+				if (entity instanceof MobEntity && PREDICATE.canTarget(null, (MobEntity)entity)) {
+					target = (MobEntity)entity;
+					directHit = true;
 				}
+			}
 
-				if (!directHit) {
-					target = this.world.getClosestEntityWithinAABB(MobEntity.class, PREDICATE, null, this.posX, this.posY, this.posZ, this.getBoundingBox().grow(12.0D, 8.0D, 12.0D));
-				}
+			if (!directHit) {
+				target = this.world.getClosestEntityWithinAABB(MobEntity.class, PREDICATE, null, this.posX, this.posY, this.posZ, this.getBoundingBox().grow(12.0D, 8.0D, 12.0D));
+			}
 
-				if (target != null) {
-					SkullSpiritEntity spirit = new SkullSpiritEntity(this.world, target);
-					spirit.setPosition(this.posX, this.posY, this.posZ);
-					this.world.addEntity(spirit);
-				}
+			if (target != null) {
+				SkullSpiritEntity spirit = new SkullSpiritEntity(this.world, target);
+				spirit.setPosition(this.posX, this.posY, this.posZ);
+				this.world.addEntity(spirit);
 			}
 
 			this.world.setEntityState(this, (byte)3);
