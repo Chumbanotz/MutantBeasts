@@ -4,10 +4,7 @@ import chumbanotz.mutantbeasts.entity.CreeperMinionEntity;
 import net.minecraft.client.renderer.entity.model.EntityModel;
 import net.minecraft.client.renderer.entity.model.RendererModel;
 import net.minecraft.util.math.MathHelper;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
-@OnlyIn(Dist.CLIENT)
 public class CreeperMinionModel extends EntityModel<CreeperMinionEntity> {
 	private final RendererModel head;
 	private final RendererModel body;

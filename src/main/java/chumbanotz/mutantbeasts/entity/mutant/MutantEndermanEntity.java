@@ -17,7 +17,7 @@ import chumbanotz.mutantbeasts.entity.ai.goal.MBHurtByTargetGoal;
 import chumbanotz.mutantbeasts.entity.ai.goal.MBMeleeAttackGoal;
 import chumbanotz.mutantbeasts.entity.projectile.ThrowableBlockEntity;
 import chumbanotz.mutantbeasts.packet.HeldBlockPacket;
-import chumbanotz.mutantbeasts.packet.PacketHandler;
+import chumbanotz.mutantbeasts.packet.MBPacketHandler;
 import chumbanotz.mutantbeasts.particles.MBParticleTypes;
 import chumbanotz.mutantbeasts.pathfinding.MBGroundPathNavigator;
 import chumbanotz.mutantbeasts.util.EntityUtil;
@@ -63,8 +63,7 @@ import net.minecraft.util.text.ITextComponent;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
 import net.minecraft.world.dimension.DimensionType;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.fml.network.PacketDistributor;
 
 public class MutantEndermanEntity extends MonsterEntity {
 	private static final DataParameter<Optional<BlockPos>> TELEPORT_POSITION = EntityDataManager.createKey(MutantEndermanEntity.class, DataSerializers.OPTIONAL_BLOCK_POS);
@@ -157,7 +156,6 @@ public class MutantEndermanEntity extends MonsterEntity {
 		this.setAttackID(clone ? CLONE_ATTACK : 0);
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	public int getAttackID() {
 		return this.attackID;
 	}
@@ -167,7 +165,6 @@ public class MutantEndermanEntity extends MonsterEntity {
 		this.world.setEntityState(this, (byte)attackID);
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	public int getAttackTick() {
 		return this.attackTick;
 	}
@@ -226,7 +223,6 @@ public class MutantEndermanEntity extends MonsterEntity {
 		this.setAggroed(entitylivingbaseIn != null);
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	public float getArmScale(float partialTicks) {
 		return MathHelper.lerp(partialTicks, (float)this.prevArmScale, (float)this.armScale) / 10.0F;
 	}
@@ -293,7 +289,6 @@ public class MutantEndermanEntity extends MonsterEntity {
 	}
 
 	@Override
-	@OnlyIn(Dist.CLIENT)
 	public void handleStatusUpdate(byte id) {
 		if (id == 1) {
 			this.spawnBigParticles();
@@ -376,7 +371,7 @@ public class MutantEndermanEntity extends MonsterEntity {
 	private void updateTeleport() {
 		Entity entity = this.getAttackTarget();
 		this.teleportByChance(entity == null ? 1600 : 800, entity);
-		if (entity != null && (this.isRidingSameEntity(entity) || this.getDistanceSq(entity) > 1024.0D || !this.hasPath() && !this.canEntityBeSeen(entity))) {
+		if (this.isInWater() || entity != null && (this.isRidingSameEntity(entity) || this.getDistanceSq(entity) > 1024.0D || !this.hasPath() && !this.canEntityBeSeen(entity))) {
 			this.teleportByChance(10, entity);
 		}
 	}
@@ -669,7 +664,6 @@ public class MutantEndermanEntity extends MonsterEntity {
 		}
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	private void spawnBigParticles() {
 		int temp = 256;
 		if (this.attackID == TELEPORT_ATTACK) {
@@ -859,7 +853,7 @@ public class MutantEndermanEntity extends MonsterEntity {
 		if (!this.world.isRemote) {
 			this.heldBlock[blockIndex] = blockId;
 			this.heldBlockTick[blockIndex] = 0;
-			PacketHandler.sendToAllTracking(new HeldBlockPacket(this, blockId, blockIndex), this);
+			MBPacketHandler.INSTANCE.send(PacketDistributor.TRACKING_ENTITY.with(() -> this), new HeldBlockPacket(this, blockId, blockIndex));
 		}
 	}
 

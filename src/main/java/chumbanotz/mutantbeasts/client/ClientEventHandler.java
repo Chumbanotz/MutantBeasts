@@ -4,6 +4,7 @@ import java.util.Map;
 
 import chumbanotz.mutantbeasts.MutantBeasts;
 import chumbanotz.mutantbeasts.block.MBSkullBlock;
+import chumbanotz.mutantbeasts.client.gui.screen.CreeperMinionTrackerScreen;
 import chumbanotz.mutantbeasts.client.particle.EndersoulParticle;
 import chumbanotz.mutantbeasts.client.particle.SkullSpiritParticle;
 import chumbanotz.mutantbeasts.client.renderer.entity.BodyPartRenderer;
@@ -63,7 +64,9 @@ import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 
 @EventBusSubscriber(modid = MutantBeasts.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
-public class ClientEventHandler {
+public enum ClientEventHandler {
+	INSTANCE;
+
 	@SubscribeEvent
 	public static void onClientSetup(FMLClientSetupEvent event) {
 		ClientRegistry.registerEntityShader(CreeperMinionEntity.class, new ResourceLocation("shaders/post/creeper.json"));
@@ -119,5 +122,9 @@ public class ClientEventHandler {
 	public static void onParticleFactoryRegistry(ParticleFactoryRegisterEvent event) {
 		Minecraft.getInstance().particles.registerFactory(MBParticleTypes.ENDERSOUL, EndersoulParticle.Factory::new);
 		Minecraft.getInstance().particles.registerFactory(MBParticleTypes.SKULL_SPIRIT, SkullSpiritParticle.Factory::new);
+	}
+
+	public void displayCreeperMinionTrackerGUI(CreeperMinionEntity creeperMinion) {
+		Minecraft.getInstance().displayGuiScreen(new CreeperMinionTrackerScreen(creeperMinion));
 	}
 }

@@ -8,10 +8,7 @@ import net.minecraft.client.renderer.entity.model.EntityModel;
 import net.minecraft.client.renderer.entity.model.RendererModel;
 import net.minecraft.client.renderer.model.Model;
 import net.minecraft.util.math.MathHelper;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
-@OnlyIn(Dist.CLIENT)
 public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 	private final RendererModel pelvis;
 	private final RendererModel abdomen;
@@ -810,7 +807,6 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 		this.partialTick = partialTick;
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	static class Arm {
 		private final ScalableRendererModel arm;
 		private final RendererModel forearm;

@@ -12,10 +12,7 @@ import net.minecraft.client.renderer.entity.MobRenderer;
 import net.minecraft.client.renderer.entity.layers.LayerRenderer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
-@OnlyIn(Dist.CLIENT)
 public class CreeperMinionRenderer extends MobRenderer<CreeperMinionEntity, CreeperMinionModel> {
 	public static final ResourceLocation TEXTURE = new ResourceLocation("textures/entity/creeper/creeper.png");
 	public static final ResourceLocation COLLAR_TEXTURE = MutantBeasts.getEntityTexture("creeper_minion_collar");
@@ -57,7 +54,6 @@ public class CreeperMinionRenderer extends MobRenderer<CreeperMinionEntity, Cree
 		return TEXTURE;
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	static class CollarLayer extends LayerRenderer<CreeperMinionEntity, CreeperMinionModel> {
 		private final CreeperMinionModel creeperMinionModel = new CreeperMinionModel(0.01F);
 

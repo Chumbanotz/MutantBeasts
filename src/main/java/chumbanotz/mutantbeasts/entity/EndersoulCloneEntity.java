@@ -22,8 +22,6 @@ import net.minecraft.scoreboard.Team;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.world.World;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
 public class EndersoulCloneEntity extends MonsterEntity {
 	private MutantEndermanEntity cloner;
@@ -70,7 +68,6 @@ public class EndersoulCloneEntity extends MonsterEntity {
 	}
 
 	@Override
-	@OnlyIn(Dist.CLIENT)
 	public void handleStatusUpdate(byte id) {
 		super.handleStatusUpdate(id);
 		if (id == 3) {

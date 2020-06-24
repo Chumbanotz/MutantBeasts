@@ -10,10 +10,7 @@ import net.minecraft.client.renderer.entity.layers.LayerRenderer;
 import net.minecraft.client.renderer.entity.model.EntityModel;
 import net.minecraft.entity.MobEntity;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
-@OnlyIn(Dist.CLIENT)
 public class EndersoulLayer<T extends MobEntity, M extends EntityModel<T>> extends LayerRenderer<T, M> {
 	private static final ResourceLocation TEXTURE = MutantBeasts.getEntityTexture("endersoul");
 

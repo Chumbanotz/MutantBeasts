@@ -8,11 +8,7 @@ import chumbanotz.mutantbeasts.entity.mutant.MutantZombieEntity;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.text.TextFormatting;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
-@OnlyIn(Dist.CLIENT)
 public class MutantZombieRenderer extends MutantRenderer<MutantZombieEntity, MutantZombieModel> {
 	private static final ResourceLocation TEXTURE = MutantBeasts.getEntityTexture("mutant_zombie");
 
@@ -44,37 +40,33 @@ public class MutantZombieRenderer extends MutantRenderer<MutantZombieEntity, Mut
 
 	@Override
 	protected void applyRotations(MutantZombieEntity entityLiving, float ageInTicks, float rotationYaw, float partialTicks) {
-		GlStateManager.rotatef(180.0F - rotationYaw, 0.0F, 1.0F, 0.0F);
-		int pitch = Math.min(20, entityLiving.deathTime);
-		boolean reviving = false;
+		if (entityLiving.deathTime > 0) {
+			GlStateManager.rotatef(180.0F - rotationYaw, 0.0F, 1.0F, 0.0F);
+			int pitch = Math.min(20, entityLiving.deathTime);
+			boolean reviving = false;
 
-		if (entityLiving.deathTime > MutantZombieEntity.MAX_DEATH_TIME - 40) {
-			pitch = MutantZombieEntity.MAX_DEATH_TIME - entityLiving.deathTime;
-			reviving = true;
-		}
-
-		if (pitch > 0) {
-			float f = ((float)pitch + partialTicks - 1.0F) / 20.0F * 1.6F;
-
-			if (reviving) {
-				f = ((float)pitch - partialTicks) / 40.0F * 1.6F;
+			if (entityLiving.deathTime > MutantZombieEntity.MAX_DEATH_TIME - 40) {
+				pitch = MutantZombieEntity.MAX_DEATH_TIME - entityLiving.deathTime;
+				reviving = true;
 			}
 
-			f = MathHelper.sqrt(f);
+			if (pitch > 0) {
+				float f = ((float)pitch + partialTicks - 1.0F) / 20.0F * 1.6F;
 
-			if (f > 1.0F) {
-				f = 1.0F;
+				if (reviving) {
+					f = ((float)pitch - partialTicks) / 40.0F * 1.6F;
+				}
+
+				f = MathHelper.sqrt(f);
+
+				if (f > 1.0F) {
+					f = 1.0F;
+				}
+
+				GlStateManager.rotatef(f * this.getDeathMaxRotation(entityLiving), -1.0F, 0.0F, 0.0F);
 			}
-
-			GlStateManager.rotatef(f * this.getDeathMaxRotation(entityLiving), -1.0F, 0.0F, 0.0F);
-		}
-
-		if (entityLiving.deathTime > 0 && entityLiving.hasCustomName()) {
-			String s = TextFormatting.getTextWithoutFormattingCodes(entityLiving.getName().getString());
-			if (s != null && ("Dinnerbone".equals(s) || "Grumm".equals(s))) {
-				GlStateManager.translatef(0.0F, entityLiving.getHeight() + 0.1F, 0.0F);
-				GlStateManager.rotatef(180.0F, 0.0F, 0.0F, 1.0F);
-			}
+		} else {
+			super.applyRotations(entityLiving, ageInTicks, rotationYaw, partialTicks);
 		}
 	}
 

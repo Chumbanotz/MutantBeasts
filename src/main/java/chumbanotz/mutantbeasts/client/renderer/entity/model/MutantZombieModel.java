@@ -4,10 +4,7 @@ import chumbanotz.mutantbeasts.entity.mutant.MutantZombieEntity;
 import net.minecraft.client.renderer.entity.model.EntityModel;
 import net.minecraft.client.renderer.entity.model.RendererModel;
 import net.minecraft.util.math.MathHelper;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
-@OnlyIn(Dist.CLIENT)
 public class MutantZombieModel extends EntityModel<MutantZombieEntity> {
 	private final RendererModel pelvis;
 	private final RendererModel waist;

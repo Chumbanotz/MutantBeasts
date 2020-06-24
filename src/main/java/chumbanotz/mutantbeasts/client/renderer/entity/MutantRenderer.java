@@ -9,10 +9,7 @@ import net.minecraft.client.renderer.entity.model.EntityModel;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.entity.MobEntity;
 import net.minecraft.util.Util;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
-@OnlyIn(Dist.CLIENT)
 public abstract class MutantRenderer<T extends MobEntity, M extends EntityModel<T>> extends MobRenderer<T, M> {
 	private static final DynamicTexture TEXTURE_BRIGHTNESS = Util.make(new DynamicTexture(16, 16, false), (dynamicTexture) -> {
 		dynamicTexture.getTextureData().untrack();

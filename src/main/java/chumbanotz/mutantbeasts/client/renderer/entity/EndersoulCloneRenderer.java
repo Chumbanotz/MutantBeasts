@@ -6,10 +6,7 @@ import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.client.renderer.entity.MobRenderer;
 import net.minecraft.client.renderer.entity.model.EndermanModel;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
-@OnlyIn(Dist.CLIENT)
 public class EndersoulCloneRenderer extends MobRenderer<EndersoulCloneEntity, EndermanModel<EndersoulCloneEntity>> {
 	public EndersoulCloneRenderer(EntityRendererManager renderManagerIn) {
 		super(renderManagerIn, new EndermanModel<>(0.0F), 0.5F);

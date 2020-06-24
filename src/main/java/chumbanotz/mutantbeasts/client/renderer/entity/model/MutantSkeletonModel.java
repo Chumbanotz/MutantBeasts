@@ -8,10 +8,7 @@ import net.minecraft.client.renderer.entity.model.EntityModel;
 import net.minecraft.client.renderer.entity.model.RendererModel;
 import net.minecraft.client.renderer.model.Model;
 import net.minecraft.util.math.MathHelper;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
-@OnlyIn(Dist.CLIENT)
 public class MutantSkeletonModel extends EntityModel<MutantSkeletonEntity> {
 	private final RendererModel skeleBase;
 	private final RendererModel pelvis;
@@ -142,20 +139,20 @@ public class MutantSkeletonModel extends EntityModel<MutantSkeletonEntity> {
 		this.jaw.rotateAngleX = 0.09817477F;
 		this.shoulder1.rotateAngleX = -0.7853982F;
 		this.shoulder2.rotateAngleX = -0.7853982F;
-		this.arm1.getJoint().rotateAngleX = 0.5235988F;
-		this.arm1.getJoint().rotateAngleZ = 0.31415927F;
-		this.arm2.getJoint().rotateAngleX = 0.5235988F;
-		this.arm2.getJoint().rotateAngleZ = -0.31415927F;
-		this.forearm1.getJoint().rotateAngleX = -0.5235988F;
-		this.forearm2.getJoint().rotateAngleX = -0.5235988F;
+		this.arm1.getModel().rotateAngleX = 0.5235988F;
+		this.arm1.getModel().rotateAngleZ = 0.31415927F;
+		this.arm2.getModel().rotateAngleX = 0.5235988F;
+		this.arm2.getModel().rotateAngleZ = -0.31415927F;
+		this.forearm1.getModel().rotateAngleX = -0.5235988F;
+		this.forearm2.getModel().rotateAngleX = -0.5235988F;
 		this.leg1.rotateAngleX = -0.2617994F - this.pelvis.rotateAngleX;
 		this.leg1.rotateAngleZ = 0.19634955F;
 		this.leg2.rotateAngleX = -0.2617994F - this.pelvis.rotateAngleX;
 		this.leg2.rotateAngleZ = -0.19634955F;
 		this.foreleg1.rotateAngleZ = -0.1308997F;
-		this.foreleg1.getJoint().rotateAngleX = 0.31415927F;
+		this.foreleg1.getModel().rotateAngleX = 0.31415927F;
 		this.foreleg2.rotateAngleZ = 0.1308997F;
-		this.foreleg2.getJoint().rotateAngleX = 0.31415927F;
+		this.foreleg2.getModel().rotateAngleX = 0.31415927F;
 		this.crossbow.setAngles((float)Math.PI);
 	}
 
@@ -203,8 +200,8 @@ public class MutantSkeletonModel extends EntityModel<MutantSkeletonEntity> {
 		this.arm2.rotateAngleX += walkAnim1 * 0.9F * f1;
 		this.leg1.rotateAngleX += (0.2F + walkAnim1) * 1.0F * f1;
 		this.leg2.rotateAngleX -= (-0.2F + walkAnim1) * 1.0F * f1;
-		this.foreleg1.getJoint().rotateAngleX += (0.6F + walkAnim2) * 0.6F * f1;
-		this.foreleg2.getJoint().rotateAngleX -= (-0.6F + walkAnim2) * 0.6F * f1;
+		this.foreleg1.getModel().rotateAngleX += (0.6F + walkAnim2) * 0.6F * f1;
+		this.foreleg2.getModel().rotateAngleX -= (-0.6F + walkAnim2) * 0.6F * f1;
 
 		for (Spine spine : this.spine) {
 			spine.animate(breatheAnim);
@@ -214,8 +211,8 @@ public class MutantSkeletonModel extends EntityModel<MutantSkeletonEntity> {
 		this.jaw.rotateAngleX += breatheAnim * 0.04F + 0.04F;
 		this.arm1.rotateAngleZ += breatheAnim * 0.025F;
 		this.arm2.rotateAngleZ -= breatheAnim * 0.025F;
-		this.head.getJoint().rotateAngleX += facePitch;
-		this.head.getJoint().rotateAngleY += faceYaw;
+		this.head.getModel().rotateAngleX += facePitch;
+		this.head.getModel().rotateAngleY += faceYaw;
 	}
 
 	protected void animateMelee(int fullTick) {
@@ -273,14 +270,14 @@ public class MutantSkeletonModel extends EntityModel<MutantSkeletonEntity> {
 		if (fullTick < 5) {
 			tick = ((float)fullTick + this.partialTick) / 5.0F;
 			f = MathHelper.sin(tick * (float)Math.PI / 2.0F);
-			this.arm1.getJoint().rotateAngleX += -f * (float)Math.PI / 4.0F;
+			this.arm1.getModel().rotateAngleX += -f * (float)Math.PI / 4.0F;
 			this.arm1.rotateAngleY += -f * (float)Math.PI / 2.0F;
 			this.arm1.rotateAngleZ += f * (float)Math.PI / 16.0F;
 			this.forearm1.rotateAngleX += f * (float)Math.PI / 7.0F;
-			this.arm2.getJoint().rotateAngleX += -f * (float)Math.PI / 4.0F;
+			this.arm2.getModel().rotateAngleX += -f * (float)Math.PI / 4.0F;
 			this.arm2.rotateAngleY += f * (float)Math.PI / 2.0F;
 			this.arm2.rotateAngleZ += -f * (float)Math.PI / 16.0F;
-			this.arm2.getJoint().rotateAngleZ += -f * (float)Math.PI / 8.0F;
+			this.arm2.getModel().rotateAngleZ += -f * (float)Math.PI / 8.0F;
 			this.forearm2.rotateAngleX += -f * (float)Math.PI / 6.0F;
 			this.crossbow.rotateRope();
 		} else if (fullTick < 12) {
@@ -288,7 +285,7 @@ public class MutantSkeletonModel extends EntityModel<MutantSkeletonEntity> {
 			f = MathHelper.cos(tick * (float)Math.PI / 2.0F);
 			float f1 = MathHelper.sin(tick * (float)Math.PI / 2.0F);
 			float f1s = MathHelper.sin(tick * (float)Math.PI / 2.0F * 0.4F);
-			this.head.getJoint().rotateAngleY += f1 * (float)Math.PI / 4.0F;
+			this.head.getModel().rotateAngleY += f1 * (float)Math.PI / 4.0F;
 
 			for (Spine spine : this.spine) {
 				spine.middle.rotateAngleY += -f1 * (float)Math.PI / 12.0F;
@@ -296,14 +293,14 @@ public class MutantSkeletonModel extends EntityModel<MutantSkeletonEntity> {
 				spine.middle.rotateAngleY += f1 * faceYaw / 3.0F;
 			}
 
-			this.arm1.getJoint().rotateAngleX += f * 0.2617994F - 1.0471976F;
+			this.arm1.getModel().rotateAngleX += f * 0.2617994F - 1.0471976F;
 			this.arm1.rotateAngleY += f * -0.9424778F - 0.62831855F;
 			this.arm1.rotateAngleZ += f * -0.850848F + 1.0471976F;
 			this.forearm1.rotateAngleX += 0.44879895F;
-			this.arm2.getJoint().rotateAngleX += f * 1.8325956F - 2.6179938F;
+			this.arm2.getModel().rotateAngleX += f * 1.8325956F - 2.6179938F;
 			this.arm2.rotateAngleY += f * 0.9424778F + 0.62831855F;
 			this.arm2.rotateAngleZ += f * 0.850848F - 1.0471976F;
-			this.arm2.getJoint().rotateAngleZ += -f * (float)Math.PI / 8.0F;
+			this.arm2.getModel().rotateAngleZ += -f * (float)Math.PI / 8.0F;
 			this.forearm2.rotateAngleX += f * 0.10471976F - 0.62831855F;
 			this.crossbow.middle1.rotateAngleX += -f1s * (float)Math.PI / 16.0F;
 			this.crossbow.side1.rotateAngleX += -f1s * (float)Math.PI / 24.0F;
@@ -313,7 +310,7 @@ public class MutantSkeletonModel extends EntityModel<MutantSkeletonEntity> {
 			this.crossbow.rope1.rotateAngleX += f1s * (float)Math.PI / 6.0F;
 			this.crossbow.rope2.rotateAngleX += -f1s * (float)Math.PI / 6.0F;
 		} else if (fullTick < 26) {
-			this.head.getJoint().rotateAngleY += 0.7853982F;
+			this.head.getModel().rotateAngleY += 0.7853982F;
 
 			for (Spine spine : this.spine) {
 				spine.middle.rotateAngleY += -0.2617994F;
@@ -321,11 +318,11 @@ public class MutantSkeletonModel extends EntityModel<MutantSkeletonEntity> {
 				spine.middle.rotateAngleY += faceYaw / 3.0F;
 			}
 
-			this.arm1.getJoint().rotateAngleX += -1.0471976F;
+			this.arm1.getModel().rotateAngleX += -1.0471976F;
 			this.arm1.rotateAngleY += -0.62831855F;
 			++this.arm1.rotateAngleZ;
 			this.forearm1.rotateAngleX += 0.44879895F;
-			this.arm2.getJoint().rotateAngleX += -2.6179938F;
+			this.arm2.getModel().rotateAngleX += -2.6179938F;
 			this.arm2.rotateAngleY += 0.62831855F;
 			this.arm2.rotateAngleZ += -1.0471976F;
 			this.forearm2.rotateAngleX += -0.62831855F;
@@ -341,7 +338,7 @@ public class MutantSkeletonModel extends EntityModel<MutantSkeletonEntity> {
 		} else if (fullTick < 30) {
 			tick = ((float)(fullTick - 26) + this.partialTick) / 4.0F;
 			f = MathHelper.cos(tick * (float)Math.PI / 2.0F);
-			this.head.getJoint().rotateAngleY += f * (float)Math.PI / 4.0F;
+			this.head.getModel().rotateAngleY += f * (float)Math.PI / 4.0F;
 
 			for (Spine spine : this.spine) {
 				spine.middle.rotateAngleY += -f * (float)Math.PI / 12.0F;
@@ -349,11 +346,11 @@ public class MutantSkeletonModel extends EntityModel<MutantSkeletonEntity> {
 				spine.middle.rotateAngleY += f * faceYaw / 3.0F;
 			}
 
-			this.arm1.getJoint().rotateAngleX += -f * (float)Math.PI / 3.0F;
+			this.arm1.getModel().rotateAngleX += -f * (float)Math.PI / 3.0F;
 			this.arm1.rotateAngleY += -f * (float)Math.PI / 5.0F;
 			this.arm1.rotateAngleZ += f * (float)Math.PI / 3.0F;
 			this.forearm1.rotateAngleX += f * (float)Math.PI / 7.0F;
-			this.arm2.getJoint().rotateAngleX += -f * (float)Math.PI / 1.2F;
+			this.arm2.getModel().rotateAngleX += -f * (float)Math.PI / 1.2F;
 			this.arm2.rotateAngleY += f * (float)Math.PI / 5.0F;
 			this.arm2.rotateAngleZ += -f * (float)Math.PI / 3.0F;
 			this.forearm2.rotateAngleX += -f * (float)Math.PI / 5.0F;
@@ -377,8 +374,8 @@ public class MutantSkeletonModel extends EntityModel<MutantSkeletonEntity> {
 			this.arm2.rotateAngleZ += -f * (float)Math.PI / 16.0F;
 			this.leg1.rotateAngleX += -f * (float)Math.PI / 8.0F;
 			this.leg2.rotateAngleX += -f * (float)Math.PI / 8.0F;
-			this.foreleg1.getJoint().rotateAngleX += f * (float)Math.PI / 4.0F;
-			this.foreleg2.getJoint().rotateAngleX += f * (float)Math.PI / 4.0F;
+			this.foreleg1.getModel().rotateAngleX += f * (float)Math.PI / 4.0F;
+			this.foreleg2.getModel().rotateAngleX += f * (float)Math.PI / 4.0F;
 			this.crossbow.rotateRope();
 		} else {
 			float f1;
@@ -396,8 +393,8 @@ public class MutantSkeletonModel extends EntityModel<MutantSkeletonEntity> {
 				this.arm2.rotateAngleZ += -f * (float)Math.PI / 16.0F;
 				this.leg1.rotateAngleX += -f * (float)Math.PI / 8.0F;
 				this.leg2.rotateAngleX += -f * (float)Math.PI / 8.0F;
-				this.foreleg1.getJoint().rotateAngleX += f * (float)Math.PI / 4.0F;
-				this.foreleg2.getJoint().rotateAngleX += f * (float)Math.PI / 4.0F;
+				this.foreleg1.getModel().rotateAngleX += f * (float)Math.PI / 4.0F;
+				this.foreleg2.getModel().rotateAngleX += f * (float)Math.PI / 4.0F;
 				this.arm1.rotateAngleZ += -f1 * (float)Math.PI / 14.0F;
 				this.arm2.rotateAngleZ += f1 * (float)Math.PI / 14.0F;
 				this.leg1.rotateAngleZ += -f1 * (float)Math.PI / 24.0F;
@@ -423,14 +420,14 @@ public class MutantSkeletonModel extends EntityModel<MutantSkeletonEntity> {
 				this.leg2.rotateAngleZ += f1 * (float)Math.PI / 24.0F;
 				this.foreleg1.rotateAngleZ += f1 * (float)Math.PI / 64.0F;
 				this.foreleg2.rotateAngleZ += -f1 * (float)Math.PI / 64.0F;
-				this.arm1.getJoint().rotateAngleX += -f * (float)Math.PI / 4.0F;
+				this.arm1.getModel().rotateAngleX += -f * (float)Math.PI / 4.0F;
 				this.arm1.rotateAngleY += -f * (float)Math.PI / 2.0F;
 				this.arm1.rotateAngleZ += f * (float)Math.PI / 16.0F;
 				this.forearm1.rotateAngleX += f * (float)Math.PI / 7.0F;
-				this.arm2.getJoint().rotateAngleX += -f * (float)Math.PI / 4.0F;
+				this.arm2.getModel().rotateAngleX += -f * (float)Math.PI / 4.0F;
 				this.arm2.rotateAngleY += f * (float)Math.PI / 2.0F;
 				this.arm2.rotateAngleZ += -f * (float)Math.PI / 16.0F;
-				this.arm2.getJoint().rotateAngleZ += -f * (float)Math.PI / 8.0F;
+				this.arm2.getModel().rotateAngleZ += -f * (float)Math.PI / 8.0F;
 				this.forearm2.rotateAngleX += -f * (float)Math.PI / 6.0F;
 				this.crossbow.rotateRope();
 			} else if (fullTick < 20) {
@@ -438,7 +435,7 @@ public class MutantSkeletonModel extends EntityModel<MutantSkeletonEntity> {
 				f = MathHelper.cos(tick * (float)Math.PI / 2.0F);
 				f1 = MathHelper.sin(tick * (float)Math.PI / 2.0F);
 				float f1s = MathHelper.sin(tick * (float)Math.PI / 2.0F * 0.4F);
-				this.head.getJoint().rotateAngleY += f1 * (float)Math.PI / 4.0F;
+				this.head.getModel().rotateAngleY += f1 * (float)Math.PI / 4.0F;
 
 				for (Spine spine : this.spine) {
 					spine.middle.rotateAngleY += -f1 * (float)Math.PI / 12.0F;
@@ -446,14 +443,14 @@ public class MutantSkeletonModel extends EntityModel<MutantSkeletonEntity> {
 					spine.middle.rotateAngleY += f1 * faceYaw / 3.0F;
 				}
 
-				this.arm1.getJoint().rotateAngleX += f * 0.2617994F - 1.0471976F;
+				this.arm1.getModel().rotateAngleX += f * 0.2617994F - 1.0471976F;
 				this.arm1.rotateAngleY += f * -0.9424778F - 0.62831855F;
 				this.arm1.rotateAngleZ += f * -0.850848F + 1.0471976F;
 				this.forearm1.rotateAngleX += 0.44879895F;
-				this.arm2.getJoint().rotateAngleX += f * 1.8325956F - 2.6179938F;
+				this.arm2.getModel().rotateAngleX += f * 1.8325956F - 2.6179938F;
 				this.arm2.rotateAngleY += f * 0.9424778F + 0.62831855F;
 				this.arm2.rotateAngleZ += f * 0.850848F - 1.0471976F;
-				this.arm2.getJoint().rotateAngleZ += -f * (float)Math.PI / 8.0F;
+				this.arm2.getModel().rotateAngleZ += -f * (float)Math.PI / 8.0F;
 				this.forearm2.rotateAngleX += f * 0.10471976F - 0.62831855F;
 				this.crossbow.middle1.rotateAngleX += -f1s * (float)Math.PI / 16.0F;
 				this.crossbow.side1.rotateAngleX += -f1s * (float)Math.PI / 24.0F;
@@ -463,7 +460,7 @@ public class MutantSkeletonModel extends EntityModel<MutantSkeletonEntity> {
 				this.crossbow.rope1.rotateAngleX += f1s * (float)Math.PI / 6.0F;
 				this.crossbow.rope2.rotateAngleX += -f1s * (float)Math.PI / 6.0F;
 			} else if (fullTick < 24) {
-				this.head.getJoint().rotateAngleY += 0.7853982F;
+				this.head.getModel().rotateAngleY += 0.7853982F;
 
 				for (Spine spine : this.spine) {
 					spine.middle.rotateAngleY += -0.2617994F;
@@ -471,11 +468,11 @@ public class MutantSkeletonModel extends EntityModel<MutantSkeletonEntity> {
 					spine.middle.rotateAngleY += faceYaw / 3.0F;
 				}
 
-				this.arm1.getJoint().rotateAngleX += -1.0471976F;
+				this.arm1.getModel().rotateAngleX += -1.0471976F;
 				this.arm1.rotateAngleY += -0.62831855F;
 				++this.arm1.rotateAngleZ;
 				this.forearm1.rotateAngleX += 0.44879895F;
-				this.arm2.getJoint().rotateAngleX += -2.6179938F;
+				this.arm2.getModel().rotateAngleX += -2.6179938F;
 				this.arm2.rotateAngleY += 0.62831855F;
 				this.arm2.rotateAngleZ += -1.0471976F;
 				this.forearm2.rotateAngleX += -0.62831855F;
@@ -491,7 +488,7 @@ public class MutantSkeletonModel extends EntityModel<MutantSkeletonEntity> {
 			} else if (fullTick < 28) {
 				tick = ((float)(fullTick - 24) + this.partialTick) / 4.0F;
 				f = MathHelper.cos(tick * (float)Math.PI / 2.0F);
-				this.head.getJoint().rotateAngleY += f * (float)Math.PI / 4.0F;
+				this.head.getModel().rotateAngleY += f * (float)Math.PI / 4.0F;
 
 				for (Spine spine : this.spine) {
 					spine.middle.rotateAngleY += -f * (float)Math.PI / 12.0F;
@@ -499,11 +496,11 @@ public class MutantSkeletonModel extends EntityModel<MutantSkeletonEntity> {
 					spine.middle.rotateAngleY += f * faceYaw / 3.0F;
 				}
 
-				this.arm1.getJoint().rotateAngleX += -f * (float)Math.PI / 3.0F;
+				this.arm1.getModel().rotateAngleX += -f * (float)Math.PI / 3.0F;
 				this.arm1.rotateAngleY += -f * (float)Math.PI / 5.0F;
 				this.arm1.rotateAngleZ += f * (float)Math.PI / 3.0F;
 				this.forearm1.rotateAngleX += f * (float)Math.PI / 7.0F;
-				this.arm2.getJoint().rotateAngleX += -f * (float)Math.PI / 1.2F;
+				this.arm2.getModel().rotateAngleX += -f * (float)Math.PI / 1.2F;
 				this.arm2.rotateAngleY += f * (float)Math.PI / 5.0F;
 				this.arm2.rotateAngleZ += -f * (float)Math.PI / 3.0F;
 				this.forearm2.rotateAngleX += -f * (float)Math.PI / 5.0F;
@@ -535,8 +532,8 @@ public class MutantSkeletonModel extends EntityModel<MutantSkeletonEntity> {
 		this.animator.move(this.skeleBase, 0.0F, 1.0F, 0.0F);
 		this.animator.rotate(this.leg1, -0.44879895F, 0.0F, 0.0F);
 		this.animator.rotate(this.leg2, -0.44879895F, 0.0F, 0.0F);
-		this.animator.rotate(this.foreleg1.getJoint(), 0.5235988F, 0.0F, 0.0F);
-		this.animator.rotate(this.foreleg2.getJoint(), 0.5235988F, 0.0F, 0.0F);
+		this.animator.rotate(this.foreleg1.getModel(), 0.5235988F, 0.0F, 0.0F);
+		this.animator.rotate(this.foreleg2.getModel(), 0.5235988F, 0.0F, 0.0F);
 		this.animator.endKeyframe();
 		this.animator.setStaticKeyframe(2);
 		this.animator.startKeyframe(1);
@@ -559,8 +556,8 @@ public class MutantSkeletonModel extends EntityModel<MutantSkeletonEntity> {
 		this.animator.move(this.skeleBase, 0.0F, 1.0F, 0.0F);
 		this.animator.rotate(this.leg1, -0.44879895F, 0.0F, 0.0F);
 		this.animator.rotate(this.leg2, -0.44879895F, 0.0F, 0.0F);
-		this.animator.rotate(this.foreleg1.getJoint(), 0.5235988F, 0.0F, 0.0F);
-		this.animator.rotate(this.foreleg2.getJoint(), 0.5235988F, 0.0F, 0.0F);
+		this.animator.rotate(this.foreleg1.getModel(), 0.5235988F, 0.0F, 0.0F);
+		this.animator.rotate(this.foreleg2.getModel(), 0.5235988F, 0.0F, 0.0F);
 		this.animator.endKeyframe();
 		this.animator.setStaticKeyframe(4);
 		this.animator.resetKeyframe(8);
@@ -595,7 +592,6 @@ public class MutantSkeletonModel extends EntityModel<MutantSkeletonEntity> {
 		this.partialTick = partialTick;
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	static class Spine {
 		public final RendererModel middle;
 		public final ScalableRendererModel[] side1;

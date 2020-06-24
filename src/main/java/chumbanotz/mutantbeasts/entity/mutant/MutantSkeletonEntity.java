@@ -40,8 +40,6 @@ import net.minecraft.util.SoundEvent;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
 public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEntity {
 	public static final byte MELEE_ATTACK = 4, SHOOT_ATTACK = 5, MULTI_SHOT_ATTACK = 6, CONSTRICT_RIBS_ATTACK = 7;
@@ -110,7 +108,6 @@ public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEnti
 	}
 
 	@Override
-	@OnlyIn(Dist.CLIENT)
 	public void handleStatusUpdate(byte id) {
 		if (id == 0 || id >= 4 && id <= 7) {
 			this.attackID = id;

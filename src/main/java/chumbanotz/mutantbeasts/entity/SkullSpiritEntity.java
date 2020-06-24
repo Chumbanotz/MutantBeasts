@@ -108,7 +108,7 @@ public class SkullSpiritEntity extends Entity {
 								}
 							}
 
-							for (ServerPlayerEntity serverplayerentity : this.world.getEntitiesWithinAABB(ServerPlayerEntity.class, mutant.getBoundingBox().grow(5.0D))) {
+							for (ServerPlayerEntity serverplayerentity : this.world.getEntitiesWithinAABB(ServerPlayerEntity.class, bb.grow(5.0D))) {
 								CriteriaTriggers.SUMMONED_ENTITY.trigger(serverplayerentity, mutant);
 							}
 						} else {

@@ -10,10 +10,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.tileentity.ItemStackTileEntityRenderer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
-@OnlyIn(Dist.CLIENT)
 public class MBItemStackTileEntityRenderer extends ItemStackTileEntityRenderer {
 	private static final ResourceLocation ENDER_SOUL_HAND_TEXTURE = MutantBeasts.prefix("textures/item/endersoul_hand_model.png");
 	private final EndersoulHandModel enderSoulHandModel = new EndersoulHandModel();

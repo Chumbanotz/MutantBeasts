@@ -12,24 +12,24 @@ import net.minecraftforge.fml.network.NetworkEvent;
 
 public class HeldBlockPacket {
 	private int entityId;
-	private short blockId;
+	private int blockId;
 	private byte blockIndex;
 
 	public HeldBlockPacket(MutantEndermanEntity enderman, int bId, int index) {
 		this.entityId = enderman.getEntityId();
-		this.blockId = (short)bId;
+		this.blockId = bId;
 		this.blockIndex = (byte)index;
 	}
 
 	void encode(PacketBuffer buffer) {
 		buffer.writeInt(this.entityId);
-		buffer.writeShort(this.blockId);
+		buffer.writeInt(this.blockId);
 		buffer.writeByte(this.blockIndex);
 	}
 
 	HeldBlockPacket(PacketBuffer buffer) {
 		this.entityId = buffer.readInt();
-		this.blockId = buffer.readShort();
+		this.blockId = buffer.readInt();
 		this.blockIndex = buffer.readByte();
 	}
 

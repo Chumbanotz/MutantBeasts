@@ -3,9 +3,9 @@ package chumbanotz.mutantbeasts.block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.WallSkullBlock;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.IBlockReader;
 import net.minecraft.world.World;
@@ -31,7 +31,7 @@ public class MBWallSkullBlock extends WallSkullBlock {
 	}
 
 	@Override
-	public void onBlockHarvested(World worldIn, BlockPos pos, BlockState state, PlayerEntity player) {
-		MBBlocks.MUTANT_SKELETON_SKULL.onBlockHarvested(worldIn, pos, state, player);
+	public ResourceLocation getLootTable() {
+		return MBBlocks.MUTANT_SKELETON_SKULL.getLootTable();
 	}
 }

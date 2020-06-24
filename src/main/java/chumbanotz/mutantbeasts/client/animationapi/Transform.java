@@ -1,9 +1,5 @@
 package chumbanotz.mutantbeasts.client.animationapi;
 
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-
-@OnlyIn(Dist.CLIENT)
 public class Transform {
     private float rotationX;
     private float rotationY;

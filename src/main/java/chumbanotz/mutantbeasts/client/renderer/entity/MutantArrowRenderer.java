@@ -9,10 +9,7 @@ import net.minecraft.client.renderer.culling.ICamera;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
-@OnlyIn(Dist.CLIENT)
 public class MutantArrowRenderer extends EntityRenderer<MutantArrowEntity> {
 	private static final ResourceLocation TEXTURE = MutantBeasts.getEntityTexture("mutant_arrow");
 	private final MutantArrowModel arrowModel = new MutantArrowModel();

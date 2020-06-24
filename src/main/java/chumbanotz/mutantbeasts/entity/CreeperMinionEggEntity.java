@@ -28,8 +28,6 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.fml.network.FMLPlayMessages;
 import net.minecraftforge.fml.network.NetworkHooks;
 
@@ -39,11 +37,8 @@ public class CreeperMinionEggEntity extends Entity {
 	private int health = 8;
 	private int age = (60 + this.rand.nextInt(40)) * 1200;
 	private int recentlyHit;
-	@OnlyIn(Dist.CLIENT)
 	private double velocityX;
-	@OnlyIn(Dist.CLIENT)
 	private double velocityY;
-	@OnlyIn(Dist.CLIENT)
 	private double velocityZ;
 
 	public CreeperMinionEggEntity(EntityType<? extends CreeperMinionEggEntity> type, World world) {
@@ -120,14 +115,12 @@ public class CreeperMinionEggEntity extends Entity {
 	}
 
 	@Override
-	@OnlyIn(Dist.CLIENT)
 	public void setPositionAndRotationDirect(double x, double y, double z, float yaw, float pitch, int posRotationIncrements, boolean teleport) {
 		super.setPositionAndRotationDirect(x, y, z, yaw, pitch, posRotationIncrements, teleport);
 		this.setMotion(this.velocityX, this.velocityY, this.velocityZ);
 	}
 
 	@Override
-	@OnlyIn(Dist.CLIENT)
 	public void setVelocity(double x, double y, double z) {
 		super.setVelocity(x, y, z);
 		this.velocityX = x;

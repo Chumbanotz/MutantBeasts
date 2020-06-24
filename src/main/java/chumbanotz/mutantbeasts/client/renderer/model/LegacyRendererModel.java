@@ -7,11 +7,8 @@ import net.minecraft.client.renderer.GLAllocation;
 import net.minecraft.client.renderer.Tessellator;
 import net.minecraft.client.renderer.entity.model.RendererModel;
 import net.minecraft.client.renderer.model.Model;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
 /** Taken from 1.12.2 ModelRenderer, to fix the issues with the Mutant Skeleton's crossbow */
-@OnlyIn(Dist.CLIENT)
 public class LegacyRendererModel extends RendererModel {
 	private boolean compiled;
 	private int displayList;

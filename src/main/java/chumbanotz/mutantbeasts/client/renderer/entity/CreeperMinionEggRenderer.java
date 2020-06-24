@@ -10,10 +10,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.util.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
-@OnlyIn(Dist.CLIENT)
 public class CreeperMinionEggRenderer extends EntityRenderer<CreeperMinionEggEntity> {
 	private static final ResourceLocation TEXTURE = MutantBeasts.getEntityTexture("creeper_minion_egg");
 	private final CreeperMinionEggModel eggModel = new CreeperMinionEggModel();

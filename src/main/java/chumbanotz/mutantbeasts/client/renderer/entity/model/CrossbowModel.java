@@ -2,10 +2,7 @@ package chumbanotz.mutantbeasts.client.renderer.entity.model;
 
 import chumbanotz.mutantbeasts.client.renderer.model.LegacyRendererModel;
 import net.minecraft.client.renderer.model.Model;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
-@OnlyIn(Dist.CLIENT)
 public class CrossbowModel {
 	public final LegacyRendererModel armwear;
 	public final LegacyRendererModel middle;

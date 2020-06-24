@@ -48,8 +48,6 @@ import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 
 public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackMob {
 	private static final DataParameter<Boolean> PUMPKIN_EQUIPPED = EntityDataManager.createKey(MutantSnowGolemEntity.class, DataSerializers.BOOLEAN);
@@ -131,12 +129,12 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 			this.attackEntityFrom(DamageSource.DROWN, 1.0F);
 		}
 
-		if (biomeTemp > 1.2F && !this.isPotionActive(Effects.FIRE_RESISTANCE)) {
+		if (biomeTemp > 1.2F) {
 			if (this.rand.nextFloat() > Math.min(80.0F, this.getHealth()) * 0.01F) {
-				this.world.setEntityState(this, (byte)4);
+				this.world.addParticle(ParticleTypes.FALLING_WATER, this.posX + (double)(this.rand.nextFloat() * this.getWidth() * 1.5F) - (double)this.getWidth(), this.posY - 0.15D + (double)(this.rand.nextFloat() * this.getHeight()), this.posZ + (double)(this.rand.nextFloat() * this.getWidth() * 1.5F) - (double)this.getWidth(), 0.0D, 0.0D, 0.0D);
 			}
 
-			if (this.ticksExisted % 60 == 0) {
+			if (this.ticksExisted % 60 == 0 && !this.isPotionActive(Effects.FIRE_RESISTANCE)) {
 				this.attackEntityFrom(DamageSource.ON_FIRE, 1.0F);
 			}
 		}
@@ -196,12 +194,10 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 		return false;
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	public boolean isThrowing() {
 		return this.isThrowing;
 	}
 
-	@OnlyIn(Dist.CLIENT)
 	public int getThrowingTick() {
 		return this.throwingTick;
 	}
@@ -213,17 +209,15 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 	}
 
 	@Override
-	@OnlyIn(Dist.CLIENT)
 	public void handleStatusUpdate(byte id) {
 		if (id == 0 || id == 1) {
 			this.isThrowing = id == 1 ? true : false;
 			this.throwingTick = 0;
-		} else if (id == 4) {
-			this.world.addParticle(ParticleTypes.FALLING_WATER, this.posX + (double)(this.rand.nextFloat() * this.getWidth() * 1.5F) - (double)this.getWidth(), this.posY - 0.15D + (double)(this.rand.nextFloat() * this.getHeight()), this.posZ + (double)(this.rand.nextFloat() * this.getWidth() * 1.5F) - (double)this.getWidth(), 0.0D, 0.0D, 0.0D);
-		} else if (id == 5 || id == 6 || id == 7) {
-			EntityUtil.spawnParticlesAtEntity(this, id == 5 ? ParticleTypes.HEART : new BlockParticleData(ParticleTypes.BLOCK, Blocks.SNOW.getDefaultState()), id == 5 ? 1 : id == 6 ? 10 : 30);
 		} else {
 			super.handleStatusUpdate(id);
+			if (id == 2 || id == 33 || id == 36 || id == 37 || id == 44) {
+				EntityUtil.spawnParticlesAtEntity(this, new BlockParticleData(ParticleTypes.BLOCK, Blocks.SNOW.getDefaultState()), 30);
+			}
 		}
 	}
 
@@ -234,18 +228,13 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 		} else if (source.getImmediateSource() instanceof SnowballEntity) {
 			if (this.getHealth() < this.getMaxHealth()) {
 				this.heal(1.0F);
-				this.world.setEntityState(this, (byte)5);
-				this.world.setEntityState(this, (byte)6);
+				EntityUtil.spawnParticlesAtEntity(this, ParticleTypes.HEART, 1);
+				EntityUtil.spawnParticlesAtEntity(this, new BlockParticleData(ParticleTypes.BLOCK, Blocks.SNOW.getDefaultState()), 10);
 			}
 
 			return false;
 		} else {
-			boolean flag = super.attackEntityFrom(source, amount);
-			if (flag && amount > 0.0F) {
-				this.world.setEntityState(this, (byte)7);
-			}
-
-			return flag;
+			return super.attackEntityFrom(source, amount);
 		}
 	}
 
