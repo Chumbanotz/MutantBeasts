@@ -10,7 +10,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 
 public class AvoidDamageGoal extends PanicGoal {
-	protected final BooleanSupplier avoidsAttacker;
+	private final BooleanSupplier avoidsAttacker;
 
 	public AvoidDamageGoal(CreatureEntity creature, double speed) {
 		this(creature, speed, () -> false);
@@ -23,20 +23,33 @@ public class AvoidDamageGoal extends PanicGoal {
 
 	@Override
 	public boolean shouldExecute() {
-		Vec3d vec3d = null;
-		if (this.creature.isBurning() || this.creature.getLastDamageSource() != null && this.creature.getLastDamageSource().isFireDamage() && this.creature.hurtResistantTime > 10) {
+		if (this.creature.isBurning()) {
+			if (this.creature.world.isRaining()) {
+				for (int i = 0; i < 10; ++i) {
+					BlockPos blockpos1 = this.creature.getPosition().add(this.creature.getRNG().nextInt(20) - 10, this.creature.getRNG().nextInt(6) - 3, this.creature.getRNG().nextInt(20) - 10);
+					if (this.creature.world.isRainingAt(blockpos1) && this.creature.getBlockPathWeight(blockpos1) >= 0.0F) {
+			            return this.hasPosition(new Vec3d(blockpos1));
+					}
+				}
+			}
+
 			BlockPos blockpos = this.getRandPos(this.creature.world, this.creature, 25, 8);
-			vec3d = blockpos != null && !this.creature.isInWater() ? new Vec3d(blockpos) : RandomPositionGenerator.findRandomTarget(this.creature, 8, 4);
+			return blockpos != null && this.creature.getNavigator().func_179680_a(blockpos, 0) != null && this.hasPosition(new Vec3d(blockpos)) || this.findRandomPosition();
+		} else if (this.avoidsAttacker.getAsBoolean() && this.creature.getRevengeTarget() != null) {
+			return this.hasPosition(RandomPositionGenerator.findRandomTargetBlockAwayFrom(this.creature, 10, 9, this.creature.getRevengeTarget().getPositionVec()));
+		} else if (this.creature.getLastDamageSource() != null && this.shouldAvoidDamage(this.creature.getLastDamageSource())) {
+			Vec3d damageVec = this.creature.getLastDamageSource().getDamageLocation();
+			if (damageVec != null) {
+				return this.hasPosition(RandomPositionGenerator.findRandomTargetBlockAwayFrom(this.creature, 4, 2, damageVec));
+			} else {
+				return this.findRandomPosition();
+			}
+		} else {
+			return false;
 		}
+	}
 
-		if (this.shouldAvoidDamage(this.creature.getLastDamageSource()) && this.creature.hurtResistantTime > 10) {
-			vec3d = this.creature.getLastDamageSource() == DamageSource.DROWN && this.creature.isInWater() ? RandomPositionGenerator.getLandPos(this.creature, 15, 15) : RandomPositionGenerator.findRandomTarget(this.creature, 4, 4);
-		}
-
-		if (this.avoidsAttacker.getAsBoolean() && this.creature.getRevengeTarget() != null) {
-			vec3d = RandomPositionGenerator.findRandomTargetBlockAwayFrom(this.creature, 10, 9, this.creature.getRevengeTarget().getPositionVector());
-		}
-
+	private boolean hasPosition(Vec3d vec3d) {
 		if (vec3d == null) {
 			return false;
 		} else {
@@ -47,27 +60,13 @@ public class AvoidDamageGoal extends PanicGoal {
 		}
 	}
 
-	@Override
-	public boolean shouldContinueExecuting() {
-		if (this.creature.isBurning() || this.avoidsAttacker.getAsBoolean() && this.creature.getRevengeTarget() != null) {
-			return super.shouldContinueExecuting();
-		} else {
-			return this.creature.getLastDamageSource() != null && this.creature.hurtResistantTime > 10;
-		}
-	}
-
-	@Override
-	public void resetTask() {
-		this.creature.getNavigator().clearPath();
-	}
-
 	protected boolean shouldAvoidDamage(DamageSource source) {
-		if (source == null) {
+		if (source.getTrueSource() != null) {
 			return false;
-		} else if (source.getImmediateSource() != null && (source.getTrueSource() == null || !this.creature.canEntityBeSeen(source.getTrueSource()))) {
-			return true;
+		} else if (source.isMagicDamage() && source.getImmediateSource() == null) {
+			return false;
 		} else {
-			return source.getTrueSource() == null && !source.isFireDamage() && source != DamageSource.FALL && source != DamageSource.STARVE && source != DamageSource.OUT_OF_WORLD;
+			return source != DamageSource.DROWN && source != DamageSource.FALL && source != DamageSource.STARVE && source != DamageSource.OUT_OF_WORLD;
 		}
 	}
 }

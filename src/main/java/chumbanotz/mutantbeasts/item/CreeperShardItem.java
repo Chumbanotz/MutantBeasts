@@ -40,26 +40,17 @@ public class CreeperShardItem extends Item {
 	@Override
 	public boolean hitEntity(ItemStack stack, LivingEntity target, LivingEntity attacker) {
 		PlayerEntity player = (PlayerEntity)attacker;
-		double x = target.posX - player.posX;
-		double y = target.posY - player.posY;
-		double z = target.posZ - player.posZ;
-		double d = Math.sqrt(x * x + y * y + z * z);
-
-		if (target.hurtResistantTime > 10) {
-			target.setMotion(x / d * 0.8999999761581421D, y / d * 0.20000000298023224D + 0.30000001192092896D, z / d * 0.8999999761581421D);
-			player.world.playSound(player, player.getPosition(), SoundEvents.ENTITY_GENERIC_EXPLODE, SoundCategory.NEUTRAL, 0.3F, 0.8F + player.getRNG().nextFloat() * 0.4F);
-		}
-
-		if (!player.isCreative() && player.getRNG().nextInt(4) == 0) {
-			player.addPotionEffect(new EffectInstance(Effects.POISON, 80 + player.getRNG().nextInt(40)));
-		}
-
 		int damage = stack.getDamage();
 
 		if (damage > 0) {
 			stack.setDamage(damage - 1);
+			if (!player.isCreative() && player.getRNG().nextInt(4) == 0) {
+				player.addPotionEffect(new EffectInstance(Effects.POISON, 80 + player.getRNG().nextInt(40)));
+			}
 		}
 
+        target.knockBack(player, (float)0.8999999761581421D, player.posX - target.posX, player.posZ - target.posZ);
+		player.world.playSound(null, player.getPosition(), SoundEvents.ENTITY_GENERIC_EXPLODE, SoundCategory.NEUTRAL, 0.3F, 0.8F + player.getRNG().nextFloat() * 0.4F);
 		return true;
 	}
 
@@ -84,7 +75,7 @@ public class CreeperShardItem extends Item {
 		}
 
 		playerIn.swingArm(handIn);
-		playerIn.getCooldownTracker().setCooldown(this, maxDmg - dmg);
+		playerIn.getCooldownTracker().setCooldown(this, (maxDmg - dmg) * 2);
 		playerIn.addStat(Stats.ITEM_USED.get(this));
 		return new ActionResult<>(ActionResultType.SUCCESS, stack);
 	}

@@ -1,27 +1,6 @@
 package chumbanotz.mutantbeasts.pathfinding;
 
-import net.minecraft.block.AbstractGlassBlock;
-import net.minecraft.block.AbstractPressurePlateBlock;
-import net.minecraft.block.AbstractRailBlock;
-import net.minecraft.block.AbstractSkullBlock;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.CactusBlock;
-import net.minecraft.block.CampfireBlock;
-import net.minecraft.block.DoorBlock;
-import net.minecraft.block.EndPortalBlock;
-import net.minecraft.block.EndRodBlock;
-import net.minecraft.block.FenceGateBlock;
-import net.minecraft.block.FireBlock;
-import net.minecraft.block.LeavesBlock;
-import net.minecraft.block.LilyPadBlock;
-import net.minecraft.block.MagmaBlock;
-import net.minecraft.block.NetherPortalBlock;
-import net.minecraft.block.SoulSandBlock;
-import net.minecraft.block.SweetBerryBushBlock;
-import net.minecraft.block.TrapDoorBlock;
-import net.minecraft.block.WebBlock;
-import net.minecraft.block.WitherRoseBlock;
+import net.minecraft.block.*;
 import net.minecraft.block.material.Material;
 import net.minecraft.fluid.IFluidState;
 import net.minecraft.pathfinding.PathNodeType;
@@ -43,10 +22,6 @@ public class MBWalkNodeProcessor extends WalkNodeProcessor {
 			nodeType = PathNodeType.BLOCKED;
 		}
 
-		if (nodeType == PathNodeType.RAIL && !(blockaccessIn.getBlockState(pos).getBlock() instanceof AbstractRailBlock) && !(blockaccessIn.getBlockState(pos.down()).getBlock() instanceof AbstractRailBlock)) {
-			nodeType = PathNodeType.FENCE;
-		}
-
 		if (nodeType == PathNodeType.LEAVES) {
 			nodeType = PathNodeType.BLOCKED;
 		}
@@ -62,16 +37,17 @@ public class MBWalkNodeProcessor extends WalkNodeProcessor {
 					for (int j = -1; j <= 1; ++j) {
 						if (i != 0 || j != 0) {
 							BlockPos newPos = pos.setPos(i + x, y, j + z);
-							PathNodeType pathNodeType = this.getPathNodeTypeRaw(blockaccessIn, newPos.getX(), newPos.getY(), newPos.getZ());
-							switch (pathNodeType) {
-							case LAVA:
-							case DAMAGE_FIRE:
-							case DANGER_FIRE:
+							switch (this.getPathNodeTypeRaw(blockaccessIn, newPos.getX(), newPos.getY(), newPos.getZ())) {
 							case DAMAGE_CACTUS:
+								return PathNodeType.DANGER_CACTUS;
+							case DANGER_FIRE:
+							case DAMAGE_FIRE:
+								return PathNodeType.DANGER_FIRE;
 							case DAMAGE_OTHER:
 							case DANGER_OTHER:
-								nodeType = pathNodeType;
-								break;
+								return PathNodeType.DANGER_OTHER;
+							case LAVA:
+								return PathNodeType.LAVA;
 							default:
 								break;
 							}
@@ -88,10 +64,8 @@ public class MBWalkNodeProcessor extends WalkNodeProcessor {
 	public PathNodeType getPathNodeType(IBlockReader blockaccessIn, int x, int y, int z) {
 		PathNodeType pathNode = this.getPathNodeTypeRaw(blockaccessIn, x, y, z);
 		if (pathNode == PathNodeType.OPEN && y >= 1) {
-			BlockState blockStateBelow = blockaccessIn.getBlockState(new BlockPos(x, y - 1, z));
 			PathNodeType pathNodeBelow = this.getPathNodeTypeRaw(blockaccessIn, x, y - 1, z);
 			pathNode = pathNodeBelow != PathNodeType.WALKABLE && pathNodeBelow != PathNodeType.OPEN && pathNodeBelow != PathNodeType.WATER && pathNodeBelow != PathNodeType.LAVA ? PathNodeType.WALKABLE : PathNodeType.OPEN;
-
 			switch (pathNodeBelow) {
 			case DAMAGE_FIRE:
 			case DAMAGE_CACTUS:
@@ -101,10 +75,6 @@ public class MBWalkNodeProcessor extends WalkNodeProcessor {
 				break;
 			default:
 				break;
-			}
-
-			if (blockStateBelow.getBlock() instanceof TrapDoorBlock && blockStateBelow.get(TrapDoorBlock.OPEN)) {
-				pathNode = PathNodeType.BLOCKED;
 			}
 		}
 

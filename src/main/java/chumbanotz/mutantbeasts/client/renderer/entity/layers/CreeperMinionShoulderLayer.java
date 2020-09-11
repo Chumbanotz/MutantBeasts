@@ -11,13 +11,11 @@ import net.minecraft.client.renderer.entity.layers.LayerRenderer;
 import net.minecraft.client.renderer.entity.model.PlayerModel;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.DyeColor;
 import net.minecraft.nbt.CompoundNBT;
 
 public class CreeperMinionShoulderLayer<T extends PlayerEntity> extends LayerRenderer<T, PlayerModel<T>> {
 	private final CreeperMinionModel creeperMinionModel = new CreeperMinionModel();
 	private final CreeperMinionModel chargedModel = new CreeperMinionModel(2.0F);
-	private final CreeperMinionModel collarModel = new CreeperMinionModel(0.01F);
 
 	public CreeperMinionShoulderLayer(IEntityRenderer<T, PlayerModel<T>> entityRenderer) {
 		super(entityRenderer);
@@ -42,14 +40,6 @@ public class CreeperMinionShoulderLayer<T extends PlayerEntity> extends LayerRen
 			this.bindTexture(CreeperMinionRenderer.TEXTURE);
 			GlStateManager.scalef(0.5F, 0.5F, 0.5F);
 			this.creeperMinionModel.render(null, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scale);
-
-			if (compoundnbt.contains("CollarColor", 99)) {
-				this.bindTexture(CreeperMinionRenderer.COLLAR_TEXTURE);
-				float[] afloat = DyeColor.byId(compoundnbt.getByte("CollarColor")).getColorComponentValues();
-				GlStateManager.color3f(afloat[0], afloat[1], afloat[2]);
-				this.collarModel.render(null, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scale);
-				GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-			}
 
 			if (compoundnbt.getBoolean("Powered")) {
 				this.bindTexture(CreeperChargeLayer.LIGHTNING_TEXTURE);

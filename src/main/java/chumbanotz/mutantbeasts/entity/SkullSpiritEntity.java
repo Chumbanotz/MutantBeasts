@@ -104,7 +104,7 @@ public class SkullSpiritEntity extends Entity {
 							for (BlockPos pos : BlockPos.getAllInBoxMutable(MathHelper.floor(bb.minX), MathHelper.floor(mutant.posY), MathHelper.floor(bb.minZ), MathHelper.floor(bb.maxX), MathHelper.floor(bb.maxY), MathHelper.floor(bb.maxZ))) {
 								BlockState blockState = this.world.getBlockState(pos);
 								if (blockState.getMaterial().isSolid() && blockState.getBlockHardness(this.world, pos) > -1.0F) {
-									this.world.removeBlock(pos, false);
+									this.world.destroyBlock(pos, true);
 								}
 							}
 

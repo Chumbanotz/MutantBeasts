@@ -32,7 +32,6 @@ import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.particles.BlockParticleData;
 import net.minecraft.particles.ParticleTypes;
 import net.minecraft.util.DamageSource;
-import net.minecraft.util.EntityPredicates;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.EntityRayTraceResult;
@@ -75,7 +74,7 @@ public class ThrowableBlockEntity extends ThrowableEntity implements IEntityAddi
 		this.posZ += forward.z + strafe.z;
 		if (attackTarget != null) {
 			this.shoot(attackTarget.posX - this.posX, attackTarget.posY + (double)attackTarget.getEyeHeight() - this.posY, attackTarget.posZ - this.posZ, 1.4F, 1.0F);
-		} else {
+		} else if (enderman.isAlive()) {
 			this.throwBlock(enderman);
 		}
 	}
@@ -114,9 +113,9 @@ public class ThrowableBlockEntity extends ThrowableEntity implements IEntityAddi
 			Entity entity = ((ServerWorld)this.world).getEntityByUuid(this.ownerUUID);
 			if (entity instanceof LivingEntity) {
 				this.setThrower((LivingEntity)entity);
-			} else {
-				this.ownerUUID = null;
 			}
+
+			this.ownerUUID = null;
 		}
 
 		return this.owner;
@@ -126,18 +125,6 @@ public class ThrowableBlockEntity extends ThrowableEntity implements IEntityAddi
 		this.owner = thrower;
 		this.ownerUUID = thrower.getUniqueID();
 		this.dataManager.set(THROWER_ENTITY_ID, OptionalInt.of(thrower.getEntityId()));
-	}
-
-	public LivingEntity getThrowerByID() {
-		OptionalInt optionalInt = this.dataManager.get(THROWER_ENTITY_ID);
-		if (optionalInt.isPresent()) {
-			Entity entity = this.world.getEntityByID(optionalInt.getAsInt());
-			if (entity instanceof LivingEntity) {
-				return (LivingEntity)entity;
-			}
-		}
-
-		return null;
 	}
 
 	public boolean isHeld() {
@@ -150,9 +137,9 @@ public class ThrowableBlockEntity extends ThrowableEntity implements IEntityAddi
 
 	@Override
 	protected float getGravityVelocity() {
-		if (this.getThrowerByID() instanceof PlayerEntity) {
+		if (this.owner instanceof PlayerEntity) {
 			return 0.04F;
-		} else if (this.getThrowerByID() instanceof MutantSnowGolemEntity) {
+		} else if (this.owner instanceof MutantSnowGolemEntity) {
 			return 0.06F;
 		} else {
 			return 0.01F;
@@ -166,7 +153,7 @@ public class ThrowableBlockEntity extends ThrowableEntity implements IEntityAddi
 
 	@Override
 	public boolean canBeCollidedWith() {
-		return this.isAlive();
+		return this.isAlive() && !(this.owner instanceof MutantSnowGolemEntity);
 	}
 
 	@Override
@@ -175,13 +162,8 @@ public class ThrowableBlockEntity extends ThrowableEntity implements IEntityAddi
 	}
 
 	@Override
-	public float getCollisionBorderSize() {
-		return 0.5F;
-	}
-
-	@Override
 	public void applyEntityCollision(Entity entityIn) {
-		if (entityIn != this.getThrower()) {
+		if (entityIn != this.owner) {
 			super.applyEntityCollision(entityIn);
 		}
 	}
@@ -202,6 +184,20 @@ public class ThrowableBlockEntity extends ThrowableEntity implements IEntityAddi
 	}
 
 	@Override
+	public void notifyDataManagerChange(DataParameter<?> key) {
+		super.notifyDataManagerChange(key);
+		if (THROWER_ENTITY_ID.equals(key)) {
+			OptionalInt optionalInt = this.dataManager.get(THROWER_ENTITY_ID);
+			if (optionalInt.isPresent()) {
+				Entity entity = this.world.getEntityByID(optionalInt.getAsInt());
+				this.owner = entity instanceof LivingEntity ? (LivingEntity)entity : null;
+			} else {
+				this.owner = null;
+			}
+		}
+	}
+
+	@Override
 	public void tick() {
 		this.lastTickPosX = this.posX;
 		this.lastTickPosY = this.posY;
@@ -214,25 +210,20 @@ public class ThrowableBlockEntity extends ThrowableEntity implements IEntityAddi
 		this.baseTick();
 
 		if (this.isHeld()) {
-			LivingEntity thrower = this.getThrower();
-			if (thrower == null) {
-				thrower = this.getThrowerByID();
-				if (thrower != null) {
-					this.owner = thrower;
-				} else {
-					this.setHeld(false);
-				}
-			} else {
-				Vec3d vec = thrower.getLookVec();
-				double x = thrower.posX + vec.x * 1.6D - this.posX;
-				double y = thrower.posY + thrower.getEyeHeight() + vec.y * 1.6D - this.posY;
-				double z = thrower.posZ + vec.z * 1.6D - this.posZ;
-				float offset = 0.6F;
-				this.setMotion(x * offset, y * offset, z * offset);
-				this.move(MoverType.SELF, this.getMotion());
-				if (!this.world.isRemote && (thrower == null || !thrower.isAlive() || thrower.isSpectator() || !thrower.canEntityBeSeen(this) || !EntityUtil.isHolding(thrower, MBItems.ENDERSOUL_HAND))) {
-					this.setHeld(false);
-				}
+			if (this.owner == null) {
+				this.setHeld(false);
+				return;
+			}
+
+			Vec3d vec = this.owner.getLookVec();
+			double x = this.owner.posX + vec.x * 1.6D - this.posX;
+			double y = this.owner.posY + this.owner.getEyeHeight() + vec.y * 1.6D - this.posY;
+			double z = this.owner.posZ + vec.z * 1.6D - this.posZ;
+			float offset = 0.6F;
+			this.setMotion(x * offset, y * offset, z * offset);
+			this.move(MoverType.SELF, this.getMotion());
+			if (!this.world.isRemote && (!this.owner.isAlive() || this.owner.isSpectator() || !this.owner.canEntityBeSeen(this) || !EntityUtil.isHolding(this.owner, MBItems.ENDERSOUL_HAND))) {
+				this.setHeld(false);
 			}
 		} else {
 			RayTraceResult raytraceresult = ProjectileHelper.rayTrace(this, true, false, this.owner, RayTraceContext.BlockMode.COLLIDER);
@@ -273,10 +264,10 @@ public class ThrowableBlockEntity extends ThrowableEntity implements IEntityAddi
 	public boolean processInitialInteract(PlayerEntity player, Hand hand) {
 		if (player.isSneaking()) {
 			return false;
-		} else if (player.getHeldItem(hand).getItem() != MBItems.ENDERSOUL_HAND || player.getCooldownTracker().hasCooldown(MBItems.ENDERSOUL_HAND)) {
+		} else if (player.getHeldItem(hand).getItem() != MBItems.ENDERSOUL_HAND) {
 			return false;
 		} else if (this.isHeld()) {
-			if (this.getThrower() == player) {
+			if (this.owner == player) {
 				if (!this.world.isRemote) {
 					this.setHeld(false);
 					this.throwBlock(player);
@@ -284,7 +275,6 @@ public class ThrowableBlockEntity extends ThrowableEntity implements IEntityAddi
 
 				player.swingArm(hand);
 				player.getHeldItem(hand).damageItem(1, player, e -> e.sendBreakAnimation(hand));
-				player.getCooldownTracker().setCooldown(MBItems.ENDERSOUL_HAND, 20);
 				return true;
 			}
 
@@ -307,19 +297,17 @@ public class ThrowableBlockEntity extends ThrowableEntity implements IEntityAddi
 
 	@Override
 	protected void onImpact(RayTraceResult result) {
-		LivingEntity thrower = this.getThrower();
-		DamageSource source = DamageSource.causeThrownDamage(this, thrower);
-		if (this.getThrowerByID() instanceof MutantSnowGolemEntity) {
+		if (this.owner instanceof MutantSnowGolemEntity) {
 			for (LivingEntity livingEntity : this.world.getEntitiesWithinAABB(LivingEntity.class, this.getBoundingBox().grow(2.5D, 2.0D, 2.5D))) {
-				if (MutantSnowGolemEntity.canHarm(thrower, livingEntity) && this.getDistanceSq(livingEntity) <= 6.25D) {
-					livingEntity.attackEntityFrom(source, 4.0F + (float)(this.rand.nextInt(3)));
+				if (MutantSnowGolemEntity.canHarm(this.owner, livingEntity) && this.getDistanceSq(livingEntity) <= 6.25D) {
+					livingEntity.attackEntityFrom(DamageSource.causeThrownDamage(this, this.owner), 4.0F + (float)(this.rand.nextInt(3)));
 				}
 			}
 
 			if (result.getType() == RayTraceResult.Type.ENTITY) {
 				Entity entity = ((EntityRayTraceResult)result).getEntity();
-				if (MutantSnowGolemEntity.canHarm(thrower, entity)) {
-					entity.attackEntityFrom(source, 4.0F);
+				if (MutantSnowGolemEntity.canHarm(this.owner, entity)) {
+					entity.attackEntityFrom(DamageSource.causeIndirectDamage(this, this.owner), 4.0F);
 				}
 			}
 
@@ -333,8 +321,8 @@ public class ThrowableBlockEntity extends ThrowableEntity implements IEntityAddi
 			BlockPos pos = this.getPosition();
 			if (result.getType() == RayTraceResult.Type.BLOCK) {
 				if (!this.world.isRemote) {
-					if (canPlaceBlock(this.world, this.blockState, pos, thrower)) {
-						SoundType soundType = this.blockState.getSoundType(this.world, pos, thrower);
+					if (canPlaceBlock(this.world, this.blockState, pos, this.owner)) {
+						SoundType soundType = this.blockState.getSoundType(this.world, pos, this.owner);
 						this.playSound(soundType.getPlaceSound(), (soundType.getVolume() + 1.0F) / 2.0F, soundType.getPitch() * 0.8F);
 					} else {
 						this.world.playEvent(2001, pos, Block.getStateId(this.blockState));
@@ -344,17 +332,20 @@ public class ThrowableBlockEntity extends ThrowableEntity implements IEntityAddi
 					}
 				}
 			} else if (result.getType() == RayTraceResult.Type.ENTITY && !this.world.isRemote) {
+				((EntityRayTraceResult)result).getEntity().attackEntityFrom(DamageSource.causeThrownDamage(this, this.owner), 4.0F);
 				this.world.playEvent(2001, pos, Block.getStateId(this.blockState));
-				((EntityRayTraceResult)result).getEntity().attackEntityFrom(source, 4.0F);
+				if (this.world.getGameRules().getBoolean(GameRules.DO_ENTITY_DROPS)) {
+					Block.spawnDrops(this.blockState, this.world, pos);
+				}
 			}
 
-			for (Entity entity : this.world.getEntitiesInAABBexcluding(thrower, this.getBoundingBox().grow(2.0D), EntityPredicates.CAN_AI_TARGET.and(Entity::canBeCollidedWith))) {
-				if (this.getDistanceSq(entity) <= 4.0D && entity.getType() != this.getType() && !entity.isEntityEqual(thrower)) {
+			for (Entity entity : this.world.getEntitiesWithinAABBExcludingEntity(this, this.getBoundingBox().grow(2.0D))) {
+				if (!entity.isEntityEqual(this.owner) && entity.canBeCollidedWith() && this.getDistanceSq(entity) <= 4.0D) {
 					double x = entity.posX - this.posX;
 					double z = entity.posZ - this.posZ;
 					double d = Math.sqrt(x * x + z * z);
 					entity.setMotion(x / d * 0.6000000238418579D, 0.20000000298023224D, z / d * 0.6000000238418579D);
-					entity.attackEntityFrom(source, (float)(6 + this.rand.nextInt(3)));
+					entity.attackEntityFrom(DamageSource.causeIndirectDamage(this, this.owner), (float)(6 + this.rand.nextInt(3)));
 				}
 			}
 

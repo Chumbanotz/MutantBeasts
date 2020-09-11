@@ -20,7 +20,7 @@ public class ThrowableBlockRenderer extends EntityRenderer<ThrowableBlockEntity>
 	@Override
 	public void doRender(ThrowableBlockEntity entity, double x, double y, double z, float entityYaw, float partialTicks) {
 		super.doRender(entity, x, y, z, entityYaw, partialTicks);
-		if (entity.getThrowerByID() instanceof MutantSnowGolemEntity) {
+		if (entity.getThrower() instanceof MutantSnowGolemEntity) {
 			GlStateManager.pushMatrix();
 			GlStateManager.translatef((float)x, (float)y + 0.5F, (float)z);
 			GlStateManager.rotatef(entity.rotationYaw, 0.0F, 1.0F, 0.0F);

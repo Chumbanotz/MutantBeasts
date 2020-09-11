@@ -2,6 +2,7 @@ package chumbanotz.mutantbeasts.entity.mutant;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -23,10 +24,10 @@ import chumbanotz.mutantbeasts.pathfinding.MBGroundPathNavigator;
 import chumbanotz.mutantbeasts.util.EntityUtil;
 import chumbanotz.mutantbeasts.util.MBSoundEvents;
 import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntitySize;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.IRangedAttackMob;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MobEntity;
 import net.minecraft.entity.Pose;
@@ -36,6 +37,7 @@ import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.goal.LookAtGoal;
 import net.minecraft.entity.ai.goal.LookRandomlyGoal;
 import net.minecraft.entity.ai.goal.NearestAttackableTargetGoal;
+import net.minecraft.entity.ai.goal.PrioritizedGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.WaterAvoidingRandomWalkingGoal;
 import net.minecraft.entity.boss.dragon.EnderDragonEntity;
@@ -45,6 +47,8 @@ import net.minecraft.entity.monster.MonsterEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.CompoundNBT;
+import net.minecraft.network.IPacket;
+import net.minecraft.network.PacketBuffer;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
@@ -53,6 +57,8 @@ import net.minecraft.pathfinding.PathNavigator;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
 import net.minecraft.util.DamageSource;
+import net.minecraft.util.Hand;
+import net.minecraft.util.IndirectEntityDamageSource;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.AxisAlignedBB;
@@ -60,17 +66,26 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.ITextComponent;
+import net.minecraft.world.GameRules;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.World;
-import net.minecraft.world.dimension.DimensionType;
+import net.minecraftforge.fml.common.registry.IEntityAdditionalSpawnData;
+import net.minecraftforge.fml.network.NetworkHooks;
 import net.minecraftforge.fml.network.PacketDistributor;
 
-public class MutantEndermanEntity extends MonsterEntity {
+public class MutantEndermanEntity extends MonsterEntity implements IEntityAdditionalSpawnData {
 	private static final DataParameter<Optional<BlockPos>> TELEPORT_POSITION = EntityDataManager.createKey(MutantEndermanEntity.class, DataSerializers.OPTIONAL_BLOCK_POS);
 	private static final DataParameter<Byte> ACTIVE_ARM = EntityDataManager.createKey(MutantEndermanEntity.class, DataSerializers.BYTE);
 	private static final DataParameter<Boolean> CLONE = EntityDataManager.createKey(MutantEndermanEntity.class, DataSerializers.BOOLEAN);
 	public static final int MAX_DEATH_TIME = 280;
-	public static final byte MELEE_ATTACK = 4, THROW_ATTACK = 5, STARE_ATTACK = 6, TELEPORT_ATTACK = 7, SCREAM_ATTACK = 8, CLONE_ATTACK = 9, TELESMASH_ATTACK = 10, DEATH_ATTACK = 11;
+	public static final byte MELEE_ATTACK = 1;
+	public static final byte THROW_ATTACK = 2;
+	public static final byte STARE_ATTACK = 3;
+	public static final byte TELEPORT_ATTACK = 4;
+	public static final byte SCREAM_ATTACK = 5;
+	public static final byte CLONE_ATTACK = 6;
+	public static final byte TELESMASH_ATTACK = 7;
+	public static final byte DEATH_ATTACK = 8;
 	private int attackID;
 	private int attackTick;
 	private int prevArmScale;
@@ -89,7 +104,6 @@ public class MutantEndermanEntity extends MonsterEntity {
 		super(type, worldIn);
 		this.experienceValue = 40;
 		this.stepHeight = 2.0F;
-		this.ignoreFrustumCheck = true;
 	}
 
 	@Override
@@ -103,13 +117,13 @@ public class MutantEndermanEntity extends MonsterEntity {
 		this.goalSelector.addGoal(1, new MutantEndermanEntity.CloneGoal());
 		this.goalSelector.addGoal(1, new MutantEndermanEntity.TeleSmashGoal());
 		this.goalSelector.addGoal(2, new MBMeleeAttackGoal(this, 1.2D).setMaxAttackTick(15));
-		this.goalSelector.addGoal(3, new AvoidDamageGoal(this, 1.2D));
-		this.goalSelector.addGoal(7, new WaterAvoidingRandomWalkingGoal(this, 1.0D, 0.0F));
-		this.goalSelector.addGoal(8, new LookAtGoal(this, PlayerEntity.class, 8.0F));
-		this.goalSelector.addGoal(8, new LookRandomlyGoal(this));
-		this.targetSelector.addGoal(1, new MBHurtByTargetGoal(this));
-		this.targetSelector.addGoal(2, new MutantEndermanEntity.FindTargetGoal(this));
-		this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, EndermiteEntity.class, 10, true, false, e -> ((EndermiteEntity)e).isSpawnedByPlayer()));
+		this.goalSelector.addGoal(3, new AvoidDamageGoal(this, 1.1D));
+		this.goalSelector.addGoal(4, new WaterAvoidingRandomWalkingGoal(this, 1.0D, 0.0F));
+		this.goalSelector.addGoal(5, new LookAtGoal(this, PlayerEntity.class, 8.0F));
+		this.goalSelector.addGoal(6, new LookRandomlyGoal(this));
+		this.targetSelector.addGoal(0, new MBHurtByTargetGoal(this));
+		this.targetSelector.addGoal(1, new MutantEndermanEntity.FindTargetGoal(this));
+		this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, EndermiteEntity.class, 10, true, false, e -> ((EndermiteEntity)e).isSpawnedByPlayer()));
 	}
 
 	@Override
@@ -154,6 +168,8 @@ public class MutantEndermanEntity extends MonsterEntity {
 	private void setClone(boolean clone) {
 		this.dataManager.set(CLONE, clone);
 		this.setAttackID(clone ? CLONE_ATTACK : 0);
+		this.playSound(MBSoundEvents.ENTITY_MUTANT_ENDERMAN_MORPH, 2.0F, this.getSoundPitch());
+		this.world.setEntityState(this, (byte)1);
 	}
 
 	public int getAttackID() {
@@ -162,7 +178,8 @@ public class MutantEndermanEntity extends MonsterEntity {
 
 	private void setAttackID(int attackID) {
 		this.attackID = attackID;
-		this.world.setEntityState(this, (byte)attackID);
+		this.attackTick = 0;
+		this.world.setEntityState(this, (byte)-attackID);
 	}
 
 	public int getAttackTick() {
@@ -181,12 +198,22 @@ public class MutantEndermanEntity extends MonsterEntity {
 
 	@Override
 	protected PathNavigator createNavigator(World worldIn) {
-		return new MBGroundPathNavigator(this, worldIn);
+		return new MBGroundPathNavigator(this, worldIn).setAvoidRain(true);
+	}
+
+	@Override
+	protected float updateDistance(float renderYawOffset, float distance) {
+		return !this.isAlive() ? distance : super.updateDistance(renderYawOffset, distance);
 	}
 
 	@Override
 	public int getMaxSpawnedInChunk() {
 		return 1;
+	}
+
+	@Override
+	public boolean canDespawn(double distanceToClosestPlayer) {
+		return this.idleTime > 6000;
 	}
 
 	@Override
@@ -254,13 +281,14 @@ public class MutantEndermanEntity extends MonsterEntity {
 		} else if (emptyHanded) {
 			this.armScale = Math.max(0, this.armScale - 1);
 		} else if (!this.world.isRemote) {
+			boolean mobGriefing = net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this.world, this);
 			for (int i = 1; i < this.heldBlock.length; ++i) {
 				if (this.heldBlock[i] != 0 && this.heldBlockTick[i] == 0) {
 					BlockPos blockPos = new BlockPos(this.posX - 1.5D + this.rand.nextDouble() * 4.0D, this.posY - 0.5D + this.rand.nextDouble() * 2.5D, this.posZ - 1.5D + this.rand.nextDouble() * 4.0D);
-					if (this.world.isAirBlock(blockPos) && !this.world.isAirBlock(blockPos.down()) && net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this.world, this)) {
+					if (this.world.isAirBlock(blockPos) && !this.world.isAirBlock(blockPos.down()) && mobGriefing) {
 						this.world.setBlockState(blockPos, Block.getStateById(this.heldBlock[i]));
 						this.sendHoldBlock(i, 0);
-					} else {
+					} else if (!mobGriefing || this.rand.nextInt(50) == 0) {
 						this.triggerThrowBlock = true;
 					}
 				}
@@ -277,10 +305,10 @@ public class MutantEndermanEntity extends MonsterEntity {
 				this.capturedEntities = null;
 			} else if (this.capturedEntities == null) {
 				this.capturedEntities = this.world.getEntitiesInAABBexcluding(this, this.getBoundingBox().grow(20.0D, 12.0D, 20.0D), EndersoulFragmentEntity.IS_VALID_TARGET);
-			} else for (int i = 0; i < this.capturedEntities.size(); i++) {
-				Entity entity = this.capturedEntities.get(i);
-				if (this.getDistanceSq(entity) > 400.0D) {
-					this.capturedEntities.remove(entity);
+			} else for (Iterator<Entity> iterator = this.capturedEntities.iterator(); iterator.hasNext();) {
+				Entity entity = iterator.next();
+				if (this.getDistanceSq(entity) > 400.0D || entity.isSpectator() || !entity.isAddedToWorld()) {
+					iterator.remove();
 				} else {
 					entity.rotationPitch += (this.rand.nextFloat() - 0.3F) * 6.0F;
 				}
@@ -290,13 +318,11 @@ public class MutantEndermanEntity extends MonsterEntity {
 
 	@Override
 	public void handleStatusUpdate(byte id) {
-		if (id == 1) {
-			this.spawnBigParticles();
-		} else if (id == 12) {
-			EntityUtil.spawnEndersoulParticles(this, 256, 1.8F);
-		} else if (id == 0 || id >= 4 && id <= 11) {
-			this.attackID = id;
+		if (id <= 0) {
+			this.attackID = Math.abs(id);
 			this.attackTick = 0;
+		} else if (id == 1) {
+			this.spawnBigParticles();
 		} else {
 			super.handleStatusUpdate(id);
 		}
@@ -304,22 +330,18 @@ public class MutantEndermanEntity extends MonsterEntity {
 
 	@Override
 	public void livingTick() {
+		this.isJumping = false;
 		super.livingTick();
 
 		if (this.attackID != 0) {
 			++this.attackTick;
 		}
 
-		if (this.isAlive() && this.ticksExisted % 100 == 0 && this.dimension == DimensionType.THE_END && this.getHealth() < this.getMaxHealth()) {
-			this.heal(2.0F);
-		}
-
 		this.updateTargetTick();
 		this.updateScreamEntities();
-		double h = this.attackID != DEATH_ATTACK ? (double)this.getHeight() : (double)(this.getHeight() + 1.0F);
-		double w = this.attackID != DEATH_ATTACK ? (double)this.getWidth() : (double)(this.getWidth() * 1.5F);
-		boolean targetBlind = this.getAttackTarget() != null && this.getAttackTarget().isPotionActive(Effects.BLINDNESS);
-		if (!targetBlind && !this.isClone()) {
+		if (this.world.isRemote && !this.isClone()) {
+			double h = this.attackID != DEATH_ATTACK ? (double)this.getHeight() : (double)(this.getHeight() + 1.0F);
+			double w = this.attackID != DEATH_ATTACK ? (double)this.getWidth() : (double)(this.getWidth() * 1.5F);
 			for (int i = 0; i < 3; ++i) {
 				double x = this.posX + (this.rand.nextDouble() - 0.5D) * w;
 				double y = this.posY + this.rand.nextDouble() * h - 0.25D;
@@ -347,19 +369,17 @@ public class MutantEndermanEntity extends MonsterEntity {
 
 	private void updateBlockFrenzy() {
 		this.blockFrenzy = Math.max(0, this.blockFrenzy - 1);
-		if (this.getAttackTarget() != null && this.attackID == 0) {
-			if (this.blockFrenzy == 0 && this.rand.nextInt(this.getAttackTarget() instanceof IRangedAttackMob ? 100 : 600) == 0) {
+		if (this.getAttackTarget() != null && this.attackID == 0 && !MutantBeasts.MUTANT_ENDERMAN_HOLABLE.getAllElements().isEmpty()) {
+			if (this.blockFrenzy == 0 && (this.getLastDamageSource() instanceof IndirectEntityDamageSource || this.rand.nextInt(600) == 0)) {
 				this.blockFrenzy = 200 + this.rand.nextInt(80);
 			}
 
 			if (this.blockFrenzy > 0 && this.rand.nextInt(8) == 0) {
-				int x = MathHelper.floor(this.posX - 2.5D + this.rand.nextDouble() * 5.0D);
-				int y = MathHelper.floor(this.posY - 0.5D + this.rand.nextDouble() * 3.0D);
-				int z = MathHelper.floor(this.posZ - 2.5D + this.rand.nextDouble() * 5.0D);
 				int index = this.getFavorableHand();
-				BlockPos pos = new BlockPos(x, y, z);
-				if (index != -1 && !this.world.getBlockState(pos).hasTileEntity() && this.world.getBlockState(pos).isIn(MutantBeasts.MUTANT_ENDERMAN_HOLABLE)) {
-					this.sendHoldBlock(index, Block.getStateId(this.world.getBlockState(pos)));
+				BlockPos pos = new BlockPos(this.posX - 2.5D + this.rand.nextDouble() * 5.0D, this.posY - 0.5D + this.rand.nextDouble() * 3.0D, this.posZ - 2.5D + this.rand.nextDouble() * 5.0D);
+				BlockState blockState = this.world.getBlockState(pos);
+				if (index != -1 && blockState.isIn(MutantBeasts.MUTANT_ENDERMAN_HOLABLE)) {
+					this.sendHoldBlock(index, Block.getStateId(blockState));
 					if (net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this.world, this)) {
 						this.world.removeBlock(pos, false);
 					}
@@ -371,7 +391,7 @@ public class MutantEndermanEntity extends MonsterEntity {
 	private void updateTeleport() {
 		Entity entity = this.getAttackTarget();
 		this.teleportByChance(entity == null ? 1600 : 800, entity);
-		if (this.isInWater() || entity != null && (this.isRidingSameEntity(entity) || this.getDistanceSq(entity) > 1024.0D || !this.hasPath() && !this.canEntityBeSeen(entity))) {
+		if (this.isInWater() || entity != null && (this.isRidingSameEntity(entity) || this.getDistanceSq(entity) > 1024.0D || !this.hasPath())) {
 			this.teleportByChance(10, entity);
 		}
 	}
@@ -457,12 +477,12 @@ public class MutantEndermanEntity extends MonsterEntity {
 				if (i != -1) {
 					boolean allHandsFree = this.heldBlock[1] == 0 && this.heldBlock[2] == 0;
 					if (allHandsFree && this.rand.nextInt(10) == 0) {
-						this.setAttackID(CLONE_ATTACK);
+						this.attackID = CLONE_ATTACK;
 					} else if (allHandsFree && this.rand.nextInt(7) == 0) {
-						this.setAttackID(TELESMASH_ATTACK);
+						this.attackID = TELESMASH_ATTACK;
 					} else {
 						this.setActiveArm(i);
-						this.setAttackID(MELEE_ATTACK);
+						this.attackID = MELEE_ATTACK;
 					}
 				} else {
 					this.triggerThrowBlock = true;
@@ -471,7 +491,7 @@ public class MutantEndermanEntity extends MonsterEntity {
 		}
 
 		if (this.isClone()) {
-			boolean flag = super.attackEntityAsMob(entityIn);
+			boolean damagedTarget = super.attackEntityAsMob(entityIn);
 			if (!this.world.isRemote && this.rand.nextInt(2) == 0) {
 				double x = entityIn.posX + (double)((this.rand.nextFloat() - 0.5F) * 24.0F);
 				double y = entityIn.posY + (double)this.rand.nextInt(5) + 4.0D;
@@ -479,51 +499,50 @@ public class MutantEndermanEntity extends MonsterEntity {
 				this.teleportTo(x, y, z);
 			}
 
-			if (flag) {
+			if (damagedTarget) {
 				this.heal(2.0F);
 			}
 
-			return flag;
+			this.swingArm(Hand.MAIN_HAND);
+			return damagedTarget;
 		}
 
 		return true;
 	}
 
 	@Override
+	public boolean isInvulnerableTo(DamageSource source) {
+		return super.isInvulnerableTo(source) || (this.attackID == TELEPORT_ATTACK || this.attackID == SCREAM_ATTACK) && source != DamageSource.OUT_OF_WORLD || source.getTrueSource() instanceof EnderDragonEntity;
+	}
+
+	@Override
 	public boolean attackEntityFrom(DamageSource source, float amount) {
-		if (this.isInvulnerableTo(source)) {
-			return false;
-		} else if (!(source.getTrueSource() instanceof EnderDragonEntity) && !(source.getTrueSource() instanceof MutantEndermanEntity)) {
-			if ((this.attackID == TELEPORT_ATTACK || this.attackID == SCREAM_ATTACK) && source != DamageSource.OUT_OF_WORLD) {
-				return false;
-			} else if (!this.world.isRemote) {
-				if (this.isClone()) {
-					this.setClone(false);
-				} else {
-					Entity entity = source.getTrueSource();
-					boolean betterDodge = entity == null;
+		boolean damaged = super.attackEntityFrom(source, amount);
+		if (damaged && !this.isAlive()) {
+			return true;
+		}
 
-					if (source.isProjectile() || source == DamageSource.FALL) {
-						betterDodge = true;
-					}
+		if (!this.world.isRemote) {
+			Entity entity = source.getTrueSource();
+			boolean betterDodge = entity == null;
 
-					if (this.teleportByChance(betterDodge ? 3 : 6, entity) && source != DamageSource.OUT_OF_WORLD) {
-						if (entity != null && entity instanceof LivingEntity) {
-							this.setRevengeTarget((LivingEntity)entity);
-						}
-
-						return false;
-					}
-
-					boolean betterTeleport = source == DamageSource.DROWN || source == DamageSource.LIGHTNING_BOLT;
-					this.teleportByChance(betterTeleport ? 3 : 5, entity);
-				}
+			if (source.isProjectile() || source.isExplosion() || source == DamageSource.FALL) {
+				betterDodge = true;
 			}
 
-			return super.attackEntityFrom(source, amount);
-		} else {
-			return false;
+			if (this.teleportByChance(betterDodge ? 3 : 6, entity) && source != DamageSource.OUT_OF_WORLD) {
+				if (entity != null && entity instanceof LivingEntity) {
+					this.setRevengeTarget((LivingEntity)entity);
+				}
+
+				return false;
+			}
+
+			boolean betterTeleport = source == DamageSource.DROWN || source == DamageSource.LIGHTNING_BOLT;
+			this.teleportByChance(betterTeleport ? 3 : 5, entity);
 		}
+
+		return damaged;
 	}
 
 	@Override
@@ -580,11 +599,11 @@ public class MutantEndermanEntity extends MonsterEntity {
 	}
 
 	private boolean teleportTo(double targetX, double targetY, double targetZ) {
-		if (this.isAIDisabled() || !this.isAlive()) {
+		if (!this.isServerWorld()) {
 			return false;
 		} else if (this.isClone()) {
-			boolean flag = EntityUtil.teleportTo(this, targetX, targetY, targetZ);
-			if (flag) {
+			boolean teleported = EntityUtil.teleportTo(this, targetX, targetY, targetZ);
+			if (teleported) {
 				this.stopRiding();
 				if (!this.isSilent()) {
 					this.world.playSound(this.prevPosX, this.prevPosY, this.prevPosZ, MBSoundEvents.ENTITY_ENDERSOUL_CLONE_TELEPORT, this.getSoundCategory(), 1.0F, 1.0F, false);
@@ -592,7 +611,7 @@ public class MutantEndermanEntity extends MonsterEntity {
 				}
 			}
 
-			return flag;
+			return teleported;
 		} else if (this.attackID == 0) {
 			this.attackID = TELEPORT_ATTACK;
 			double oldX = this.posX;
@@ -616,7 +635,7 @@ public class MutantEndermanEntity extends MonsterEntity {
 
 				if (temp) {
 					this.setPosition(targetX, newY, targetZ);
-					if (this.world.isCollisionBoxesEmpty(this, this.getBoundingBox()) && !this.world.containsAnyLiquid(this.getBoundingBox())) {
+					if (this.world.areCollisionShapesEmpty(this) && !this.world.containsAnyLiquid(this.getBoundingBox())) {
 						success = true;
 					}
 				}
@@ -648,19 +667,15 @@ public class MutantEndermanEntity extends MonsterEntity {
 		}
 
 		for (Entity entity : attacker.world.getEntitiesInAABBexcluding(attacker, attacker.getBoundingBox().grow(r), EndersoulFragmentEntity.IS_VALID_TARGET)) {
-			if (entity instanceof LivingEntity) {
-				LivingEntity living = (LivingEntity)entity;
-				living.attackEntityFrom(damageSource, 4.0F);
-				if (attacker.getRNG().nextInt(3) == 0) {
-					living.addPotionEffect(new EffectInstance(Effects.BLINDNESS, duration));
-				}
-
-				double x = entity.posX - attacker.posX;
-				double z = entity.posZ - attacker.posZ;
-				double signX = x / Math.abs(x);
-				double signZ = z / Math.abs(z);
-				living.setMotion((r * signX * 2.0D - x) * 0.20000000298023224D, 0.20000000298023224D, (r * signZ * 2.0D - z) * 0.20000000298023224D);
+			if (entity instanceof LivingEntity && entity.attackEntityFrom(damageSource, 4.0F) && attacker.getRNG().nextInt(3) == 0) {
+				((LivingEntity)entity).addPotionEffect(new EffectInstance(Effects.BLINDNESS, duration));
 			}
+
+			double x = entity.posX - attacker.posX;
+			double z = entity.posZ - attacker.posZ;
+			double signX = x / Math.abs(x);
+			double signZ = z / Math.abs(z);
+			entity.setMotion((r * signX * 2.0D - x) * 0.20000000298023224D, 0.20000000298023224D, (r * signZ * 2.0D - z) * 0.20000000298023224D);
 		}
 	}
 
@@ -674,17 +689,14 @@ public class MutantEndermanEntity extends MonsterEntity {
 			float f = (this.rand.nextFloat() - 0.5F) * 1.8F;
 			float f1 = (this.rand.nextFloat() - 0.5F) * 1.8F;
 			float f2 = (this.rand.nextFloat() - 0.5F) * 1.8F;
-			boolean flag = i < temp / 2;
+			boolean notTeleporting = i < temp / 2;
 			if (this.attackID != TELEPORT_ATTACK) {
-				flag = true;
+				notTeleporting = true;
 			}
 
-			boolean death = this.attackID != DEATH_ATTACK;
-			double h = death ? (double)this.getHeight() : (double)(this.getHeight() + 1.0F);
-			double w = death ? (double)this.getWidth() : (double)(this.getWidth() * 1.5F);
-			double tempX = (flag ? this.posX : (double)this.getTeleportPosition().getX()) + (this.rand.nextDouble() - 0.5D) * w;
-			double tempY = (flag ? this.posY : (double)this.getTeleportPosition().getY()) + (this.rand.nextDouble() - 0.5D) * h + (double)(death ? 1.5F : 0.5F);
-			double tempZ = (flag ? this.posZ : (double)this.getTeleportPosition().getZ()) + (this.rand.nextDouble() - 0.5D) * w;
+			double tempX = (notTeleporting ? this.posX : (double)this.getTeleportPosition().getX()) + (this.rand.nextDouble() - 0.5D) * (double)this.getWidth();
+			double tempY = (notTeleporting ? this.posY : (double)this.getTeleportPosition().getY()) + (this.rand.nextDouble() - 0.5D) * (double)this.getHeight() + (double)1.5F;
+			double tempZ = (notTeleporting ? this.posZ : (double)this.getTeleportPosition().getZ()) + (this.rand.nextDouble() - 0.5D) * (double)this.getWidth();
 			this.world.addParticle(MBParticleTypes.ENDERSOUL, tempX, tempY, tempZ, (double)f, (double)f1, (double)f2);
 		}
 	}
@@ -702,18 +714,19 @@ public class MutantEndermanEntity extends MonsterEntity {
 	@Override
 	protected void constructKnockBackVector(LivingEntity livingEntity) {
 		if (!this.isClone()) {
-			livingEntity.applyEntityCollision(this);
 			livingEntity.velocityChanged = true;
 		}
 	}
 
 	@Override
 	public void onDeath(DamageSource cause) {
-		EntityUtil.onDeath(this, cause);
+		super.onDeath(cause);
 		this.capturedEntities = null;
 		if (!this.world.isRemote) {
 			this.deathCause = cause;
-			this.setClone(false);
+			this.goalSelector.getRunningGoals().forEach(PrioritizedGoal::resetTask);
+			this.setAttackID(DEATH_ATTACK);
+
 			if (this.recentlyHit > 0) {
 				this.recentlyHit += MAX_DEATH_TIME;
 			}
@@ -722,67 +735,65 @@ public class MutantEndermanEntity extends MonsterEntity {
 
 	@Override
 	protected void onDeathUpdate() {
-		++this.deathTime;
+		System.out.println("DeathTime = " + deathTime +" > " + (world.isRemote ? "Client" : "Server"));
+		this.deathTime = this.attackTick;
 		this.setMotion(0.0D, Math.min(this.getMotion().y, 0.0D), 0.0D);
-
-		if (this.attackID != DEATH_ATTACK) {
-			this.setAttackID(DEATH_ATTACK);
-		}
 
 		if (this.deathTime == 80) {
 			this.playSound(MBSoundEvents.ENTITY_MUTANT_ENDERMAN_DEATH, 5.0F, this.getSoundPitch());
 		}
 
-		if (!this.world.isRemote) {
-			if (this.deathTime >= 60) {
-				if (this.deathTime < 80 && this.capturedEntities == null) {
-					this.capturedEntities = this.world.getEntitiesInAABBexcluding(this, this.getBoundingBox().grow(10.0D, 8.0D, 10.0D), EndersoulFragmentEntity.IS_VALID_TARGET);
-				}
-
-				if (this.rand.nextInt(3) != 0) {
-					EndersoulFragmentEntity orb = new EndersoulFragmentEntity(this.world, this);
-					orb.setPosition(this.posX, this.posY + 3.8D, this.posZ);
-					orb.setMotion((double)((this.rand.nextFloat() - 0.5F) * 1.5F), (double)((this.rand.nextFloat() - 0.5F) * 1.5F), (double)((this.rand.nextFloat() - 0.5F) * 1.5F));
-					this.world.addEntity(orb);
-				}
+		if (this.deathTime >= 60) {
+			if (this.deathTime < 80 && this.capturedEntities == null) {
+				this.capturedEntities = this.world.getEntitiesInAABBexcluding(this, this.getBoundingBox().grow(10.0D, 8.0D, 10.0D), EndersoulFragmentEntity.IS_VALID_TARGET);
 			}
 
-			if (this.deathTime >= 80 && this.deathTime < MAX_DEATH_TIME - 20 && this.capturedEntities != null) {
-				for (int i = 0; i < this.capturedEntities.size(); i++) {
-					Entity entity = this.capturedEntities.get(i);
-					if (entity.fallDistance > 4.5F) {
-						entity.fallDistance = 4.5F;
-					}
+			if (!this.world.isRemote && this.rand.nextInt(3) != 0) {
+				EndersoulFragmentEntity orb = new EndersoulFragmentEntity(this.world, this);
+				orb.setPosition(this.posX, this.posY + 3.8D, this.posZ);
+				orb.setMotion((double)((this.rand.nextFloat() - 0.5F) * 1.5F), (double)((this.rand.nextFloat() - 0.5F) * 1.5F), (double)((this.rand.nextFloat() - 0.5F) * 1.5F));
+				this.world.addEntity(orb);
+			}
+		}
 
-					if (this.getDistanceSq(entity) > 64.0D) {
-						if (EndersoulFragmentEntity.isProtected(entity) || entity instanceof PlayerEntity && !entity.isAlive()) {
-							this.capturedEntities.remove(entity);
-						} else {
-							double x = this.posX - entity.posX;
-							double y = entity.getMotion().y;
-							double z = this.posZ - entity.posZ;
-							double d = Math.sqrt(x * x + z * z);
+		if (this.deathTime >= 80 && this.deathTime < MAX_DEATH_TIME - 20 && this.capturedEntities != null) {
+			for (Iterator<Entity> iterator = this.capturedEntities.iterator(); iterator.hasNext();) {
+				Entity entity = iterator.next();
+				if (entity.fallDistance > 4.5F) {
+					entity.fallDistance = 4.5F;
+				}
 
-							if (this.posY + 4.0D > entity.posY) {
-								y = Math.max(entity.getMotion().y, 0.4000000059604645D);
-							}
+				if (this.getDistanceSq(entity) > 64.0D) {
+					if (EndersoulFragmentEntity.isProtected(entity) || entity.isSpectator() || !entity.isAddedToWorld()) {
+						iterator.remove();
+					} else {
+						double x = this.posX - entity.posX;
+						double y = entity.getMotion().y;
+						double z = this.posZ - entity.posZ;
+						double d = Math.sqrt(x * x + z * z);
 
-							entity.setMotion(0.800000011920929D * x / d, y, 0.800000011920929D * z / d);
-							EntityUtil.sendPlayerVelocityPacket(entity);
+						if (this.posY + 4.0D > entity.posY) {
+							y = Math.max(entity.getMotion().y, 0.4000000059604645D);
 						}
+
+						entity.setMotion(0.800000011920929D * x / d, y, 0.800000011920929D * z / d);
 					}
 				}
 			}
+		}
 
-			if (this.deathTime >= 100 && this.deathTime < 150 && this.deathTime % 6 == 0) {
-				this.spawnDrops(this.deathCause != null ? this.deathCause : DamageSource.GENERIC);
-			}
+		if (!this.world.isRemote && this.deathTime >= 100 && this.deathTime < 150 && this.deathTime % 6 == 0 && this.world.getGameRules().getBoolean(GameRules.DO_MOB_LOOT)) {
+			super.dropLoot(this.deathCause != null ? this.deathCause : DamageSource.GENERIC, this.recentlyHit > 0);
 		}
 
 		if (this.deathTime >= MAX_DEATH_TIME) {
-			EntityUtil.dropExperience(this, this.recentlyHit, this::getExperiencePoints, this.attackingPlayer);
+			EntityUtil.dropExperience(this, this.recentlyHit, this.experienceValue, this.attackingPlayer);
 			this.remove();
 		}
+	}
+
+	@Override
+	protected void dropLoot(DamageSource damageSourceIn, boolean p_213354_2_) {
 	}
 
 	@Override
@@ -791,13 +802,7 @@ public class MutantEndermanEntity extends MonsterEntity {
 	}
 
 	public static boolean canSpawn(EntityType<MutantEndermanEntity> type, IWorld worldIn, SpawnReason reason, BlockPos pos, Random randomIn) {
-		if (randomIn.nextInt(3) == 0) {
-			return false;
-		} else if (worldIn.getDimension().getType() != DimensionType.OVERWORLD && randomIn.nextInt(2600) != 0) {
-			return false;
-		} else {
-			return MonsterEntity.func_223325_c(type, worldIn, reason, pos, randomIn);
-		}
+		return randomIn.nextInt(3) == 0 && MonsterEntity.func_223325_c(type, worldIn, reason, pos, randomIn);
 	}
 
 	@Override
@@ -817,8 +822,9 @@ public class MutantEndermanEntity extends MonsterEntity {
 		super.readAdditional(compound);
 		this.blockFrenzy = compound.getInt("BlockFrenzy");
 		this.screamDelayTick = compound.getInt("ScreamDelay");
-		if (compound.getByte("CloneState") == 2) {
-			this.remove();
+		if (this.deathTime > 0) {
+			this.attackID = DEATH_ATTACK;
+			this.attackTick = this.deathTime;
 		}
 	}
 
@@ -829,7 +835,7 @@ public class MutantEndermanEntity extends MonsterEntity {
 
 	@Override
 	public void playAmbientSound() {
-		if (this.attackID != SCREAM_ATTACK && !this.isClone()) {
+		if (!this.isClone()) {
 			super.playAmbientSound();
 		}
 	}
@@ -846,7 +852,7 @@ public class MutantEndermanEntity extends MonsterEntity {
 
 	@Override
 	protected SoundEvent getDeathSound() {
-		return null;
+		return MBSoundEvents.ENTITY_MUTANT_ENDERMAN_HURT;
 	}
 
 	public void sendHoldBlock(int blockIndex, int blockId) {
@@ -859,7 +865,7 @@ public class MutantEndermanEntity extends MonsterEntity {
 
 	private boolean isBeingLookedAtBy(LivingEntity target) {
 		if (target instanceof MobEntity) {
-			return ((MobEntity)target).getAttackTarget() == this;
+			return ((MobEntity)target).getAttackTarget() == this && target.canEntityBeSeen(this);
 		} else {
 			Vec3d playerVec = target.getLook(1.0F).normalize();
 			Vec3d targetVec = new Vec3d(this.posX - target.posX, this.getBoundingBox().minY + (double)this.getEyeHeight() - (target.posY + (double)target.getEyeHeight()), this.posZ - target.posZ);
@@ -868,6 +874,29 @@ public class MutantEndermanEntity extends MonsterEntity {
 			double d = playerVec.dotProduct(targetVec);
 			return d > 1.0D - 0.08D / length ? target.canEntityBeSeen(this) : false;
 		}
+	}
+
+	@Override
+	public void writeSpawnData(PacketBuffer buffer) {
+		buffer.writeVarInt(this.attackID);
+		buffer.writeVarInt(this.attackTick);
+		buffer.writeVarInt(this.deathTime);
+		buffer.writeVarInt(this.armScale);
+		buffer.writeVarInt(this.hasTarget);
+	}
+
+	@Override
+	public void readSpawnData(PacketBuffer additionalData) {
+		this.attackID = additionalData.readVarInt();
+		this.attackTick = additionalData.readVarInt();
+		this.deathTime = additionalData.readVarInt();
+		this.armScale = additionalData.readVarInt();
+		this.hasTarget = additionalData.readVarInt();
+	}
+
+	@Override
+	public IPacket<?> createSpawnPacket() {
+		return NetworkHooks.getEntitySpawningPacket(this);
 	}
 
 	static class FindTargetGoal extends NearestAttackableTargetGoal<LivingEntity> {
@@ -879,21 +908,17 @@ public class MutantEndermanEntity extends MonsterEntity {
 
 		@Override
 		public boolean shouldExecute() {
-			if (this.goalOwner.getAttackTarget() != null || ((MutantEndermanEntity)this.goalOwner).attackID != 0) {
-				return false;
-			} else {
-				boolean flag = super.shouldExecute();
-				if (flag && ((MutantEndermanEntity)this.goalOwner).isBeingLookedAtBy(this.nearestTarget)) {
-					((MutantEndermanEntity)this.goalOwner).setAttackID(STARE_ATTACK);
-				}
-
-				return flag;
+			boolean foundTarget = ((MutantEndermanEntity)this.goalOwner).attackID == 0 && super.shouldExecute();
+			if (foundTarget && ((MutantEndermanEntity)this.goalOwner).isBeingLookedAtBy(this.nearestTarget)) {
+				((MutantEndermanEntity)this.goalOwner).attackID = STARE_ATTACK;
 			}
+
+			return foundTarget;
 		}
 
 		@Override
 		protected AxisAlignedBB getTargetableArea(double targetDistance) {
-			return this.goalOwner.getBoundingBox().grow(targetDistance);
+			return this.goalOwner.getBoundingBox().grow(targetDistance, targetDistance / 2.0D, targetDistance);
 		}
 	}
 
@@ -912,8 +937,9 @@ public class MutantEndermanEntity extends MonsterEntity {
 
 		@Override
 		public void startExecuting() {
-			attackTick = 0;
+			setAttackID(STARE_ATTACK);
 			navigator.clearPath();
+			livingSoundTime = -getTalkInterval();
 			playSound(MBSoundEvents.ENTITY_MUTANT_ENDERMAN_STARE, 2.5F, 0.7F + rand.nextFloat() * 0.2F);
 		}
 
@@ -954,22 +980,26 @@ public class MutantEndermanEntity extends MonsterEntity {
 
 		@Override
 		public void startExecuting() {
-			attackTick = 0;
+			setAttackID(MELEE_ATTACK);
 		}
 
 		@Override
 		public void tick() {
 			if (attackTick == 3) {
 				playSound(SoundEvents.ENTITY_PLAYER_ATTACK_STRONG, 1.0F, getSoundPitch());
-				for (Entity entity : world.getEntitiesInAABBexcluding(MutantEndermanEntity.this, getBoundingBox().grow(4.0D), EndersoulFragmentEntity.IS_VALID_TARGET)) {
+				boolean lower = getActiveArm() >= 3;
+				float attackDamage = (float)getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getValue();
+				float damage = attackDamage > 0.0F ? attackDamage + (lower ? 1.0F : 3.0F) : 0.0F;
+				for (Entity entity : world.getEntitiesWithinAABBExcludingEntity(MutantEndermanEntity.this, getBoundingBox().grow(4.0D))) {
+					if (entity instanceof MutantEndermanEntity || entity instanceof EndersoulCloneEntity) {
+						continue;
+					}
+
 					double dist = (double)getDistance(entity);
 					double x = posX - entity.posX;
 					double z = posZ - entity.posZ;
 
 					if (getBoundingBox().minY <= entity.getBoundingBox().maxY && dist <= 4.0D && EntityUtil.isFacing(rotationYawHead, x, z, 3.0F + (1.0F - (float)dist / 4.0F) * 40.0F)) {
-						boolean lower = getActiveArm() >= 3;
-						float attackDamage = (float)getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getValue();
-						float damage = attackDamage > 0.0F ? attackDamage + (lower ? 1.0F : 3.0F) : 0.0F;
 						entity.attackEntityFrom(DamageSource.causeMobDamage(MutantEndermanEntity.this), damage);
 						float power = 0.4F + rand.nextFloat() * 0.2F;
 						if (!lower) {
@@ -977,6 +1007,7 @@ public class MutantEndermanEntity extends MonsterEntity {
 						}
 
 						entity.setMotion(-x / dist * (double)power, (double)(power * 0.6F), -z / dist * (double)power);
+						EntityUtil.sendPlayerVelocityPacket(entity);
 					}
 				}
 			}
@@ -1005,13 +1036,11 @@ public class MutantEndermanEntity extends MonsterEntity {
 
 		@Override
 		public void startExecuting() {
-			attackTick = 0;
-			hurtResistantTime = 20;
 			setClone(true);
+			hurtResistantTime = 20;
 			this.attackTarget = getAttackTarget();
 			extinguish();
 			clearActivePotions();
-			this.playEffects();
 
 			for (int i = 0; i < 7; ++i) {
 				double x = this.attackTarget.posX + (double)((rand.nextFloat() - 0.5F) * 24.0F);
@@ -1025,7 +1054,7 @@ public class MutantEndermanEntity extends MonsterEntity {
 			double y = this.attackTarget.posY + 8.0D;
 			double z = this.attackTarget.posZ + (double)((rand.nextFloat() - 0.5F) * 24.0F);
 			teleportTo(x, y, z);
-			EntityUtil.divertAttackers(MutantEndermanEntity.this, this.getRandomClone());
+			EntityUtil.divertAttackers(MutantEndermanEntity.this, this.cloneList.get(rand.nextInt(this.cloneList.size())));
 		}
 
 		@Override
@@ -1036,8 +1065,11 @@ public class MutantEndermanEntity extends MonsterEntity {
 		@Override
 		public void tick() {
 			for (int i = cloneList.size() - 1; i >= 0; --i) {
-				if (!cloneList.get(i).isAlive()) {
-					EntityUtil.divertAttackers(cloneList.remove(i), this.getRandomClone());
+				EndersoulCloneEntity clone = cloneList.get(i);
+				if (!clone.isAlive()) {
+					cloneList.remove(i);
+				} else if (clone.getAttackTarget() != getAttackTarget()) {
+					clone.setAttackTarget(getAttackTarget());
 				}
 			}
 		}
@@ -1046,33 +1078,25 @@ public class MutantEndermanEntity extends MonsterEntity {
 		public void resetTask() {
 			setClone(false);
 			for (EndersoulCloneEntity clone : this.cloneList) {
-				if (clone.isAlive()) {
-					clone.onKillCommand();
-				}
+				clone.remove();
 			}
 
 			this.cloneList.clear();
-			this.playEffects();
 			navigator.clearPath();
+			this.attackTarget.setRevengeTarget(MutantEndermanEntity.this);
 			this.attackTarget = null;
 		}
 
 		private void createClone(double x, double y, double z) {
 			EndersoulCloneEntity clone = MBEntityType.ENDERSOUL_CLONE.create(world);
 			clone.setCloner(MutantEndermanEntity.this);
-			if (EntityUtil.teleportTo(clone, x, y, z)) {
-				world.addEntity(clone);
-				this.cloneList.add(clone);
+			clone.setAttackTarget(this.attackTarget);
+			this.cloneList.add(clone);
+			if (!EntityUtil.teleportTo(clone, x, y, z)) {
+				clone.setPosition(posX, posY, posZ);
 			}
-		}
 
-		private LivingEntity getRandomClone() {
-			return this.cloneList.isEmpty() ? MutantEndermanEntity.this : this.cloneList.get(rand.nextInt(this.cloneList.size()));
-		}
-
-		private void playEffects() {
-			playSound(MBSoundEvents.ENTITY_MUTANT_ENDERMAN_MORPH, 2.0F, getSoundPitch());
-			world.setEntityState(MutantEndermanEntity.this, (byte)12);
+			world.addEntity(clone);
 		}
 	}
 
@@ -1084,7 +1108,7 @@ public class MutantEndermanEntity extends MonsterEntity {
 		@Override
 		public boolean shouldExecute() {
 			if (getAttackTarget() != null && attackID == 0) {
-				return screamDelayTick > 0 ? false : rand.nextInt(isWet() ? 400 : 1200) == 0;
+				return screamDelayTick > 0 ? false : getDistanceSq(getAttackTarget()) < 400.0D && rand.nextInt(isWet() ? 400 : 1200) == 0;
 			} else {
 				return false;
 			}
@@ -1097,9 +1121,9 @@ public class MutantEndermanEntity extends MonsterEntity {
 
 		@Override
 		public void startExecuting() {
-			attackTick = 0;
 			setAttackID(SCREAM_ATTACK);
 			navigator.clearPath();
+			livingSoundTime = -getTalkInterval();
 		}
 
 		@Override
@@ -1161,7 +1185,6 @@ public class MutantEndermanEntity extends MonsterEntity {
 
 		@Override
 		public void startExecuting() {
-			attackTick = 0;
 			navigator.clearPath();
 
 			if (getAttackTarget() != null) {
@@ -1184,6 +1207,7 @@ public class MutantEndermanEntity extends MonsterEntity {
 		@Override
 		public void resetTask() {
 			setAttackID(0);
+			fallDistance = 0.0F;
 			setPosition((double)getTeleportPosition().getX() + 0.5D, (double)getTeleportPosition().getY(), (double)getTeleportPosition().getZ() + 0.5D);
 			setTeleportPosition(null);
 			prevPosX = posX;
@@ -1212,7 +1236,7 @@ public class MutantEndermanEntity extends MonsterEntity {
 
 		@Override
 		public void startExecuting() {
-			attackTick = 0;
+			setAttackID(TELESMASH_ATTACK);
 			this.attackTarget.addPotionEffect(new EffectInstance(Effects.SLOWNESS, 20, 5));
 			this.attackTarget.addPotionEffect(new EffectInstance(Effects.NAUSEA, 160 + this.attackTarget.getRNG().nextInt(160), 0));
 		}
@@ -1273,7 +1297,6 @@ public class MutantEndermanEntity extends MonsterEntity {
 
 		@Override
 		public void startExecuting() {
-			attackTick = 0;
 			setAttackID(THROW_ATTACK);
 			int id = getActiveArm();
 			world.addEntity(new ThrowableBlockEntity(world, MutantEndermanEntity.this, id));

@@ -5,15 +5,11 @@ import net.minecraft.client.particle.IParticleFactory;
 import net.minecraft.client.particle.IParticleRenderType;
 import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.SpriteTexturedParticle;
-import net.minecraft.client.renderer.ActiveRenderInfo;
-import net.minecraft.client.renderer.BufferBuilder;
 import net.minecraft.particles.BasicParticleType;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.World;
 
 public class SkullSpiritParticle extends SpriteTexturedParticle {
-	private float particleScale = (this.rand.nextFloat() * 0.5F + 0.5F) * 2.0F;
-	private float skullScale;
-
 	private SkullSpiritParticle(World world, double x, double y, double z, double xx, double yy, double zz) {
 		super(world, x, y, z, 0.0D, 0.0D, 0.0D);
 		this.motionX *= 0.10000000149011612D;
@@ -22,11 +18,10 @@ public class SkullSpiritParticle extends SpriteTexturedParticle {
 		this.motionX += xx;
 		this.motionY += yy;
 		this.motionZ += zz;
-		this.particleRed = this.particleGreen = this.particleBlue = 1.0F - (float)(Math.random() * 0.2D);
-		this.particleScale *= 1.0F;
+		float color = 1.0F - (float)(Math.random() * 0.2D);
+		this.setColor(color, color, color);
 		float scale = 0.4F + this.rand.nextFloat() * 0.6F;
 		this.particleScale *= scale;
-		this.skullScale = this.particleScale;
 		this.maxAge = (int)(8.0D / (Math.random() * 0.8D + 0.2D));
 		this.maxAge = (int)((float)this.maxAge * scale);
 		this.canCollide = false;
@@ -34,22 +29,9 @@ public class SkullSpiritParticle extends SpriteTexturedParticle {
 
 	@Override
 	public float getScale(float partialTicks) {
-		return 0.1F * this.particleScale;
-	}
-
-	@Override
-	public void renderParticle(BufferBuilder buffer, ActiveRenderInfo entityIn, float partialTicks, float rotationX, float rotationZ, float rotationYZ, float rotationXY, float rotationXZ) {
 		float timeScale = ((float)this.age + partialTicks) / (float)this.maxAge * 32.0F;
-		if (timeScale < 0.0F) {
-			timeScale = 0.0F;
-		}
-
-		if (timeScale > 1.0F) {
-			timeScale = 1.0F;
-		}
-
-		this.particleScale = this.skullScale * timeScale;
-		super.renderParticle(buffer, entityIn, partialTicks, rotationX, rotationZ, rotationYZ, rotationXY, rotationXZ);
+		timeScale = MathHelper.clamp(timeScale, 0.0F, 1.0F);
+		return this.particleScale * timeScale;
 	}
 
 	@Override

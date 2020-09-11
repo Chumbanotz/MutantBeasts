@@ -28,7 +28,7 @@ public class EndersoulParticle extends SpriteTexturedParticle {
 
 	@Override
 	public float getScale(float partialTicks) {
-		float scale = 1.0F - (this.age + partialTicks) / this.maxAge;
+		float scale = 1.0F - ((float)this.age + partialTicks) / (float)this.maxAge;
 		scale *= scale;
 		scale = 1.0F - scale;
 		return this.particleScale * scale;

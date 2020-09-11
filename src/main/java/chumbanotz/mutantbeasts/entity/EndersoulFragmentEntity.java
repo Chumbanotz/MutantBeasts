@@ -30,7 +30,7 @@ import net.minecraftforge.fml.network.NetworkHooks;
 public class EndersoulFragmentEntity extends Entity {
 	public static final Predicate<Entity> IS_VALID_TARGET = EntityPredicates.CAN_AI_TARGET.and(entity -> {
 		EntityType<?> type = entity.getType();
-		return type != EntityType.ITEM && type != EntityType.EXPERIENCE_ORB && type != MBEntityType.ENDERSOUL_CLONE && type != MBEntityType.ENDERSOUL_FRAGMENT && type != MBEntityType.MUTANT_ENDERMAN && type != EntityType.ENDER_DRAGON && type != EntityType.ENDERMAN;
+		return type != EntityType.ITEM && type != EntityType.EXPERIENCE_ORB && type != EntityType.END_CRYSTAL && type != MBEntityType.ENDERSOUL_CLONE && type != MBEntityType.ENDERSOUL_FRAGMENT && type != MBEntityType.MUTANT_ENDERMAN && type != EntityType.ENDER_DRAGON && type != EntityType.ENDERMAN;
 	});
 	private static final DataParameter<Boolean> TAMED = EntityDataManager.createKey(EndersoulFragmentEntity.class, DataSerializers.BOOLEAN);
 	private int explodeTick = 20 + this.rand.nextInt(20);
@@ -157,7 +157,7 @@ public class EndersoulFragmentEntity extends Entity {
 		if (this.isInvulnerableTo(source)) {
 			return false;
 		} else {
-			if (!this.world.isRemote && this.isAlive()) {
+			if (!this.world.isRemote && this.isAlive() && this.ticksExisted > 0) {
 				this.explode();
 			}
 
@@ -200,7 +200,7 @@ public class EndersoulFragmentEntity extends Entity {
 
 	@Override
 	public SoundCategory getSoundCategory() {
-		return !this.isTamed() ? SoundCategory.HOSTILE : SoundCategory.NEUTRAL;
+		return this.isTamed() ? SoundCategory.NEUTRAL : SoundCategory.HOSTILE;
 	}
 
 	@Override

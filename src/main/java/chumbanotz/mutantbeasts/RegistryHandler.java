@@ -90,11 +90,11 @@ public class RegistryHandler {
 				);
 
 		build("creeper_minion", EntityType.Builder.create(CreeperMinionEntity::new, EntityClassification.MISC).size(0.3F, 0.84F), 894731, 12040119);
-		build("mutant_creeper", EntityType.Builder.create(MutantCreeperEntity::new, EntityClassification.MONSTER).size(1.6F, 2.8F), 5349438, 11013646);
+		build("mutant_creeper", EntityType.Builder.create(MutantCreeperEntity::new, EntityClassification.MONSTER).size(1.98F, 2.8F), 5349438, 11013646);
 		build("mutant_enderman", EntityType.Builder.create(MutantEndermanEntity::new, EntityClassification.MONSTER).size(1.2F, 4.2F), 1447446, 8860812);
-		build("mutant_skeleton", EntityType.Builder.create(MutantSkeletonEntity::new, EntityClassification.MONSTER).size(1.2F, 3.6F), 12698049, 6310217);
-		build("mutant_snow_golem", EntityType.Builder.create(MutantSnowGolemEntity::new, EntityClassification.MISC).size(1.05F, 2.2F), 15073279, 16753434);
-		build("mutant_zombie", EntityType.Builder.create(MutantZombieEntity::new, EntityClassification.MONSTER).size(1.8F, 3.2F), 7969893, 44975);
+		build("mutant_skeleton", EntityType.Builder.<MutantSkeletonEntity>create(MutantSkeletonEntity::new, EntityClassification.MONSTER).setCustomClientFactory(MutantSkeletonEntity::new).size(1.2F, 3.6F), 12698049, 6310217);
+		build("mutant_snow_golem", EntityType.Builder.create(MutantSnowGolemEntity::new, EntityClassification.MISC).size(1.1F, 2.2F), 15073279, 16753434);
+		build("mutant_zombie", EntityType.Builder.<MutantZombieEntity>create(MutantZombieEntity::new, EntityClassification.MONSTER).setCustomClientFactory(MutantZombieEntity::new).size(1.8F, 3.2F), 7969893, 44975);
 		build("spider_pig", EntityType.Builder.create(SpiderPigEntity::new, EntityClassification.CREATURE).size(1.4F, 0.9F), 3419431, 15771042);
 
 		for (SpawnEggItem spawnEggItem : SPAWN_EGGS.values()) {
@@ -217,7 +217,8 @@ public class RegistryHandler {
 	}
 
 	private static SoundEvent createSoundEvent(String name) {
-		return setRegistryName(name, new SoundEvent(MutantBeasts.prefix(name)));
+		ResourceLocation resourceLocation = MutantBeasts.prefix(name);
+		return new SoundEvent(resourceLocation).setRegistryName(resourceLocation);
 	}
 
 	@SubscribeEvent

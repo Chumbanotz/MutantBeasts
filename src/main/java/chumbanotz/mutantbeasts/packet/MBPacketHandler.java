@@ -15,5 +15,7 @@ public class MBPacketHandler {
 	public static void register() {
 		INSTANCE.registerMessage(0, CreeperMinionTrackerPacket.class, CreeperMinionTrackerPacket::encode, CreeperMinionTrackerPacket::new, CreeperMinionTrackerPacket::handle);
 		INSTANCE.registerMessage(1, HeldBlockPacket.class, HeldBlockPacket::encode, HeldBlockPacket::new, HeldBlockPacket::handle);
+		INSTANCE.registerMessage(2, FluidParticlePacket.class, FluidParticlePacket::encode, FluidParticlePacket::new, FluidParticlePacket::handle);
+		INSTANCE.registerMessage(3, SpawnParticlePacket.class, SpawnParticlePacket::encode, SpawnParticlePacket::new, SpawnParticlePacket::handle);
 	}
 }

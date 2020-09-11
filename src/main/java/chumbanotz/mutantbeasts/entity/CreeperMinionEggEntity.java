@@ -1,18 +1,19 @@
 package chumbanotz.mutantbeasts.entity;
 
-import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
 
 import javax.annotation.Nullable;
 
 import chumbanotz.mutantbeasts.item.MBItems;
+import chumbanotz.mutantbeasts.util.EntityUtil;
 import chumbanotz.mutantbeasts.util.MBSoundEvents;
 import chumbanotz.mutantbeasts.util.MutatedExplosion;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.MoverType;
 import net.minecraft.entity.Pose;
-import net.minecraft.entity.monster.CreeperEntity;
+import net.minecraft.entity.effect.LightningBoltEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundNBT;
@@ -27,12 +28,10 @@ import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
-import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.fml.network.FMLPlayMessages;
 import net.minecraftforge.fml.network.NetworkHooks;
 
 public class CreeperMinionEggEntity extends Entity {
-	private static final DataParameter<Optional<UUID>> OWNER_UNIQUE_ID = EntityDataManager.createKey(CreeperMinionEggEntity.class, DataSerializers.OPTIONAL_UNIQUE_ID);
 	private static final DataParameter<Boolean> CHARGED = EntityDataManager.createKey(CreeperMinionEggEntity.class, DataSerializers.BOOLEAN);
 	private int health = 8;
 	private int age = (60 + this.rand.nextInt(40)) * 1200;
@@ -40,6 +39,7 @@ public class CreeperMinionEggEntity extends Entity {
 	private double velocityX;
 	private double velocityY;
 	private double velocityZ;
+	private UUID ownerUUID;
 
 	public CreeperMinionEggEntity(EntityType<? extends CreeperMinionEggEntity> type, World world) {
 		super(type, world);
@@ -48,7 +48,7 @@ public class CreeperMinionEggEntity extends Entity {
 
 	public CreeperMinionEggEntity(World world, Entity owner) {
 		this(MBEntityType.CREEPER_MINION_EGG, world);
-		this.setOwnerUniqueId(owner.getUniqueID());
+		this.ownerUUID = owner.getUniqueID();
 	}
 
 	public CreeperMinionEggEntity(FMLPlayMessages.SpawnEntity packet, World world) {
@@ -57,17 +57,7 @@ public class CreeperMinionEggEntity extends Entity {
 
 	@Override
 	protected void registerData() {
-		this.dataManager.register(OWNER_UNIQUE_ID, Optional.empty());
 		this.dataManager.register(CHARGED, false);
-	}
-
-	@Nullable
-	public UUID getOwnerUniqueId() {
-		return this.dataManager.get(OWNER_UNIQUE_ID).orElse(null);
-	}
-
-	public void setOwnerUniqueId(@Nullable UUID uuid) {
-		this.dataManager.set(OWNER_UNIQUE_ID, Optional.ofNullable(uuid));
 	}
 
 	public boolean isCharged() {
@@ -80,7 +70,11 @@ public class CreeperMinionEggEntity extends Entity {
 
 	@Override
 	public double getYOffset() {
-		return this.isPassenger() ? (double)this.getHeight() - (this.getRidingEntity().getPose() == Pose.SNEAKING ? 0.35D : 0.2D) : 0.0F;
+		if (this.getRidingEntity() instanceof PlayerEntity) {
+			return this.getHeight() - (this.getRidingEntity().getPose() == Pose.SNEAKING ? 0.35D : 0.2D);
+		}
+
+		return 0.0F;
 	}
 
 	@Override
@@ -130,23 +124,28 @@ public class CreeperMinionEggEntity extends Entity {
 
 	private void hatch() {
 		CreeperMinionEntity minion = MBEntityType.CREEPER_MINION.create(this.world);
-		UUID uuid = this.getOwnerUniqueId();
-
-		if (uuid != null) {
-			PlayerEntity playerEntity = this.world.getPlayerByUuid(uuid);
-			if (playerEntity != null) {
+		if (this.ownerUUID != null) {
+			PlayerEntity playerEntity = this.world.getPlayerByUuid(this.ownerUUID);
+			if (playerEntity != null && !net.minecraftforge.event.ForgeEventFactory.onAnimalTame(minion, playerEntity)) {
 				minion.setTamedBy(playerEntity);
 				minion.getAISit().setSitting(true);
-			} else {
-				minion.setOwnerId(uuid);
 			}
 		}
 
-		minion.setPowered(this.isCharged());
+		if (this.isCharged()) {
+			minion.setPowered(true);
+		}
+
 		minion.setPosition(this.posX, this.posY, this.posZ);
 		this.world.addEntity(minion);
 		this.playSound(MBSoundEvents.ENTITY_CREEPER_MINION_EGG_HATCH, 0.7F, 0.9F + this.rand.nextFloat() * 0.1F);
 		this.remove();
+	}
+
+	@Override
+	public void onStruckByLightning(LightningBoltEntity lightningBolt) {
+		super.onStruckByLightning(lightningBolt);
+		this.setCharged(true);
 	}
 
 	@Override
@@ -175,7 +174,7 @@ public class CreeperMinionEggEntity extends Entity {
 				++this.health;
 			}
 
-			if (--this.age <= 0 && !this.isPassenger()) {
+			if (--this.age <= 0) {
 				this.hatch();
 			}
 		}
@@ -183,17 +182,22 @@ public class CreeperMinionEggEntity extends Entity {
 
 	@Override
 	public boolean processInitialInteract(PlayerEntity player, Hand hand) {
-		if (this.isPassenger() && player == this.getRidingEntity()) {
-			this.stopRiding();
+		if (this.getRidingEntity() == player) {
+			this.getTopPassenger(player).stopRiding();
 			this.playMountSound(false);
 			return true;
-		} else if (!player.isBeingRidden() && (player.getPose() == Pose.STANDING || player.getPose() == Pose.SNEAKING)) {
-			this.startRiding(player, true);
+		} else if (player.getPose() == Pose.STANDING || player.getPose() == Pose.SNEAKING) {
+			this.startRiding(this.getTopPassenger(player), true);
 			this.playMountSound(true);
 			return true;
 		} else {
 			return false;
 		}
+	}
+
+	private Entity getTopPassenger(Entity entity) {
+		List<Entity> list = entity.getPassengers();
+		return !list.isEmpty() ? this.getTopPassenger(list.get(0)) : entity;
 	}
 
 	private void playMountSound(boolean mount) {
@@ -204,52 +208,33 @@ public class CreeperMinionEggEntity extends Entity {
 	public boolean attackEntityFrom(DamageSource source, float amount) {
 		if (this.isInvulnerableTo(source) || source.getTrueSource() == this.getRidingEntity()) {
 			return false;
-		} else {
-			Entity entity = source.getTrueSource();
-			if (entity == null || !(entity instanceof CreeperEntity) && !(entity instanceof CreeperMinionEntity)) {
-				this.markVelocityChanged();
-
-				if (source.isExplosion()) {
-					if (!this.world.isRemote) {
-						this.age = (int)((float)this.age - amount * 80.0F);
-					}
-
-					if (this.world instanceof ServerWorld) {
-						for (int i = 0; i < (int)(amount / 2.0F); i++) {
-							double d0 = this.rand.nextGaussian() * 0.02D;
-							double d1 = this.rand.nextGaussian() * 0.02D;
-							double d2 = this.rand.nextGaussian() * 0.02D;
-							((ServerWorld)this.world).spawnParticle(ParticleTypes.HEART, this.posX + (double)(this.rand.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(), this.posY + 0.5D + (double)(this.rand.nextFloat() * this.getHeight()), this.posZ + (double)(this.rand.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(), 0, d0, d1, d2, 1.0D);
-						}
-					}
-
-					return false;
-				} else {
-					this.recentlyHit = this.ticksExisted;
-					this.setMotion(0.0D, 0.2D, 0.0D);
-
-					if (!this.world.isRemote) {
-						this.health = (int)((float)this.health - amount);
-					}
-
-					if (this.health <= 0) {
-						MutatedExplosion.create(this, this.isCharged() ? 2.0F : 0.0F, false, MutatedExplosion.Mode.DESTROY);
-						if (!this.world.isRemote && this.world.getGameRules().getBoolean(GameRules.DO_ENTITY_DROPS)) {
-							if (this.rand.nextInt(this.isCharged() ? 2 : 3) == 0) {
-								this.entityDropItem(MBItems.CREEPER_SHARD);
-							} else for (int j = 5 + this.rand.nextInt(6); j > 0; --j) {
-								this.entityDropItem(Items.GUNPOWDER);
-							}
-						}
-
-						this.remove();
-					}
-
-					return true;
-				}
-			} else {
+		} else if (!this.world.isRemote && this.isAlive()) {
+			this.markVelocityChanged();
+			if (source.isExplosion()) {
+				this.age = (int)((float)this.age - amount * 80.0F);
+				EntityUtil.sendParticlePacket(this, ParticleTypes.HEART, (int)(amount / 2.0F));
 				return false;
+			} else {
+				this.recentlyHit = this.ticksExisted;
+				this.health = (int)((float)this.health - amount);
+
+				if (this.health <= 0) {
+					MutatedExplosion.create(this, this.isCharged() ? 2.0F : 0.0F, false, MutatedExplosion.Mode.BREAK);
+					if (this.world.getGameRules().getBoolean(GameRules.DO_ENTITY_DROPS)) {
+						if (this.isCharged() || this.rand.nextInt(3) == 0) {
+							this.entityDropItem(MBItems.CREEPER_SHARD);
+						} else for (int i = 5 + this.rand.nextInt(6); i > 0; --i) {
+							this.entityDropItem(Items.GUNPOWDER);
+						}
+					}
+
+					this.remove();
+				}
+
+				return true;
 			}
+		} else {
+			return false;
 		}
 	}
 
@@ -262,14 +247,17 @@ public class CreeperMinionEggEntity extends Entity {
 			compound.putBoolean("Charged", true);
 		}
 
-		if (this.getOwnerUniqueId() != null) {
-			compound.putUniqueId("OwnerUUID", this.getOwnerUniqueId());
+		if (this.ownerUUID != null) {
+			compound.putUniqueId("OwnerUUID", this.ownerUUID);
 		}
 	}
 
 	@Override
 	protected void readAdditional(CompoundNBT compound) {
-		this.health = compound.getInt("Health");
+		if (compound.contains("Health")) {
+			this.health = compound.getInt("Health");
+		}
+
 		if (compound.contains("Age")) {
 			this.age = compound.getInt("Age");
 		}
@@ -277,7 +265,7 @@ public class CreeperMinionEggEntity extends Entity {
 		this.recentlyHit = compound.getInt("RecentlyHit");
 		this.setCharged(compound.getBoolean("Charged"));
 		if (compound.hasUniqueId("OwnerUUID")) {
-			this.setOwnerUniqueId(compound.getUniqueId("OwnerUUID"));
+			this.ownerUUID = compound.getUniqueId("OwnerUUID");
 		}
 	}
 

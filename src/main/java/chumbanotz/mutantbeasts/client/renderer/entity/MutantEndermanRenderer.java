@@ -11,6 +11,7 @@ import chumbanotz.mutantbeasts.client.renderer.entity.model.MutantEndermanModel;
 import chumbanotz.mutantbeasts.entity.mutant.MutantEndermanEntity;
 import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.culling.ICamera;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.client.renderer.entity.IEntityRenderer;
 import net.minecraft.client.renderer.entity.layers.LayerRenderer;
@@ -18,9 +19,11 @@ import net.minecraft.client.renderer.entity.model.EndermanModel;
 import net.minecraft.client.renderer.entity.model.EntityModel;
 import net.minecraft.client.renderer.texture.AtlasTexture;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.AxisAlignedBB;
+import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 
-public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> {
+public class MutantEndermanRenderer extends AlternateMobRenderer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> {
 	private static final Field RENDER_POS_X = ObfuscationReflectionHelper.findField(EntityRendererManager.class, "field_78725_b");
 	private static final Field RENDER_POS_Y = ObfuscationReflectionHelper.findField(EntityRendererManager.class, "field_78726_c");
 	private static final Field RENDER_POS_Z = ObfuscationReflectionHelper.findField(EntityRendererManager.class, "field_78723_d");
@@ -36,6 +39,21 @@ public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity,
 		this.addLayer(new MutantEndermanRenderer.EyesLayer(this));
 		this.addLayer(new MutantEndermanRenderer.SoulLayer(this));
 		this.addLayer(new MutantEndermanRenderer.HeldBlocksLayer(this));
+	}
+
+	@Override
+	public boolean shouldRender(MutantEndermanEntity livingEntity, ICamera camera, double camX, double camY, double camZ) {
+		if (super.shouldRender(livingEntity, camera, camX, camY, camZ)) {
+			return true;
+		} else {
+			if (livingEntity.getAttackID() == MutantEndermanEntity.TELEPORT_ATTACK && livingEntity.getTeleportPosition() != null) {
+				BlockPos pos = livingEntity.getTeleportPosition();
+				AxisAlignedBB bb = livingEntity.getType().func_220328_a((double)pos.getX() + 0.5D, pos.getY(), (double)pos.getZ() + 0.5D);
+				return camera.isBoundingBoxInFrustum(bb);
+			}
+
+			return false;
+		}
 	}
 
 	@Override
@@ -85,13 +103,14 @@ public class MutantEndermanRenderer extends MutantRenderer<MutantEndermanEntity,
 		}
 
 		super.doRender(entity, x, y, z, entityYaw, partialTicks);
-		if (entity.getAttackID() == MutantEndermanEntity.TELEPORT_ATTACK) {
+		if (entity.getAttackID() == MutantEndermanEntity.TELEPORT_ATTACK && entity.getTeleportPosition() != null) {
 			this.teleportAttack = true;
 			try {
 				double renderPosX = (double)entity.getTeleportPosition().getX() + 0.5D - RENDER_POS_X.getDouble(this.renderManager);
 				double renderPosY = (double)entity.getTeleportPosition().getY() - RENDER_POS_Y.getDouble(this.renderManager);
 				double renderPosZ = (double)entity.getTeleportPosition().getZ() + 0.5D - RENDER_POS_Z.getDouble(this.renderManager);
 				super.doRender(entity, renderPosX, renderPosY, renderPosZ, entityYaw, partialTicks);
+				this.doRenderShadowAndFire(entity, renderPosX, renderPosY, renderPosZ, entityYaw, partialTicks);
 			} catch (IllegalArgumentException | IllegalAccessException exception) {
 				MutantBeasts.LOGGER.error("Failed to render mutant enderman teleport position", exception);
 			}

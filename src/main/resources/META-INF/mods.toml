@@ -16,7 +16,7 @@ description='''Mutant Beasts brings back the popular Mutant Creatures mod to mod
 [[dependencies.mutantbeasts]]
     modId="forge"
     mandatory=true
-    versionRange="[28,)"
+    versionRange="[28.2.0,)"
     ordering="NONE"
     side="BOTH"
 [[dependencies.mutantbeasts]]

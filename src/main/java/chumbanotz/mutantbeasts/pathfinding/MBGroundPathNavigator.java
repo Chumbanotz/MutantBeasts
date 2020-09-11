@@ -8,7 +8,6 @@ import net.minecraft.pathfinding.PathPoint;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
-import net.minecraft.world.biome.Biome;
 
 public class MBGroundPathNavigator extends GroundPathNavigator {
 	private boolean shouldAvoidRain;
@@ -39,7 +38,7 @@ public class MBGroundPathNavigator extends GroundPathNavigator {
 	@Override
 	protected void trimPath() {
 		super.trimPath();
-		if (this.shouldAvoidRain && this.world.isRaining() && this.world.getBiome(this.entity.getPosition()).getPrecipitation() == Biome.RainType.RAIN) {
+		if (this.shouldAvoidRain && this.world.isRaining()) {
 			if (this.world.isRainingAt(new BlockPos(this.entity.posX, this.entity.getBoundingBox().minY + 0.5D, this.entity.posZ))) {
 				return;
 			}
@@ -59,10 +58,10 @@ public class MBGroundPathNavigator extends GroundPathNavigator {
 		super.tick();
 		if (!this.entity.isImmuneToFire()) {
 			if (this.entity.isInLava()) {
-				if (this.entity.getPathPriority(PathNodeType.LAVA) <= -1.0F) {
+				if (this.entity.getPathPriority(PathNodeType.LAVA) < 8.0F) {
 					this.entity.setPathPriority(PathNodeType.LAVA, 8.0F);
 				}
-			} else if (this.entity.getPathPriority(PathNodeType.LAVA) != -1.0F) {
+			} else if (this.entity.getPathPriority(PathNodeType.LAVA) > -1.0F) {
 				this.entity.setPathPriority(PathNodeType.LAVA, -1.0F);
 			}
 		}

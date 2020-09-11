@@ -17,10 +17,6 @@ public class SkeletonArmorItem extends ArmorItem {
 
 	@Override
 	public void onArmorTick(ItemStack stack, World world, PlayerEntity player) {
-		if (this.slot == EquipmentSlotType.CHEST) {
-			// MutantCreatures.proxy.increaseBowSpeed(player);
-		}
-
 		if (this.slot == EquipmentSlotType.LEGS) {
 			player.addPotionEffect(new EffectInstance(Effects.SPEED, 1, 1, false, false));
 		}

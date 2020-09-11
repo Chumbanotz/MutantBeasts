@@ -12,6 +12,7 @@ public class CreeperMinionEggModel extends Model {
 
     public CreeperMinionEggModel(float scale) {
         this.egg = new RendererModel(this, 0, 0);
+		this.egg.setRotationPoint(0.0F, 22.0F, 0.0F);
         this.egg.addBox(-2.0F, 1.0F, -2.0F, 4, 1, 4, scale);
         this.egg.addBox(-3.0F, -3.0F, -3.0F, 6, 4, 6, scale);
         this.egg.addBox(-1.0F, -6.0F, -1.0F, 2, 1, 2, scale);

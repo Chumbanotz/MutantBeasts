@@ -1,9 +1,9 @@
 package chumbanotz.mutantbeasts.client.renderer.entity.layers;
 
-import java.util.function.Predicate;
-
 import com.mojang.blaze3d.platform.GlStateManager;
 
+import chumbanotz.mutantbeasts.entity.CreeperMinionEntity;
+import chumbanotz.mutantbeasts.entity.mutant.MutantCreeperEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.IEntityRenderer;
 import net.minecraft.client.renderer.entity.layers.LayerRenderer;
@@ -14,17 +14,15 @@ import net.minecraft.util.ResourceLocation;
 public class CreeperChargeLayer<T extends Entity, M extends EntityModel<T>> extends LayerRenderer<T, M> {
 	public static final ResourceLocation LIGHTNING_TEXTURE = new ResourceLocation("textures/entity/creeper/creeper_armor.png");
 	private final M model;
-	private final Predicate<T> shouldRender;
 
-	public CreeperChargeLayer(IEntityRenderer<T, M> renderer, M model, Predicate<T> shouldRender) {
+	public CreeperChargeLayer(IEntityRenderer<T, M> renderer, M model) {
 		super(renderer);
 		this.model = model;
-		this.shouldRender = shouldRender;
 	}
 
 	@Override
 	public void render(T entityIn, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch, float scale) {
-		if (this.shouldRender.test(entityIn)) {
+		if (entityIn instanceof CreeperMinionEntity && ((CreeperMinionEntity)entityIn).getPowered() || entityIn instanceof MutantCreeperEntity && ((MutantCreeperEntity)entityIn).getPowered()) {
 			GlStateManager.depthMask(!entityIn.isInvisible());
 			this.bindTexture(LIGHTNING_TEXTURE);
 			GlStateManager.matrixMode(5890);

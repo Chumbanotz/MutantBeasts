@@ -4,10 +4,8 @@ import java.util.List;
 
 import javax.annotation.Nullable;
 
-import chumbanotz.mutantbeasts.capability.SummonableCapability;
 import chumbanotz.mutantbeasts.entity.EndersoulFragmentEntity;
 import chumbanotz.mutantbeasts.entity.MBEntityType;
-import chumbanotz.mutantbeasts.entity.ai.goal.TrackSummonerGoal;
 import chumbanotz.mutantbeasts.entity.mutant.MutantCreeperEntity;
 import chumbanotz.mutantbeasts.entity.mutant.MutantZombieEntity;
 import chumbanotz.mutantbeasts.entity.mutant.SpiderPigEntity;
@@ -17,53 +15,50 @@ import chumbanotz.mutantbeasts.item.MBItems;
 import chumbanotz.mutantbeasts.util.EntityUtil;
 import chumbanotz.mutantbeasts.util.MBSoundEvents;
 import chumbanotz.mutantbeasts.util.SeismicWave;
+import net.minecraft.enchantment.EnchantmentHelper;
+import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.CreatureEntity;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.AvoidEntityGoal;
-import net.minecraft.entity.ai.goal.MoveTowardsRestrictionGoal;
 import net.minecraft.entity.ai.goal.TemptGoal;
 import net.minecraft.entity.item.ItemEntity;
 import net.minecraft.entity.merchant.villager.VillagerEntity;
 import net.minecraft.entity.merchant.villager.WanderingTraderEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.projectile.AbstractArrowEntity;
 import net.minecraft.inventory.EquipmentSlotType;
+import net.minecraft.item.ArrowItem;
+import net.minecraft.item.BowItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.item.UseAction;
 import net.minecraft.item.crafting.Ingredient;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
+import net.minecraft.stats.Stats;
 import net.minecraft.util.ActionResultType;
 import net.minecraft.util.DamageSource;
-import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.SoundCategory;
+import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.world.World;
-import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.item.ItemTossEvent;
-import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingDropsEvent;
+import net.minecraftforge.event.entity.living.LivingEntityUseItemEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.event.entity.living.LivingSpawnEvent;
+import net.minecraftforge.event.entity.player.ArrowLooseEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.world.ExplosionEvent;
-import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 
 @EventBusSubscriber(modid = MutantBeasts.MOD_ID)
 public class EventHandler {
-	//data get entity @e[type=!minecraft:player,limit=1,distance=..5]
-	@SubscribeEvent
-	public static void onAttachEntityCapability(AttachCapabilitiesEvent<Entity> event) {
-		if (SummonableCapability.isEntityEligible(event.getObject().getType())) {
-			event.addCapability(MutantBeasts.prefix("summonable"), new SummonableCapability.Provider());
-		}
-	}
-
 	@SubscribeEvent
 	public static void onEntityJoinWorld(EntityJoinWorldEvent event) {
 		if (event.getEntity() instanceof CreatureEntity) {
@@ -83,11 +78,6 @@ public class EventHandler {
 
 			if (creature instanceof WanderingTraderEntity) {
 				creature.goalSelector.addGoal(1, new AvoidEntityGoal<>(creature, MutantZombieEntity.class, 12.0F, 0.5F, 0.5F));
-			}
-
-			if (SummonableCapability.getLazy(creature).isPresent()) {
-				creature.goalSelector.addGoal(0, new TrackSummonerGoal(creature));
-				creature.goalSelector.addGoal(3, new MoveTowardsRestrictionGoal(creature, 1.0D));
 			}
 		}
 	}
@@ -125,22 +115,6 @@ public class EventHandler {
 	}
 
 	@SubscribeEvent
-	public static void onLivingAttack(LivingAttackEvent event) {
-		LivingEntity livingEntity = event.getEntityLiving();
-		DamageSource source = event.getSource();
-		if (livingEntity instanceof PlayerEntity && EntityUtil.canBlockDamageSource(livingEntity, source) && source.getTrueSource() instanceof MutantCreeperEntity && source.isExplosion()) {
-			MutantCreeperEntity mutantCreeperEntity = ((MutantCreeperEntity)source.getTrueSource());
-			if (mutantCreeperEntity.deathTime > 0) {
-				livingEntity.getActiveItemStack().damageItem(Integer.MAX_VALUE, livingEntity, e -> e.sendBreakAnimation(livingEntity.getActiveHand()));
-				livingEntity.attackEntityFrom(event.getSource(), event.getAmount() * 0.5F);
-			} else {
-				EntityUtil.disableShield(livingEntity, source, mutantCreeperEntity.getPowered() ? 200 : 100);
-				livingEntity.attackEntityFrom(source, event.getAmount() * 0.5F);
-			}
-		}
-	}
-
-	@SubscribeEvent
 	public static void onLivingDrops(LivingDropsEvent event) {
 		if (SpiderPigEntity.isPigOrSpider(event.getEntityLiving()) && event.getSource().getTrueSource() instanceof SpiderPigEntity) {
 			event.setCanceled(true);
@@ -148,11 +122,80 @@ public class EventHandler {
 	}
 
 	@SubscribeEvent
+	public static void onLivingUseItem(LivingEntityUseItemEvent.Tick event) {
+		int duration = event.getDuration();
+		if (event.getEntityLiving().getItemStackFromSlot(EquipmentSlotType.HEAD).getItem() == MBItems.MUTANT_SKELETON_SKULL && event.getItem().getUseAction() == UseAction.BOW && duration > 4) {
+			event.setDuration(duration - 3);
+		}
+	}
+
+	@SubscribeEvent
+	public static void onPlayerShootArrow(ArrowLooseEvent event) {
+		if (event.getPlayer().getItemStackFromSlot(EquipmentSlotType.HEAD).getItem() == MBItems.MUTANT_SKELETON_SKULL && event.hasAmmo()) {
+			event.setCanceled(true);
+			PlayerEntity player = event.getPlayer();
+			World world = event.getWorld();
+			ItemStack bow = event.getBow();
+			boolean inAir = !player.onGround && !player.isInWater() && !player.isInLava();
+			ItemStack ammo = player.findAmmo(bow);
+			if (!ammo.isEmpty() || event.hasAmmo()) {
+				if (ammo.isEmpty()) {
+					ammo = new ItemStack(Items.ARROW);
+				}
+
+				float velocity = BowItem.getArrowVelocity(bow.getUseDuration() - event.getCharge());
+				boolean infiniteArrows = player.abilities.isCreativeMode || ammo.getItem() instanceof ArrowItem && ((ArrowItem)ammo.getItem()).isInfinite(ammo, bow, player);
+				if (!world.isRemote) {
+					ArrowItem arrowitem = (ArrowItem)(ammo.getItem() instanceof ArrowItem ? ammo.getItem() : Items.ARROW);
+					AbstractArrowEntity abstractarrowentity = arrowitem.createArrow(world, ammo, player);
+					abstractarrowentity = ((BowItem)bow.getItem()).customeArrow(abstractarrowentity);
+					abstractarrowentity.shoot(player, player.rotationPitch, player.rotationYaw, 0.0F, velocity * 3.0F, 1.0F);
+					if (velocity == 1.0F && inAir) {
+						abstractarrowentity.setIsCritical(true);
+					}
+
+					int j = EnchantmentHelper.getEnchantmentLevel(Enchantments.POWER, bow);
+					if (j > 0) {
+						abstractarrowentity.setDamage(abstractarrowentity.getDamage() + j * 0.5D + 0.5D);
+					}
+
+					int k = EnchantmentHelper.getEnchantmentLevel(Enchantments.PUNCH, bow);
+					if (k > 0) {
+						abstractarrowentity.setKnockbackStrength(k);
+					}
+
+					if (EnchantmentHelper.getEnchantmentLevel(Enchantments.FLAME, bow) > 0) {
+						abstractarrowentity.setFire(100);
+					}
+
+					abstractarrowentity.setDamage(abstractarrowentity.getDamage() * (inAir ? 2.0D : 0.5D));
+					bow.damageItem(1, player, p_220009_1_ -> p_220009_1_.sendBreakAnimation(player.getActiveHand()));
+					if (infiniteArrows || player.abilities.isCreativeMode && (ammo.getItem() == Items.SPECTRAL_ARROW || ammo.getItem() == Items.TIPPED_ARROW)) {
+						abstractarrowentity.pickupStatus = AbstractArrowEntity.PickupStatus.CREATIVE_ONLY;
+					}
+
+					world.addEntity(abstractarrowentity);
+				}
+
+				world.playSound((PlayerEntity)null, player.posX, player.posY, player.posZ, SoundEvents.ENTITY_ARROW_SHOOT, SoundCategory.PLAYERS, 1.0F, 1.0F / (player.getRNG().nextFloat() * 0.4F + 1.2F) + velocity * 0.5F);
+				if (!infiniteArrows && !player.abilities.isCreativeMode) {
+					ammo.shrink(1);
+					if (ammo.isEmpty()) {
+						player.inventory.deleteStack(ammo);
+					}
+				}
+
+				player.addStat(Stats.ITEM_USED.get(bow.getItem()));
+			}
+		}
+	}
+
+	@SubscribeEvent
 	public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-		playShoulderEntitySound(event.player, event.player.getLeftShoulderEntity());
-		playShoulderEntitySound(event.player, event.player.getRightShoulderEntity());
-		if (!event.player.world.isRemote && !HulkHammerItem.WAVES.isEmpty()) {
-			PlayerEntity player = event.player;
+		PlayerEntity player = event.player;
+		playShoulderEntitySound(player, player.getLeftShoulderEntity());
+		playShoulderEntitySound(player, player.getRightShoulderEntity());
+		if (!player.world.isRemote && !HulkHammerItem.WAVES.isEmpty() && HulkHammerItem.WAVES.containsKey(player.getUniqueID())) {
 			List<SeismicWave> waveList = HulkHammerItem.WAVES.get(player.getUniqueID());
 
 			while (waveList.size() > 16) {
@@ -213,17 +256,6 @@ public class EventHandler {
 		event.getAffectedEntities().removeIf(entity -> {
 			return entity instanceof ItemEntity && ((ItemEntity)entity).getItem().getItem() == MBItems.CREEPER_SHARD;
 		});
-	}
-
-	@SubscribeEvent
-	public static void onLivingSpawnCheck(LivingSpawnEvent.CheckSpawn event) {
-		if (!MBConfig.dimensionBlacklist.isEmpty()) {
-			String name = event.getEntityLiving().getEntityString();
-			ResourceLocation dimensionLoc = event.getWorld().getDimension().getType().getRegistryName();
-			if (name != null && name.contains(MutantBeasts.MOD_ID) && dimensionLoc != null && MBConfig.dimensionBlacklist.contains(dimensionLoc.toString())) {
-				event.setResult(Event.Result.DENY);
-			}
-		}
 	}
 
 	private static void playShoulderEntitySound(PlayerEntity player, @Nullable CompoundNBT compoundNBT) {

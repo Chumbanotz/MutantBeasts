@@ -25,9 +25,11 @@ public class CreeperMinionEggRenderer extends EntityRenderer<CreeperMinionEggEnt
 	public void doRender(CreeperMinionEggEntity entity, double x, double y, double z, float entityYaw, float partialTicks) {
         super.doRender(entity, x, y, z, entityYaw, partialTicks);
 	    GlStateManager.pushMatrix();
-	    GlStateManager.translatef((float)x, (float)y + 0.2F, (float)z);
-	    GlStateManager.rotatef(180.0F, 0, 0, 1.0F);
+	    GlStateManager.translatef((float)x, (float)y, (float)z);
+        GlStateManager.enableRescaleNormal();
+        GlStateManager.scalef(-1.0F, -1.0F, 1.0F);
 	    GlStateManager.scalef(1.5F, 1.5F, 1.5F);
+        GlStateManager.translatef(0.0F, -1.501F, 0.0F);
 	    this.bindEntityTexture(entity);
 		if (this.renderOutlines) {
 			GlStateManager.enableColorMaterial();

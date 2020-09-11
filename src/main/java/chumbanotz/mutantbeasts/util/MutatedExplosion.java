@@ -42,6 +42,10 @@ public class MutatedExplosion extends Explosion {
 
 	@Override
 	public void doExplosionA() {
+		if (this.size <= 0.0F) {
+			return;
+		}
+
 		Set<BlockPos> set = new HashSet<>();
 
 		for (int j = 0; j < 16; ++j) {
@@ -116,7 +120,21 @@ public class MutatedExplosion extends Explosion {
 					y /= d13;
 					z /= d13;
 					double impact = (1.0D - distance) * (double)getBlockDensity(this.getPosition(), entity);
-					entity.attackEntityFrom(this.getDamageSource(), (float)((int)((impact * impact + impact) / 2.0D * 6.0D * (double)diameter + 1.0D)));
+					float damage = (float)((int)((impact * impact + impact) / 2.0D * 6.0D * (double)diameter + 1.0D));
+					if (!entity.attackEntityFrom(this.getDamageSource(), damage)) {
+						if (this.exploder instanceof MutantCreeperEntity && entity instanceof PlayerEntity && ((PlayerEntity)entity).isActiveItemStackBlocking()) {
+							MutantCreeperEntity mutantCreeper = (MutantCreeperEntity)this.exploder;
+							PlayerEntity player = (PlayerEntity)entity;
+							if (mutantCreeper.isJumpAttacking()) {
+								EntityUtil.disableShield(player, mutantCreeper.getPowered() ? 200 : 100);
+								entity.attackEntityFrom(this.getDamageSource(), damage * 0.5F);
+							} else {
+								player.getActiveItemStack().damageItem((int)damage * 2, player, e -> e.sendBreakAnimation(player.getActiveHand()));
+								entity.attackEntityFrom(this.getDamageSource(), damage * 0.5F);
+							}
+						}
+					}
+
 					double exposure = impact;
 					if (entity instanceof LivingEntity) {
 						exposure = ProtectionEnchantment.getBlastDamageReduction((LivingEntity)entity, impact);
@@ -142,24 +160,23 @@ public class MutatedExplosion extends Explosion {
 	}
 
 	public static MutatedExplosion create(World worldIn, @Nullable Entity exploderIn, double xIn, double yIn, double zIn, float sizeIn, boolean causesFireIn, Explosion.Mode mode) {
-		if (exploderIn instanceof MobEntity && !net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(exploderIn.world, exploderIn)) {
+		if (exploderIn instanceof MobEntity && !net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(worldIn, exploderIn)) {
 			mode = Explosion.Mode.NONE;
 		}
 
 		MutatedExplosion explosion = new MutatedExplosion(worldIn, exploderIn, xIn, yIn, zIn, sizeIn, causesFireIn, mode);
-		if (net.minecraftforge.event.ForgeEventFactory.onExplosionStart(explosion.world, explosion)) return explosion;
+		if (net.minecraftforge.event.ForgeEventFactory.onExplosionStart(worldIn, explosion)) return explosion;
+		if (worldIn instanceof ServerWorld) {
+			explosion.doExplosionA();
+			explosion.doExplosionB(false);
 
-		explosion.doExplosionA();
-		explosion.doExplosionB(true);
-
-		if (explosion.world instanceof ServerWorld) {
 			if (mode == Explosion.Mode.NONE) {
 				explosion.clearAffectedBlockPositions();
 			}
 
-			for (ServerPlayerEntity serverplayerentity : ((ServerWorld)explosion.world).getPlayers()) {
-				if (serverplayerentity.getDistanceSq(explosion.getPosition().x, explosion.getPosition().y, explosion.getPosition().z) < 4096.0D) {
-					serverplayerentity.connection.sendPacket(new SExplosionPacket(explosion.getPosition().x, explosion.getPosition().y, explosion.getPosition().z, explosion.size, explosion.getAffectedBlockPositions(), explosion.getPlayerKnockbackMap().get(serverplayerentity)));
+			for (ServerPlayerEntity serverplayerentity : ((ServerWorld)worldIn).getPlayers()) {
+				if (serverplayerentity.getDistanceSq(xIn, yIn, zIn) < 4096.0D) {
+					serverplayerentity.connection.sendPacket(new SExplosionPacket(xIn, yIn, zIn, explosion.size, explosion.getAffectedBlockPositions(), explosion.getPlayerKnockbackMap().get(serverplayerentity)));
 				}
 			}
 		}

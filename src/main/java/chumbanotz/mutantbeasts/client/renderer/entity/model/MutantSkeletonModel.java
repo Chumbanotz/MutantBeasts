@@ -13,7 +13,7 @@ public class MutantSkeletonModel extends EntityModel<MutantSkeletonEntity> {
 	private final RendererModel skeleBase;
 	private final RendererModel pelvis;
 	private final RendererModel waist;
-	private final Spine[] spine;
+	private final MutantSkeletonModel.Spine[] spine;
 	private final RendererModel neck;
 	private final JointRendererModel head;
 	private final RendererModel jaw;
@@ -119,7 +119,7 @@ public class MutantSkeletonModel extends EntityModel<MutantSkeletonEntity> {
 
 	@Override
 	public void render(MutantSkeletonEntity entityIn, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch, float scale) {
-		this.animator.update(entityIn);
+		this.animator.update(entityIn, this.partialTick);
 		this.setAngles();
 		this.animate(entityIn, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scale);
 		this.skeleBase.render(scale);
@@ -154,6 +154,7 @@ public class MutantSkeletonModel extends EntityModel<MutantSkeletonEntity> {
 		this.foreleg2.rotateAngleZ = 0.1308997F;
 		this.foreleg2.getModel().rotateAngleX = 0.31415927F;
 		this.crossbow.setAngles((float)Math.PI);
+		this.crossbow.rotateRope();
 	}
 
 	public void animate(MutantSkeletonEntity skele, float f, float f1, float f2, float f3, float f4, float f5) {
