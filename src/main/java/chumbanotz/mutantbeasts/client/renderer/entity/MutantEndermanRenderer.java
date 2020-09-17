@@ -46,7 +46,7 @@ public class MutantEndermanRenderer extends AlternateMobRenderer<MutantEndermanE
 		if (super.shouldRender(livingEntity, camera, camX, camY, camZ)) {
 			return true;
 		} else {
-			if (livingEntity.getAttackID() == MutantEndermanEntity.TELEPORT_ATTACK && livingEntity.getTeleportPosition() != null) {
+			if (livingEntity.getAttackID() == MutantEndermanEntity.TELEPORT_ATTACK) {
 				BlockPos pos = livingEntity.getTeleportPosition();
 				AxisAlignedBB bb = livingEntity.getType().func_220328_a((double)pos.getX() + 0.5D, pos.getY(), (double)pos.getZ() + 0.5D);
 				return camera.isBoundingBoxInFrustum(bb);
@@ -103,7 +103,7 @@ public class MutantEndermanRenderer extends AlternateMobRenderer<MutantEndermanE
 		}
 
 		super.doRender(entity, x, y, z, entityYaw, partialTicks);
-		if (entity.getAttackID() == MutantEndermanEntity.TELEPORT_ATTACK && entity.getTeleportPosition() != null) {
+		if (entity.getAttackID() == MutantEndermanEntity.TELEPORT_ATTACK) {
 			this.teleportAttack = true;
 			try {
 				double renderPosX = (double)entity.getTeleportPosition().getX() + 0.5D - RENDER_POS_X.getDouble(this.renderManager);

@@ -164,12 +164,14 @@ public class EntityUtil {
 		}
 
 		if (copiedNBT.contains("ActiveEffects", 9)) {
-			ListNBT listnbt = copiedNBT.getList("ActiveEffects", 10);
+			ListNBT activeEffects = copiedNBT.getList("ActiveEffects", 10);
 
-			for (int i = 0; i < listnbt.size(); ++i) {
-				CompoundNBT compoundnbt = listnbt.getCompound(i);
-				if (!newMob.isPotionApplicable(EffectInstance.read(compoundnbt))) {
-					listnbt.remove(i);
+			for (int i = 0; i < activeEffects.size(); ++i) {
+				CompoundNBT compoundnbt = activeEffects.getCompound(i);
+				EffectInstance effectInstance = EffectInstance.read(compoundnbt);
+				if (effectInstance != null && !newMob.isPotionApplicable(effectInstance)) {
+					activeEffects.remove(i);
+					i--;
 				}
 			}
 		}

@@ -1,9 +1,10 @@
 package chumbanotz.mutantbeasts.client.renderer.entity.model;
 
+import chumbanotz.mutantbeasts.entity.CreeperMinionEggEntity;
+import net.minecraft.client.renderer.entity.model.EntityModel;
 import net.minecraft.client.renderer.entity.model.RendererModel;
-import net.minecraft.client.renderer.model.Model;
 
-public class CreeperMinionEggModel extends Model {
+public class CreeperMinionEggModel extends EntityModel<CreeperMinionEggEntity> {
     private final RendererModel egg;
 
     public CreeperMinionEggModel() {
@@ -19,7 +20,8 @@ public class CreeperMinionEggModel extends Model {
         this.egg.addBox(-2.0F, -5.0F, -2.0F, 4, 2, 4, scale);
     }
 
-    public void render() {
-    	this.egg.render(0.0625F);
+    @Override
+    public void render(CreeperMinionEggEntity entityIn, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch, float scale) {
+    	this.egg.render(scale);
     }
 }

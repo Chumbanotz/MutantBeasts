@@ -31,18 +31,18 @@ public class MutantCreeperRenderer extends AlternateMobRenderer<MutantCreeperEnt
 
 	@Override
 	protected int getColorMultiplier(MutantCreeperEntity livingEntity, float lightBrightness, float partialTickTime) {
-		if (livingEntity.isJumpAttacking()) {
-			float f = MathHelper.lerp(partialTickTime, (float)livingEntity.prevPosY, (float)livingEntity.posY) / 10.0F;
-			if ((int)(f * 10.0F) % 2 == 0) {
+		float color = livingEntity.getExplosionColor(partialTickTime);
+		if (livingEntity.isJumpAttacking() && livingEntity.deathTime == 0) {
+			if ((int)(color * 10.0F) % 2 == 0) {
 				return 0;
 			} else {
-				int i = (int)(f * 0.2F * 255.0F);
+				int i = (int)(color * 0.2F * 255.0F);
 				i = MathHelper.clamp(i, 0, 255);
 				return i << 24 | 822083583;
 			}
 		}
 
-		int a = livingEntity.getExplosionColor(partialTickTime);
+		int a = (int)color;
 		int r = 255;
 		int g = 255;
 		int b = 255;

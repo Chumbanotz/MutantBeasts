@@ -38,6 +38,7 @@ import net.minecraft.entity.monster.CreeperEntity;
 import net.minecraft.entity.monster.IMob;
 import net.minecraft.entity.passive.GolemEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.entity.projectile.SnowballEntity;
 import net.minecraft.fluid.WaterFluid;
 import net.minecraft.item.ItemStack;
@@ -57,6 +58,7 @@ import net.minecraft.util.SoundEvent;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.world.GameRules;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.IWorldReader;
 import net.minecraft.world.World;
@@ -65,12 +67,13 @@ import net.minecraft.world.gen.Heightmap;
 
 public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackMob, net.minecraftforge.common.IShearable {
 	private static final DataParameter<Optional<UUID>> OWNER_UNIQUE_ID = EntityDataManager.createKey(MutantSnowGolemEntity.class, DataSerializers.OPTIONAL_UNIQUE_ID);
-	private static final DataParameter<Boolean> PUMPKIN_EQUIPPED = EntityDataManager.createKey(MutantSnowGolemEntity.class, DataSerializers.BOOLEAN);
+	private static final DataParameter<Byte> STATUS = EntityDataManager.createKey(MutantSnowGolemEntity.class, DataSerializers.BYTE);
 	private boolean isThrowing;
 	private int throwingTick;
 
 	public MutantSnowGolemEntity(EntityType<? extends MutantSnowGolemEntity> type, World worldIn) {
 		super(type, worldIn);
+		this.setPathPriority(PathNodeType.WATER, -1.0F);
 	}
 
 	@Override
@@ -103,7 +106,7 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 	protected void registerData() {
 		super.registerData();
 		this.dataManager.register(OWNER_UNIQUE_ID, Optional.empty());
-		this.dataManager.register(PUMPKIN_EQUIPPED, true);
+		this.dataManager.register(STATUS, (byte)1);
 	}
 
 	@Nullable
@@ -122,11 +125,21 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 	}
 
 	public boolean hasJackOLantern() {
-		return this.dataManager.get(PUMPKIN_EQUIPPED);
+		return (this.dataManager.get(STATUS) & 1) != 0;
 	}
 
 	public void setJackOLantern(boolean jackOLantern) {
-		this.dataManager.set(PUMPKIN_EQUIPPED, jackOLantern);
+		byte b0 = this.dataManager.get(STATUS);
+		this.dataManager.set(STATUS, jackOLantern ? (byte)(b0 | 1) : (byte)(b0 & -2));
+	}
+
+	public boolean getSwimJump() {
+		return (this.dataManager.get(STATUS) & 4) != 0;
+	}
+
+	public void setSwimJump(boolean swimJump) {
+		byte b0 = this.dataManager.get(STATUS);
+		this.dataManager.set(STATUS, swimJump ? (byte)(b0 | 4) : (byte)(b0 & -5));
 	}
 
 	@Override
@@ -150,10 +163,17 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 	}
 
 	@Override
+	public float getBlockPathWeight(BlockPos pos, IWorldReader worldIn) {
+		return worldIn.getBlockState(pos).getBlock() == Blocks.SNOW ? 10.0F : 0.0F;
+	}
+
+	@Override
 	public void tick() {
 		super.tick();
-		this.setPathPriority(PathNodeType.WATER, net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this.world, this) ? 16.0F : -1.0F);
-		float biomeTemp = this.world.getBiome(this.getPosition()).func_225486_c(this.getPosition());
+		if (this.world.isRemote && this.getSwimJump()) {
+			EntityUtil.spawnParticlesAtEntity(this, new BlockParticleData(ParticleTypes.BLOCK, Blocks.SNOW.getDefaultState()), 6);
+			EntityUtil.spawnParticlesAtEntity(this, ParticleTypes.SPLASH, 6);
+		}
 
 		if (this.isThrowing) {
 			this.throwingTick++;
@@ -163,6 +183,7 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 			this.attackEntityFrom(DamageSource.DROWN, 1.0F);
 		}
 
+		float biomeTemp = this.world.getBiome(this.getPosition()).func_225486_c(this.getPosition());
 		if (biomeTemp > 1.2F) {
 			if (this.rand.nextFloat() > Math.min(80.0F, this.getHealth()) * 0.01F) {
 				this.world.addParticle(ParticleTypes.FALLING_WATER, this.posX + (double)(this.rand.nextFloat() * this.getWidth() * 1.5F) - (double)this.getWidth(), this.posY - 0.15D + (double)(this.rand.nextFloat() * this.getHeight()), this.posZ + (double)(this.rand.nextFloat() * this.getWidth() * 1.5F) - (double)this.getWidth(), 0.0D, 0.0D, 0.0D);
@@ -340,11 +361,20 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 	}
 
 	@Override
+	public void onDeath(DamageSource cause) {
+		if (!this.world.isRemote && this.world.getGameRules().getBoolean(GameRules.SHOW_DEATH_MESSAGES) && this.getOwner() instanceof ServerPlayerEntity) {
+			this.getOwner().sendMessage(this.getCombatTracker().getDeathMessage());
+		}
+
+		super.onDeath(cause);
+	}
+
+	@Override
 	public void writeAdditional(CompoundNBT compound) {
 		super.writeAdditional(compound);
 		compound.putBoolean("JackOLantern", this.hasJackOLantern());
 		if (this.getOwnerId() != null) {
-			compound.putUniqueId("Owner", this.getOwnerId());
+			compound.putUniqueId("OwnerUUID", this.getOwnerId());
 		}
 	}
 
@@ -355,8 +385,8 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 			this.setJackOLantern(compound.getBoolean("Pumpkin") || compound.getBoolean("JackOLantern"));
 		}
 
-		if (compound.hasUniqueId("Owner")) {
-			this.setOwnerId(compound.getUniqueId("Owner"));
+		if (compound.hasUniqueId("OwnerUUID")) {
+			this.setOwnerId(compound.getUniqueId("OwnerUUID"));
 		}
 	}
 
@@ -395,7 +425,7 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 			this.prevPos = new BlockPos.MutableBlockPos(posX, getBoundingBox().minY - 1, posZ);
 			setMotion(((rand.nextFloat() - rand.nextFloat()) * 0.9F), 1.5D, ((rand.nextFloat() - rand.nextFloat()) * 0.9F));
 			attackEntityFrom(DamageSource.DROWN, 16.0F);
-			//setSwimJump(true);
+			setSwimJump(true);
 		}
 
 		@Override
@@ -447,7 +477,7 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 			this.jumpTick = 20;
 			this.waterReplaced = false;
 			this.prevPos = null;
-			// setSwimJump(false);
+			setSwimJump(false);
 		}
 
 		private int getWaterSurfaceHeight(World world, BlockPos coord) {

@@ -83,7 +83,7 @@ public class SpawnParticlePacket {
 						double tempX = this.posX + ((this.random.nextFloat() - 0.5F) * this.motionX);
 						double tempY = this.posY + ((this.random.nextFloat() - 0.5F) * this.motionY) + 0.5D;
 						double tempZ = this.posZ + ((this.random.nextFloat() - 0.5F) * this.motionZ);
-						world.addParticle(this.particle, true, tempX, tempY, tempZ, (double)f, (double)f1, (double)f2);
+						world.addOptionalParticle(this.particle, true, tempX, tempY, tempZ, (double)f, (double)f1, (double)f2);
 					} else {
 						double posX = this.posX + (this.random.nextFloat() * this.motionX * 2.0F) - this.motionX;
 						double posY = this.posY + 0.5D + (this.random.nextFloat() * this.motionY);

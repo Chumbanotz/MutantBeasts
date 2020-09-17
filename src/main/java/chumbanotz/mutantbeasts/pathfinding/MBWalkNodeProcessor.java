@@ -1,6 +1,28 @@
 package chumbanotz.mutantbeasts.pathfinding;
 
-import net.minecraft.block.*;
+import net.minecraft.block.AbstractGlassBlock;
+import net.minecraft.block.AbstractPressurePlateBlock;
+import net.minecraft.block.AbstractRailBlock;
+import net.minecraft.block.AbstractSkullBlock;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.CactusBlock;
+import net.minecraft.block.CampfireBlock;
+import net.minecraft.block.DoorBlock;
+import net.minecraft.block.EndPortalBlock;
+import net.minecraft.block.EndRodBlock;
+import net.minecraft.block.FenceGateBlock;
+import net.minecraft.block.FireBlock;
+import net.minecraft.block.LeavesBlock;
+import net.minecraft.block.LilyPadBlock;
+import net.minecraft.block.MagmaBlock;
+import net.minecraft.block.NetherPortalBlock;
+import net.minecraft.block.SoulSandBlock;
+import net.minecraft.block.SweetBerryBushBlock;
+import net.minecraft.block.TrapDoorBlock;
+import net.minecraft.block.WebBlock;
+import net.minecraft.block.WitherRoseBlock;
 import net.minecraft.block.material.Material;
 import net.minecraft.fluid.IFluidState;
 import net.minecraft.pathfinding.PathNodeType;
@@ -86,9 +108,9 @@ public class MBWalkNodeProcessor extends WalkNodeProcessor {
 	protected PathNodeType getPathNodeTypeRaw(IBlockReader blockaccessIn, int x, int y, int z) {
 		BlockPos blockPos = new BlockPos(x, y, z);
 		BlockState blockState = blockaccessIn.getBlockState(blockPos);
-		PathNodeType forgeType = blockState.getAiPathNodeType(blockaccessIn, blockPos, this.currentEntity);
-		if (forgeType != null) return forgeType;
 		Block block = blockState.getBlock();
+		PathNodeType forgeType = blockState.getAiPathNodeType(blockaccessIn, blockPos, this.currentEntity);
+		if (forgeType != null && block != Blocks.LAVA) return forgeType; //https://github.com/MinecraftForge/MinecraftForge/issues/6755
 		Material material = blockState.getMaterial();
 		if (blockState.isAir(blockaccessIn, blockPos)) {
 			return PathNodeType.OPEN;

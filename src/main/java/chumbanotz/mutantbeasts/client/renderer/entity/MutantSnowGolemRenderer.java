@@ -36,7 +36,7 @@ public class MutantSnowGolemRenderer extends MobRenderer<MutantSnowGolemEntity, 
 			ITextComponent textComponent = entity.getOwner().getDisplayName();
 			textComponent.getStyle().setItalic(true);
 			if (this.canRenderName(entity)) {
-	            y += (double)(9.0F * 1.15F * 0.025F);
+				y += (double)(9.0F * 1.15F * 0.025F);
 			}
 
 			this.renderEntityName(entity, x, y, z, textComponent.getFormattedText(), 64);

@@ -43,7 +43,6 @@ import net.minecraft.util.DamageSource;
 import net.minecraft.util.EntityPredicates;
 import net.minecraft.util.Hand;
 import net.minecraft.util.SoundEvent;
-import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.Explosion;
@@ -58,6 +57,8 @@ public class MutantCreeperEntity extends MonsterEntity {
 	public static final int MAX_DEATH_TIME = 100;
 	private int chargeTime;
 	private int chargeHits = 3 + this.rand.nextInt(3);
+	private int lastJumpTick;
+	private int jumpTick;
 	private boolean summonLightning;
 	private DamageSource deathCause;
 
@@ -80,7 +81,7 @@ public class MutantCreeperEntity extends MonsterEntity {
 		this.goalSelector.addGoal(5, new LookRandomlyGoal(this));
 		this.targetSelector.addGoal(0, new MBHurtByTargetGoal(this));
 		this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, PlayerEntity.class, true).setUnseenMemoryTicks(300));
-		this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, AnimalEntity.class, 50, true, true, EntityUtil::isFeline));
+		this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, AnimalEntity.class, 100, true, true, EntityUtil::isFeline));
 	}
 
 	@Override
@@ -200,11 +201,6 @@ public class MutantCreeperEntity extends MonsterEntity {
 	}
 
 	@Override
-	public boolean canDespawn(double distanceToClosestPlayer) {
-		return this.idleTime > 6000;
-	}
-
-	@Override
 	protected void func_213623_ec() {
 	}
 
@@ -220,12 +216,20 @@ public class MutantCreeperEntity extends MonsterEntity {
 	@Override
 	public void tick() {
 		super.tick();
-		if (!this.world.isRemote && this.isJumpAttacking()) {
+		this.lastJumpTick = this.jumpTick;
+		if (this.isJumpAttacking()) {
+			if (this.jumpTick == 0 && !this.isSilent()) {
+				this.world.playMovingSound(null, this, MBSoundEvents.ENTITY_MUTANT_CREEPER_PRIMED, this.getSoundCategory(), 2.0F, this.getSoundPitch());
+			}
+
+			this.jumpTick++;
 			this.motionMultiplier = Vec3d.ZERO;
-			if (this.onGround || !this.getBlockState().getFluidState().isEmpty()) {
+			if (!this.world.isRemote && (this.onGround || !this.getBlockState().getFluidState().isEmpty())) {
 				MutatedExplosion.create(this, this.getPowered() ? 6.0F : 4.0F, false, MutatedExplosion.Mode.DESTROY);
 				this.setJumpAttacking(false);
 			}
+		} else if (this.jumpTick > 0) {
+			this.jumpTick = 0;
 		}
 	}
 
@@ -244,27 +248,30 @@ public class MutantCreeperEntity extends MonsterEntity {
 		livingEntity.velocityChanged = true;
 	}
 
-	public int getExplosionColor(float partialTicks) {
-		float f = (float)this.deathTime / (float)MAX_DEATH_TIME;
-
-		if (this.isCharging()) {
-			f = this.ticksExisted % 20 < 10 ? 0.6F : 0.0F;
+	public float getExplosionColor(float partialTicks) {
+		if (this.deathTime > 0) {
+			return ((float)this.deathTime / (float)MAX_DEATH_TIME) * 255.0F;
+		} else if (this.isCharging()) {
+			 return (this.ticksExisted % 20 < 10 ? 0.6F : 0.0F) * 255.0F;
+		} else {
+	        return ((float)this.lastJumpTick + (float)(this.jumpTick - this.lastJumpTick) * partialTicks) / (float)(30 - 2);
 		}
-
-		return (int)(f * 255.0F);
 	}
 
 	@Override
 	public void onDeath(DamageSource cause) {
-		this.deathCause = cause;
-		this.setCharging(false);
+		if (!this.world.isRemote) {
+			this.deathCause = cause;
+			this.setCharging(false);
+			this.world.setEntityState(this, (byte)3);
 
-		if (!this.isSilent()) {
-			this.world.playMovingSound(null, this, MBSoundEvents.ENTITY_MUTANT_CREEPER_DEATH, this.getSoundCategory(), 2.0F, 1.0F);
-		}
+			if (!this.isSilent()) {
+				this.world.playMovingSound(null, this, MBSoundEvents.ENTITY_MUTANT_CREEPER_DEATH, this.getSoundCategory(), 2.0F, 1.0F);
+			}
 
-		if (this.recentlyHit > 0) {
-			this.recentlyHit += MAX_DEATH_TIME;
+			if (this.recentlyHit > 0) {
+				this.recentlyHit += MAX_DEATH_TIME;
+			}
 		}
 	}
 
@@ -475,10 +482,6 @@ public class MutantCreeperEntity extends MonsterEntity {
 				setMotion((getAttackTarget().posX - posX) * 0.2D, 1.4D, (getAttackTarget().posZ - posZ) * 0.2D);
 			} else {
 				setMotion(0.0D, 1.4D, 0.0D);
-			}
-
-			if (!isSilent()) {
-				world.playMovingSound(null, MutantCreeperEntity.this, SoundEvents.ENTITY_CREEPER_PRIMED, getSoundCategory(), 2.0F, getSoundPitch() * 0.5F);
 			}
 		}
 	}

@@ -65,7 +65,7 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 	private static final DataParameter<Float> EXPLOSION_RADIUS = EntityDataManager.createKey(CreeperMinionEntity.class, DataSerializers.FLOAT);
 	private int lastActiveTime;
 	private int timeSinceIgnited;
-	private int fuseTime = 25;
+	private int fuseTime = 26;
 
 	public CreeperMinionEntity(EntityType<? extends CreeperMinionEntity> type, World worldIn) {
 		super(type, worldIn);
@@ -509,7 +509,7 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 		@Override
 		public boolean shouldExecute() {
 			LivingEntity livingentity = getAttackTarget();
-			return !isSitting() && (getExplodeState() > 0 || livingentity != null && getDistanceSq(livingentity) < 9.0D);
+			return !isSitting() && (getExplodeState() > 0 || livingentity != null && getDistanceSq(livingentity) < 9.0D && canEntityBeSeen(livingentity));
 		}
 
 		@Override

@@ -5,7 +5,6 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import chumbanotz.mutantbeasts.client.renderer.entity.CreeperMinionRenderer;
 import chumbanotz.mutantbeasts.client.renderer.entity.model.CreeperMinionModel;
 import chumbanotz.mutantbeasts.entity.MBEntityType;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.IEntityRenderer;
 import net.minecraft.client.renderer.entity.layers.LayerRenderer;
 import net.minecraft.client.renderer.entity.model.PlayerModel;
@@ -42,26 +41,7 @@ public class CreeperMinionShoulderLayer<T extends PlayerEntity> extends LayerRen
 			this.creeperMinionModel.render(null, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scale);
 
 			if (compoundnbt.getBoolean("Powered")) {
-				this.bindTexture(CreeperChargeLayer.LIGHTNING_TEXTURE);
-				GlStateManager.matrixMode(5890);
-				GlStateManager.loadIdentity();
-				float f = (float)player.ticksExisted + partialTicks;
-				GlStateManager.translatef(f * 0.01F, f * 0.01F, 0.0F);
-				GlStateManager.matrixMode(5888);
-				GlStateManager.enableBlend();
-				GlStateManager.color4f(0.5F, 0.5F, 0.5F, 1.0F);
-				GlStateManager.disableLighting();
-				GlStateManager.blendFunc(GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE);
-				Minecraft.getInstance().gameRenderer.setupFogColor(true);
-				this.chargedModel.render(null, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scale);
-				Minecraft.getInstance().gameRenderer.setupFogColor(false);
-				GlStateManager.color4f(1.0F, 1.0F, 1.0F, 1.0F);
-				GlStateManager.matrixMode(5890);
-				GlStateManager.loadIdentity();
-				GlStateManager.matrixMode(5888);
-				GlStateManager.enableLighting();
-				GlStateManager.disableBlend();
-				GlStateManager.depthMask(true);
+				CreeperChargeLayer.render(null, limbSwing, limbSwingAmount, partialTicks, ageInTicks, netHeadYaw, headPitch, scale, this.creeperMinionModel, this.chargedModel);
 			}
 
 			GlStateManager.popMatrix();

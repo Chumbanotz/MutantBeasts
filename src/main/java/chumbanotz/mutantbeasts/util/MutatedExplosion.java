@@ -101,7 +101,12 @@ public class MutatedExplosion extends Explosion {
 			if (entity.isImmuneToExplosions()) {
 				return false;
 			} else if (this.exploder instanceof SkullSpiritEntity) {
-				return !(entity instanceof LivingEntity) || ChemicalXEntity.IS_APPLICABLE.test((LivingEntity)entity);
+				SkullSpiritEntity skullSpirit = (SkullSpiritEntity)this.exploder;
+				if (entity == skullSpirit.getTarget()) {
+					return !skullSpirit.isAttached();
+				} else {
+					return !(entity instanceof LivingEntity) || ChemicalXEntity.IS_APPLICABLE.test((LivingEntity)entity);
+				}
 			} else {
 				return true;
 			}
@@ -127,10 +132,10 @@ public class MutatedExplosion extends Explosion {
 							PlayerEntity player = (PlayerEntity)entity;
 							if (mutantCreeper.isJumpAttacking()) {
 								EntityUtil.disableShield(player, mutantCreeper.getPowered() ? 200 : 100);
-								entity.attackEntityFrom(this.getDamageSource(), damage * 0.5F);
+								player.attackEntityFrom(this.getDamageSource(), damage * 0.5F);
 							} else {
 								player.getActiveItemStack().damageItem((int)damage * 2, player, e -> e.sendBreakAnimation(player.getActiveHand()));
-								entity.attackEntityFrom(this.getDamageSource(), damage * 0.5F);
+								player.attackEntityFrom(this.getDamageSource(), damage * 0.5F);
 							}
 						}
 					}

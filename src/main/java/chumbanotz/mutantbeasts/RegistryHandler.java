@@ -93,7 +93,7 @@ public class RegistryHandler {
 		build("mutant_creeper", EntityType.Builder.create(MutantCreeperEntity::new, EntityClassification.MONSTER).size(1.98F, 2.8F), 5349438, 11013646);
 		build("mutant_enderman", EntityType.Builder.create(MutantEndermanEntity::new, EntityClassification.MONSTER).size(1.2F, 4.2F), 1447446, 8860812);
 		build("mutant_skeleton", EntityType.Builder.<MutantSkeletonEntity>create(MutantSkeletonEntity::new, EntityClassification.MONSTER).setCustomClientFactory(MutantSkeletonEntity::new).size(1.2F, 3.6F), 12698049, 6310217);
-		build("mutant_snow_golem", EntityType.Builder.create(MutantSnowGolemEntity::new, EntityClassification.MISC).size(1.1F, 2.2F), 15073279, 16753434);
+		build("mutant_snow_golem", EntityType.Builder.create(MutantSnowGolemEntity::new, EntityClassification.MISC).size(1.2F, 2.2F), 15073279, 16753434);
 		build("mutant_zombie", EntityType.Builder.<MutantZombieEntity>create(MutantZombieEntity::new, EntityClassification.MONSTER).setCustomClientFactory(MutantZombieEntity::new).size(1.8F, 3.2F), 7969893, 44975);
 		build("spider_pig", EntityType.Builder.create(SpiderPigEntity::new, EntityClassification.CREATURE).size(1.4F, 0.9F), 3419431, 15771042);
 
@@ -163,6 +163,7 @@ public class RegistryHandler {
 				createSoundEvent("entity.mutant_creeper.charge"),
 				createSoundEvent("entity.mutant_creeper.death"),
 				createSoundEvent("entity.mutant_creeper.hurt"),
+				createSoundEvent("entity.mutant_creeper.primed"),
 				createSoundEvent("entity.mutant_enderman.ambient"),
 				createSoundEvent("entity.mutant_enderman.death"),
 				createSoundEvent("entity.mutant_enderman.hurt"),

@@ -94,6 +94,16 @@
 		],
 		"subtitle": "subtitles.mutantbeasts.entity.mutant_creeper.hurt"
 	},
+	"entity.mutant_creeper.primed": {
+		"sounds": [
+			{
+				"name": "entity.creeper.primed",
+				"type": "event",
+				"pitch": 0.25
+			}
+		],
+		"subtitle": "subtitles.mutantbeasts.entity.mutant_creeper.primed"
+	},
 	"entity.mutant_enderman.ambient": {
 		"sounds": [
 			"mutantbeasts:entity/mutant_enderman/ambient1",

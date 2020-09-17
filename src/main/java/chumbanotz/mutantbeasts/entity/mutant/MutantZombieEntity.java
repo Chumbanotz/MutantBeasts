@@ -194,11 +194,6 @@ public class MutantZombieEntity extends MonsterEntity implements IEntityAddition
 	}
 
 	@Override
-	public boolean canDespawn(double distanceToClosestPlayer) {
-		return this.idleTime > 6000;
-	}
-
-	@Override
 	public int getMaxFallHeight() {
 		return this.getAttackTarget() != null ? (int)this.getDistance(this.getAttackTarget()) : 3;
 	}
@@ -285,7 +280,7 @@ public class MutantZombieEntity extends MonsterEntity implements IEntityAddition
 				this.attackID = MELEE_ATTACK;
 			}
 
-			if (this.attackID == 0 && this.getDistanceSq(this.getAttackTarget()) < 1.0F) {
+			if (this.attackID == 0 && this.getDistanceSq(this.getAttackTarget()) < 1.0F && this.rand.nextInt(125) == 0) {
 				this.attackID = THROW_ATTACK;
 			}
 		}
@@ -407,30 +402,25 @@ public class MutantZombieEntity extends MonsterEntity implements IEntityAddition
 
 	@Override
 	public void onDeath(DamageSource cause) {
-		System.out.println("Dead = " + dead +" > " + (world.isRemote ? "Client" : "Server"));
-		if (this.world.isRemote || this.dead) {
-			return;
-		}
+		if (!this.world.isRemote) {
+			this.deathCause = cause;
+			this.goalSelector.getRunningGoals().forEach(PrioritizedGoal::resetTask);
+			this.setLastAttackedEntity(this.getRevengeTarget());
+			this.world.setEntityState(this, (byte)3);
 
-		this.deathCause = cause;
-		this.goalSelector.getRunningGoals().forEach(PrioritizedGoal::resetTask);
-		this.setLastAttackedEntity(this.getRevengeTarget());
-		this.world.setEntityState(this, (byte)3);
-
-		if (this.recentlyHit > 0) {
-			this.recentlyHit += MAX_DEATH_TIME;
+			if (this.recentlyHit > 0) {
+				this.recentlyHit += MAX_DEATH_TIME;
+			}
 		}
 	}
 
 	@Override
 	protected void onDeathUpdate() {
 		if (this.deathTime <= 25 || !this.isBurning() || this.deathTime >= 100) {
-			System.out.println("DeathTime = " + deathTime +" > " + (world.isRemote ? "Client" : "Server"));
 			++this.deathTime;
 		}
 
 		if (this.isBurning()) {
-			System.out.println("VanishTime = " + vanishTime +" > " + (world.isRemote ? "Client" : "Server"));
 			++this.vanishTime;
 		} else if (this.vanishTime > 0) {
 			--this.vanishTime;
@@ -441,15 +431,11 @@ public class MutantZombieEntity extends MonsterEntity implements IEntityAddition
 			this.vanishTime = 0;
 			this.deathCause = null;
 			this.setLives(this.getLives() - 1);
-
-			if (!this.world.isRemote) {
-				if (this.getLastAttackedEntity() != null) {
-					this.getLastAttackedEntity().setRevengeTarget(this);
-				}
+			if (this.getLastAttackedEntity() != null) {
+				this.getLastAttackedEntity().setRevengeTarget(this);
 			}
-			System.out.println("Lives left = " + getLives() + " > " +(world.isRemote ? "Client" : "Server"));
+
 			this.setHealth((float)Math.round(this.getMaxHealth() / 3.75F));
-			return;
 		}
 
 		if (this.vanishTime >= MAX_VANISH_TIME || this.getLives() <= 0 && this.deathTime > 25) {
@@ -546,7 +532,7 @@ public class MutantZombieEntity extends MonsterEntity implements IEntityAddition
 		buffer.writeVarInt(this.deathTime);
 		buffer.writeVarInt(this.vanishTime);
 		buffer.writeVarInt(this.throwHitTick);
-		buffer.writeVarInt(this.throwHitTick);
+		buffer.writeVarInt(this.throwFinishTick);
 	}
 
 	@Override
@@ -556,7 +542,7 @@ public class MutantZombieEntity extends MonsterEntity implements IEntityAddition
 		this.deathTime = additionalData.readVarInt();
 		this.vanishTime = additionalData.readVarInt();
 		this.throwHitTick = additionalData.readVarInt();
-		this.throwHitTick = additionalData.readVarInt();
+		this.throwFinishTick = additionalData.readVarInt();
 	}
 
 	@Override
@@ -628,16 +614,13 @@ public class MutantZombieEntity extends MonsterEntity implements IEntityAddition
 	}
 
 	class RoarGoal extends Goal {
-		private LivingEntity attackTarget;
-
 		public RoarGoal() {
 			this.setMutexFlags(EnumSet.of(Goal.Flag.JUMP, Goal.Flag.LOOK, Goal.Flag.MOVE));
 		}
 
 		@Override
 		public boolean shouldExecute() {
-			this.attackTarget = getAttackTarget();
-			return this.attackTarget != null && onGround && getDistanceSq(this.attackTarget) > 16.0D && rand.nextFloat() * 100.0F < 0.35F;
+			return getAttackTarget()!= null && onGround && getDistanceSq(getAttackTarget()) > 16.0D && rand.nextFloat() * 100.0F < 0.35F;
 		}
 
 		@Override
@@ -655,8 +638,8 @@ public class MutantZombieEntity extends MonsterEntity implements IEntityAddition
 
 		@Override
 		public void tick() {
-			if (attackTick < 75) {
-				lookController.setLookPositionWithEntity(this.attackTarget, 30.0F, 30.0F);
+			if (attackTick < 75 && getAttackTarget() != null) {
+				lookController.setLookPositionWithEntity(getAttackTarget(), 30.0F, 30.0F);
 			}
 
 			if (attackTick == 10) {
@@ -691,7 +674,6 @@ public class MutantZombieEntity extends MonsterEntity implements IEntityAddition
 		@Override
 		public void resetTask() {
 			setAttackID(0);
-			this.attackTarget = null;
 		}
 	}
 
@@ -747,15 +729,17 @@ public class MutantZombieEntity extends MonsterEntity implements IEntityAddition
 
 				if (d2 < d1 && !getThrowAttackHit()) {
 					setThrowAttackHit(true);
-					attackEntityAsMob(this.attackTarget);
+					if (!attackEntityAsMob(this.attackTarget)) {
+						EntityUtil.disableShield(this.attackTarget, 150);
+					}
+
 					x = this.attackTarget.posX - posX;
 					z = this.attackTarget.posZ - posZ;
 					double d = Math.sqrt(x * x + z * z);
-					this.attackTarget.setMotion(x / d * 0.6000000238418579D, -1.2000000476837158D, z / d * 0.6000000238418579D);
-					EntityUtil.sendPlayerVelocityPacket(this.attackTarget);
 					this.attackTarget.hurtResistantTime = 10;
+					this.attackTarget.setMotion(x / d * 0.6000000238418579D, -1.2000000476837158D, z / d * 0.6000000238418579D);
 					EntityUtil.stunRavager(this.attackTarget);
-					EntityUtil.disableShield(this.attackTarget, 150);
+					EntityUtil.sendPlayerVelocityPacket(this.attackTarget);
 					playSound(MBSoundEvents.ENTITY_MUTANT_ZOMBIE_GRUNT, 0.3F, 0.8F + rand.nextFloat() * 0.4F);
 				}
 

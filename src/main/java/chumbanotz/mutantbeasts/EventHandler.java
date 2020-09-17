@@ -123,9 +123,8 @@ public class EventHandler {
 
 	@SubscribeEvent
 	public static void onLivingUseItem(LivingEntityUseItemEvent.Tick event) {
-		int duration = event.getDuration();
-		if (event.getEntityLiving().getItemStackFromSlot(EquipmentSlotType.HEAD).getItem() == MBItems.MUTANT_SKELETON_SKULL && event.getItem().getUseAction() == UseAction.BOW && duration > 4) {
-			event.setDuration(duration - 3);
+		if (event.getEntityLiving().getItemStackFromSlot(EquipmentSlotType.CHEST).getItem() == MBItems.MUTANT_SKELETON_CHESTPLATE && event.getItem().getUseAction() == UseAction.BOW && event.getDuration() > 4) {
+			event.setDuration(event.getDuration() - 3);
 		}
 	}
 

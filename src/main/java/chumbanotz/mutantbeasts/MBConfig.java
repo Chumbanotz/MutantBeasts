@@ -6,6 +6,7 @@ import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 
 import net.minecraftforge.common.ForgeConfigSpec;
+import net.minecraftforge.common.ForgeConfigSpec.ConfigValue;
 
 public class MBConfig {
 	static final ForgeConfigSpec COMMON_SPEC;
@@ -14,14 +15,14 @@ public class MBConfig {
 	public static int mutantEndermanSpawnWeight;
 	public static int mutantSkeletonSpawnWeight;
 	public static int mutantZombieSpawnWeight;
-	public static List<String> biomeWhitelist;
+	public static List<? extends String> biomeWhitelist;
 
 	private static class Common {
 		private final ForgeConfigSpec.IntValue mutantCreeperSpawnWeight;
 		private final ForgeConfigSpec.IntValue mutantEndermanSpawnWeight;
 		private final ForgeConfigSpec.IntValue mutantSkeletonSpawnWeight;
 		private final ForgeConfigSpec.IntValue mutantZombieSpawnWeight;
-		private final ForgeConfigSpec.ConfigValue<List<String>> biomeWhitelist;
+		private final ConfigValue<List<? extends String>> biomeWhitelist;
 
 		private Common(ForgeConfigSpec.Builder builder) {
 			builder.comment("Common configuration settings").push("common");
@@ -46,7 +47,7 @@ public class MBConfig {
 							"Example - \"minecraft\", \"midnight\"",
 							"You can see a mod's ID by clicking the 'Mods' button on the main screen and clicking on the mod's name on the left",
 							"Requires game restart")
-					.define("biomeWhitelist", Arrays.asList("minecraft"));
+					.defineList("biomeWhitelist", Arrays.asList("minecraft"), String.class::isInstance);
 			builder.pop();
 		}
 	}

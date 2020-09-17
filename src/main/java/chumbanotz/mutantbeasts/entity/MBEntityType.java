@@ -19,7 +19,6 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.MobEntity;
 import net.minecraft.entity.monster.MonsterEntity;
 import net.minecraft.entity.passive.AnimalEntity;
-import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.biome.Biome;
 import net.minecraft.world.biome.Biomes;
 import net.minecraft.world.gen.Heightmap;
@@ -46,9 +45,7 @@ public class MBEntityType {
 
 	public static void addSpawns() {
 		for (Biome biome : ForgeRegistries.BIOMES) {
-			ResourceLocation location = biome.getRegistryName();
-			if (location == null || !MBConfig.biomeWhitelist.contains(location.toString()) || !MBConfig.biomeWhitelist.contains(location.getNamespace())) {
-				MutantBeasts.LOGGER.warn("Skipping " + biome.getRegistryName() + " for mutant spawns");
+			if (biome.getRegistryName() == null || !MBConfig.biomeWhitelist.contains(biome.getRegistryName().toString())) {
 				continue;
 			}
 

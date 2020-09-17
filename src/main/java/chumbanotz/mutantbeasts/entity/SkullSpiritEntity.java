@@ -4,6 +4,7 @@ import java.util.OptionalInt;
 
 import chumbanotz.mutantbeasts.entity.projectile.ChemicalXEntity;
 import chumbanotz.mutantbeasts.particles.MBParticleTypes;
+import chumbanotz.mutantbeasts.util.EntityUtil;
 import chumbanotz.mutantbeasts.util.MutatedExplosion;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.block.BlockState;
@@ -39,7 +40,7 @@ public class SkullSpiritEntity extends Entity {
 
 	public SkullSpiritEntity(World worldIn, MobEntity target) {
 		this(MBEntityType.SKULL_SPIRIT, worldIn);
-		this.setTarget(target);
+		this.dataManager.set(TARGET_ENTITY_ID, OptionalInt.of(target.getEntityId()));
 	}
 
 	public SkullSpiritEntity(FMLPlayMessages.SpawnEntity packet, World worldIn) {
@@ -52,26 +53,16 @@ public class SkullSpiritEntity extends Entity {
 		this.dataManager.register(ATTACHED, false);
 	}
 
-	private boolean isAttached() {
+	public boolean isAttached() {
 		return this.dataManager.get(ATTACHED);
 	}
 
-	private void attach(boolean flag) {
-		this.dataManager.set(ATTACHED, flag);
+	private void setAttached(boolean attached) {
+		this.dataManager.set(ATTACHED, attached);
 	}
 
 	public MobEntity getTarget() {
-		OptionalInt optionalInt = this.dataManager.get(TARGET_ENTITY_ID);
-		if (!optionalInt.isPresent()) {
-			return null;
-		} else {
-			Entity entity = this.world.getEntityByID(optionalInt.getAsInt());
-			return entity instanceof MobEntity ? (MobEntity)entity : null;
-		}
-	}
-
-	private void setTarget(MobEntity mobEntity) {
-		this.dataManager.set(TARGET_ENTITY_ID, OptionalInt.of(mobEntity.getEntityId()));
+		return this.target;
 	}
 
 	@Override
@@ -80,30 +71,34 @@ public class SkullSpiritEntity extends Entity {
 	}
 
 	@Override
+	public void notifyDataManagerChange(DataParameter<?> key) {
+		super.notifyDataManagerChange(key);
+		if (TARGET_ENTITY_ID.equals(key)) {
+			this.dataManager.get(TARGET_ENTITY_ID).ifPresent(id -> {
+				Entity entity = this.world.getEntityByID(id);
+				this.target = entity instanceof MobEntity ? (MobEntity)entity : null;
+			});
+		}
+	}
+
+	@Override
 	public void tick() {
 		super.tick();
-		if (this.target == null) {
-			this.target = this.getTarget();
-		}
-
 		if (this.target != null && this.target.isAlive()) {
 			if (this.isAttached()) {
 				if (!this.world.isRemote) {
 					this.target.setMotion((double)((this.rand.nextFloat() - this.rand.nextFloat()) * 0.1F), this.target.getMotion().y, (double)((this.rand.nextFloat() - this.rand.nextFloat()) * 0.1F));
 
 					if (--this.attachedTick <= 0) {
-						MobEntity mutant = ChemicalXEntity.getMutantOf(this.target);
-						if (mutant != null && this.rand.nextFloat() < 0.75F) {
-							this.target.setPosition(this.posX, 0.0D, this.posZ);
-							this.target.remove();
+						EntityType<? extends MobEntity> entityType = ChemicalXEntity.getMutantOf(this.target);
+						if (entityType != null && this.rand.nextFloat() < 0.75F) {
 							MutatedExplosion.create(this, 2.0F, false, MutatedExplosion.Mode.NONE);
+							MobEntity mutant = EntityUtil.convertMobWithNBT(this.target, entityType, true);
 							mutant.enablePersistence();
-							mutant.setPosition(this.posX, this.posY, this.posZ);
-							this.world.addEntity(mutant);
-							AxisAlignedBB bb = mutant.getBoundingBox().grow(1.0D);
+							AxisAlignedBB bb = mutant.getBoundingBox();
 							for (BlockPos pos : BlockPos.getAllInBoxMutable(MathHelper.floor(bb.minX), MathHelper.floor(mutant.posY), MathHelper.floor(bb.minZ), MathHelper.floor(bb.maxX), MathHelper.floor(bb.maxY), MathHelper.floor(bb.maxZ))) {
 								BlockState blockState = this.world.getBlockState(pos);
-								if (blockState.getMaterial().isSolid() && blockState.getBlockHardness(this.world, pos) > -1.0F) {
+								if (blockState.getBlockHardness(this.world, pos) > -1.0F) {
 									this.world.destroyBlock(pos, true);
 								}
 							}
@@ -112,6 +107,7 @@ public class SkullSpiritEntity extends Entity {
 								CriteriaTriggers.SUMMONED_ENTITY.trigger(serverplayerentity, mutant);
 							}
 						} else {
+							this.setAttached(false);
 							MutatedExplosion.create(this, 2.0F, false, MutatedExplosion.Mode.NONE);
 						}
 
@@ -152,7 +148,7 @@ public class SkullSpiritEntity extends Entity {
 				this.move(MoverType.SELF, this.getMotion());
 
 				if (!this.world.isRemote && this.getDistanceSq(this.target) < 1.0D) {
-					this.attach(true);
+					this.setAttached(true);
 				}
 
 				for (int i = 0; i < 16; i++) {
@@ -175,7 +171,7 @@ public class SkullSpiritEntity extends Entity {
 
 	@Override
 	protected void readAdditional(CompoundNBT compound) {
-		this.attach(compound.getBoolean("Attached"));
+		this.setAttached(compound.getBoolean("Attached"));
 		this.attachedTick = compound.getInt("AttachedTick");
 	}
 

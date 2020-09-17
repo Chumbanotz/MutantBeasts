@@ -19,6 +19,7 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MobEntity;
 import net.minecraft.entity.MoverType;
+import net.minecraft.entity.monster.EndermanEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.ProjectileHelper;
 import net.minecraft.entity.projectile.ThrowableEntity;
@@ -187,13 +188,10 @@ public class ThrowableBlockEntity extends ThrowableEntity implements IEntityAddi
 	public void notifyDataManagerChange(DataParameter<?> key) {
 		super.notifyDataManagerChange(key);
 		if (THROWER_ENTITY_ID.equals(key)) {
-			OptionalInt optionalInt = this.dataManager.get(THROWER_ENTITY_ID);
-			if (optionalInt.isPresent()) {
-				Entity entity = this.world.getEntityByID(optionalInt.getAsInt());
+			this.dataManager.get(THROWER_ENTITY_ID).ifPresent(id -> {
+				Entity entity = this.world.getEntityByID(id);
 				this.owner = entity instanceof LivingEntity ? (LivingEntity)entity : null;
-			} else {
-				this.owner = null;
-			}
+			});
 		}
 	}
 
@@ -298,16 +296,20 @@ public class ThrowableBlockEntity extends ThrowableEntity implements IEntityAddi
 	@Override
 	protected void onImpact(RayTraceResult result) {
 		if (this.owner instanceof MutantSnowGolemEntity) {
-			for (LivingEntity livingEntity : this.world.getEntitiesWithinAABB(LivingEntity.class, this.getBoundingBox().grow(2.5D, 2.0D, 2.5D))) {
-				if (MutantSnowGolemEntity.canHarm(this.owner, livingEntity) && this.getDistanceSq(livingEntity) <= 6.25D) {
-					livingEntity.attackEntityFrom(DamageSource.causeThrownDamage(this, this.owner), 4.0F + (float)(this.rand.nextInt(3)));
+			if (result.getType() == RayTraceResult.Type.ENTITY) {
+				Entity entity = ((EntityRayTraceResult)result).getEntity();
+				if (entity instanceof MutantSnowGolemEntity || !MutantSnowGolemEntity.canHarm(this.owner, entity)) {
+					return;
+				}
+
+				if (entity.attackEntityFrom(DamageSource.causeThrownDamage(this, this.owner), 4.0F) && entity instanceof EndermanEntity) {
+					return;
 				}
 			}
 
-			if (result.getType() == RayTraceResult.Type.ENTITY) {
-				Entity entity = ((EntityRayTraceResult)result).getEntity();
-				if (MutantSnowGolemEntity.canHarm(this.owner, entity)) {
-					entity.attackEntityFrom(DamageSource.causeIndirectDamage(this, this.owner), 4.0F);
+			for (LivingEntity livingEntity : this.world.getEntitiesWithinAABB(LivingEntity.class, this.getBoundingBox().grow(2.5D, 2.0D, 2.5D))) {
+				if (MutantSnowGolemEntity.canHarm(this.owner, livingEntity) && this.getDistanceSq(livingEntity) <= 6.25D) {
+					livingEntity.attackEntityFrom(DamageSource.causeIndirectDamage(this, this.owner), 4.0F + (float)(this.rand.nextInt(3)));
 				}
 			}
 
@@ -332,7 +334,11 @@ public class ThrowableBlockEntity extends ThrowableEntity implements IEntityAddi
 					}
 				}
 			} else if (result.getType() == RayTraceResult.Type.ENTITY && !this.world.isRemote) {
-				((EntityRayTraceResult)result).getEntity().attackEntityFrom(DamageSource.causeThrownDamage(this, this.owner), 4.0F);
+				Entity entity = ((EntityRayTraceResult)result).getEntity();
+				if (entity.attackEntityFrom(DamageSource.causeThrownDamage(this, this.owner), 4.0F) && entity instanceof EndermanEntity) {
+					return;
+				}
+
 				this.world.playEvent(2001, pos, Block.getStateId(this.blockState));
 				if (this.world.getGameRules().getBoolean(GameRules.DO_ENTITY_DROPS)) {
 					Block.spawnDrops(this.blockState, this.world, pos);

@@ -33,11 +33,9 @@ import net.minecraft.entity.passive.WolfEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.IPacket;
 import net.minecraft.pathfinding.PathNavigator;
-import net.minecraft.pathfinding.PathNodeType;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
 import net.minecraft.util.DamageSource;
-import net.minecraft.util.EntityPredicates;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.BlockPos;
@@ -112,11 +110,6 @@ public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEnti
 	}
 
 	@Override
-	public boolean canDespawn(double distanceToClosestPlayer) {
-		return this.idleTime > 6000;
-	}
-
-	@Override
 	public void fall(float distance, float damageMultiplier) {
 	}
 
@@ -137,7 +130,6 @@ public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEnti
 	@Override
 	public void livingTick() {
 		super.livingTick();
-		this.setPathPriority(PathNodeType.WATER, this.isInWaterOrBubbleColumn() ? 16.0F : -1.0F);
 
 		if (this.attackID != 0) {
 			++this.attackTick;
@@ -332,7 +324,7 @@ public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEnti
 			}
 
 			if (attackTick == 3) {
-				for (Entity entity : world.getEntitiesInAABBexcluding(MutantSkeletonEntity.this, getBoundingBox().grow(4.0D), EntityPredicates.CAN_AI_TARGET)) {
+				for (Entity entity : world.getEntitiesWithinAABBExcludingEntity(MutantSkeletonEntity.this, getBoundingBox().grow(4.0D))) {
 					double dist = (double)getDistance(entity);
 					double x = posX - entity.posX;
 					double z = posZ - entity.posZ;

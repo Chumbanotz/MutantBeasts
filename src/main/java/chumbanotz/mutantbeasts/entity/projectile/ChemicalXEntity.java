@@ -120,15 +120,16 @@ public class ChemicalXEntity extends ProjectileItemEntity {
 	}
 
 	@Nullable
-	public static MobEntity getMutantOf(MobEntity target) {
-		if (!MUTATIONS.containsValue(target.getType())) {
+	public static EntityType<? extends MobEntity> getMutantOf(MobEntity target) {
+		EntityType<?> entityType = target.getType();
+		if (!MUTATIONS.containsKey(entityType)) {
 			return null;
-		} else if (target.getType() == EntityType.PIG && (!target.isPotionActive(Effects.UNLUCK) || target.getActivePotionEffect(Effects.UNLUCK).getAmplifier() != 13)) {
+		} else if (entityType == EntityType.PIG && (!target.isPotionActive(Effects.UNLUCK) || target.getActivePotionEffect(Effects.UNLUCK).getAmplifier() != 13)) {
 			return null;
-		} else if (target.getType() == EntityType.ZOMBIE && target.isChild()) {
+		} else if (entityType == EntityType.ZOMBIE && target.isChild()) {
 			return null;
 		} else {
-			return MUTATIONS.get(target.getType()).create(target.world);
+			return MUTATIONS.get(entityType);
 		}
 	}
 

@@ -64,7 +64,7 @@ public class EndersoulHandItem extends Item {
 		BlockState blockState = world.getBlockState(pos);
 		PlayerEntity playerEntity = context.getPlayer();
 		if (context.isPlacerSneaking()) {
-			return ActionResultType.FAIL;
+			return ActionResultType.PASS;
 		} else if (!blockState.isIn(MutantBeasts.ENDERSOUL_HAND_HOLDABLE)) {
 			return ActionResultType.FAIL;
 		} else if (!world.canMineBlockBody(playerEntity, pos)) {
@@ -110,14 +110,14 @@ public class EndersoulHandItem extends Item {
 
 			worldIn.playSound(null, playerIn.prevPosX, playerIn.prevPosY, playerIn.prevPosZ, SoundEvents.ITEM_CHORUS_FRUIT_TELEPORT, playerIn.getSoundCategory(), 1.0F, 1.0F);
 			playerIn.setPositionAndUpdate((double)endPos.getX() + 0.5D, (double)endPos.getY(), (double)endPos.getZ() + 0.5D);
-			worldIn.playSound(null, playerIn.posX, playerIn.posY, playerIn.posZ, SoundEvents.ITEM_CHORUS_FRUIT_TELEPORT, playerIn.getSoundCategory(), 1.0F, 1.0F);
-			playerIn.fallDistance = 0.0F;
+			worldIn.playSound(null, endPos, SoundEvents.ITEM_CHORUS_FRUIT_TELEPORT, playerIn.getSoundCategory(), 1.0F, 1.0F);
 			MutantEndermanEntity.teleportAttack(playerIn);
 			EntityUtil.spawnEndersoulParticles(playerIn);
 			playerIn.getCooldownTracker().setCooldown(this, 40);
 			stack.damageItem(4, playerIn, e -> e.sendBreakAnimation(handIn));
 		}
 
+		playerIn.fallDistance = 0.0F;
 		playerIn.swingArm(handIn);
 		playerIn.addStat(Stats.ITEM_USED.get(this));
 		return new ActionResult<>(ActionResultType.SUCCESS, stack);

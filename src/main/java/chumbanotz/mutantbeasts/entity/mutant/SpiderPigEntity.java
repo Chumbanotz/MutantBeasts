@@ -321,7 +321,7 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 
 	@Override
 	public boolean canJump() {
-		return this.isSaddled() && !this.chargeExhausted && (this.onGround || !this.getBlockState().getFluidState().isEmpty());
+		return this.isSaddled() && !this.chargeExhausted && this.onGround;
 	}
 
 	@Override
@@ -478,8 +478,8 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 	}
 
 	@Override
-	public void onDeath(DamageSource cause) {
-		super.onDeath(cause);
+	public void remove() {
+		super.remove();
 		if (!this.world.isRemote && !this.webList.isEmpty()) {
 			for (SpiderPigEntity.WebPos webPos : this.webList) {
 				this.removeWeb(webPos);
