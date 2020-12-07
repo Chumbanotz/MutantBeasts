@@ -47,7 +47,7 @@ public class MBConfig {
 							"Example - \"minecraft\", \"midnight\"",
 							"You can see a mod's ID by clicking the 'Mods' button on the main screen and clicking on the mod's name on the left",
 							"Requires game restart")
-					.defineList("biomeWhitelist", Arrays.asList("minecraft","byg","biomesoplenty"), String.class::isInstance);
+					.defineList("biomeWhitelist", Arrays.asList("minecraft","biomesoplenty","byg","omni"), String.class::isInstance);
 			builder.pop();
 		}
 	}
