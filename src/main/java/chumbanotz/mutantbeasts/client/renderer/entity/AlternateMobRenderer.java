@@ -10,7 +10,7 @@ import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.entity.MobEntity;
 import net.minecraft.util.Util;
 
-public abstract class MutantRenderer<T extends MobEntity, M extends EntityModel<T>> extends MobRenderer<T, M> {
+public abstract class AlternateMobRenderer<T extends MobEntity, M extends EntityModel<T>> extends MobRenderer<T, M> {
 	private static final DynamicTexture TEXTURE_BRIGHTNESS = Util.make(new DynamicTexture(16, 16, false), (dynamicTexture) -> {
 		dynamicTexture.getTextureData().untrack();
 
@@ -23,16 +23,19 @@ public abstract class MutantRenderer<T extends MobEntity, M extends EntityModel<
 		dynamicTexture.updateDynamicTexture();
 	});
 
-	public MutantRenderer(EntityRendererManager manager, M model, float shadowSize) {
+	public AlternateMobRenderer(EntityRendererManager manager, M model, float shadowSize) {
 		super(manager, model, shadowSize);
+	}
+
+	protected boolean shouldRenderDeathColor(T entityliving) {
+		return false;
 	}
 
 	@Override
 	protected boolean setBrightness(T entitylivingbaseIn, float partialTicks, boolean combineTextures) {
-		float hurtColor = ((float)entitylivingbaseIn.hurtTime - partialTicks) / (float)entitylivingbaseIn.maxHurtTime;
 		int colorMuliplier = this.getColorMultiplier(entitylivingbaseIn, entitylivingbaseIn.getBrightness(), partialTicks);
 		boolean hasColorMuliplier = (colorMuliplier >> 24 & 255) > 0;
-		boolean wasHurt = entitylivingbaseIn.hurtTime > 0;
+		boolean wasHurt = entitylivingbaseIn.hurtTime > 0 || this.shouldRenderDeathColor(entitylivingbaseIn);
 		if (!hasColorMuliplier && !wasHurt) {
 			return false;
 		} else if (!hasColorMuliplier && !combineTextures) {
@@ -64,7 +67,7 @@ public abstract class MutantRenderer<T extends MobEntity, M extends EntityModel<
 			GlStateManager.texEnv(8960, GLX.GL_OPERAND0_ALPHA, 770);
 			this.brightnessBuffer.position(0);
 			if (wasHurt) {
-				this.brightnessBuffer.put(hurtColor);
+				this.brightnessBuffer.put(1.0F);
 				this.brightnessBuffer.put(0.0F);
 				this.brightnessBuffer.put(0.0F);
 				this.brightnessBuffer.put(0.3F);

@@ -1,24 +1,15 @@
 package chumbanotz.mutantbeasts.util;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import chumbanotz.mutantbeasts.capability.SummonableCapability;
+import chumbanotz.mutantbeasts.entity.ai.goal.TrackSummonerGoal;
 import chumbanotz.mutantbeasts.entity.mutant.MutantZombieEntity;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.DoorBlock;
-import net.minecraft.block.TrapDoorBlock;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityClassification;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.ILivingEntityData;
-import net.minecraft.entity.MobEntity;
 import net.minecraft.entity.SpawnReason;
-import net.minecraft.state.properties.Half;
+import net.minecraft.entity.ai.goal.MoveTowardsRestrictionGoal;
+import net.minecraft.entity.monster.ZombieEntity;
 import net.minecraft.tags.FluidTags;
-import net.minecraft.util.WeightedRandom;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.Biome;
@@ -48,30 +39,23 @@ public class ZombieResurrection extends BlockPos {
 			return false;
 		}
 
+		BlockPos abovePos = this.up();
 		if (mutantZombie.getRNG().nextInt(15) == 0) {
-			this.world.playEvent(2001, this.up(), Block.getStateId(this.world.getBlockState(this.up())));
+			this.world.playEvent(2001, abovePos, Block.getStateId(this.world.getBlockState(abovePos)));
 		}
 
 		if (--this.tick <= 0) {
-			Entity entity = getZombieByLocation(this.world, this).create(this.world);
-			if (entity instanceof MobEntity) {
-				MobEntity mobEntity = (MobEntity)entity;
-				ILivingEntityData livingEntityData = null;
-				livingEntityData = mobEntity.onInitialSpawn(this.world, this.world.getDifficultyForLocation(this), SpawnReason.MOB_SUMMONED, livingEntityData, null);
-				mobEntity.setHealth(mobEntity.getMaxHealth() * (0.6F + 0.4F * mobEntity.getRNG().nextFloat()));
-				mobEntity.playAmbientSound();
-			}
-
-			this.world.playEvent(2001, this.up(), Block.getStateId(this.world.getBlockState(this.up())));
-
 			if (!this.world.isRemote) {
-				SummonableCapability.getLazy(entity).ifPresent(summonable -> {
-					summonable.setSummonerUUID(mutantZombie.getUniqueID());
-					summonable.setSpawnedBySummoner(true);
-				});
-
-				entity.setPosition((double)this.getX() + 0.5D, (double)this.getY() + 1.0D, (double)this.getZ() + 0.5D);
-				this.world.addEntity(entity);
+				ZombieEntity zombieEntity = getZombieByLocation(this.world, abovePos).create(this.world);
+				zombieEntity.onInitialSpawn(this.world, this.world.getDifficultyForLocation(this), SpawnReason.MOB_SUMMONED, null, null);
+				zombieEntity.setHealth(zombieEntity.getMaxHealth() * (0.6F + 0.4F * zombieEntity.getRNG().nextFloat()));
+				zombieEntity.playAmbientSound();
+				zombieEntity.stopRiding(); //Chicken jockeys seem to cause problems
+				this.world.playEvent(2001, abovePos, Block.getStateId(this.world.getBlockState(abovePos)));
+				zombieEntity.moveToBlockPosAndAngles(abovePos, mutantZombie.rotationYaw, 0.0F);
+				zombieEntity.goalSelector.addGoal(0, new TrackSummonerGoal(zombieEntity, mutantZombie));
+				zombieEntity.goalSelector.addGoal(3, new MoveTowardsRestrictionGoal(zombieEntity, 1.0D));
+				this.world.addEntity(zombieEntity);
 			}
 
 			return false;
@@ -90,7 +74,7 @@ public class ZombieResurrection extends BlockPos {
 		while (Math.abs(y - i) <= range) {
 			BlockPos pos = new BlockPos(x, i, z);
 			BlockState blockState = world.getBlockState(pos);
-	
+
 			if (blockState.getBlock() != Blocks.FIRE) {
 				if (checkDay && !world.getFluidState(pos).isTagged(FluidTags.LAVA) || world.getFluidState(pos).isEmpty()) {
 					if (world.isAirBlock(pos)) {
@@ -98,9 +82,9 @@ public class ZombieResurrection extends BlockPos {
 						continue;
 					}
 
-					if (!world.isAirBlock(pos) && world.isAirBlock(pos.up()) && shouldIgnoreBlock(world, blockState, pos)) {
+					if (!world.isAirBlock(pos) && world.isAirBlock(pos.up()) && blockState.getCollisionShape(world, pos).isEmpty()) {
 						--i;
-					} else if (!world.isAirBlock(pos) && !world.isAirBlock(pos.up()) && !shouldIgnoreBlock(world, world.getBlockState(pos.up()), pos.up())) {
+					} else if (!world.isAirBlock(pos) && !world.isAirBlock(pos.up()) && !blockState.getCollisionShape(world, pos.up()).isEmpty()) {
 						++i;
 						continue;
 					}
@@ -124,19 +108,16 @@ public class ZombieResurrection extends BlockPos {
 		return -1;
 	}
 
-	private static boolean shouldIgnoreBlock(World world, BlockState blockState, BlockPos blockPos) {
-		if (blockState.getBlock() instanceof TrapDoorBlock && blockState.get(TrapDoorBlock.HALF) == Half.TOP) {
-			return false;
-		} else if (blockState.getBlock() instanceof DoorBlock) {
-			return true;
-		} else {
-			return blockState.getCollisionShape(world, blockPos).isEmpty();
-		}
-	}
+	public static EntityType<? extends ZombieEntity> getZombieByLocation(World world, BlockPos pos) {
+		Biome biome = world.getBiome(pos);
+		int chance = world.rand.nextInt(100);
 
-	public static EntityType<?> getZombieByLocation(World world, BlockPos pos) {
-		List<Biome.SpawnListEntry> entries = new ArrayList<>(world.getBiome(pos).getSpawns(EntityClassification.MONSTER));
-		entries.removeIf(entry -> !SummonableCapability.isEntityEligible(entry.entityType));
-		return entries.isEmpty() ? EntityType.ZOMBIE : WeightedRandom.getRandomItem(world.rand, entries).entityType;
+		if (biome.getCategory() == Biome.Category.DESERT) {
+			return chance < 80 && world.isSkyLightMax(pos) ? EntityType.HUSK : chance < 1 ? EntityType.ZOMBIE_VILLAGER : EntityType.ZOMBIE;
+		} else if ((biome.getCategory() == Biome.Category.OCEAN || biome.getCategory() == Biome.Category.RIVER) && world.hasWater(pos)) {
+			return EntityType.DROWNED;
+		} else {
+			return chance < 95 ? EntityType.ZOMBIE : EntityType.ZOMBIE_VILLAGER;
+		}
 	}
 }

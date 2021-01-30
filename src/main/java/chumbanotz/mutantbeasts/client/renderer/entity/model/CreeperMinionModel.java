@@ -51,29 +51,30 @@ public class CreeperMinionModel extends EntityModel<CreeperMinionEntity> {
 
 	@Override
 	public void setRotationAngles(CreeperMinionEntity entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch, float scaleFactor) {
+		limbSwing *= 3.0F;
 		this.head.rotateAngleY = netHeadYaw * ((float)Math.PI / 180F);
 		this.head.rotateAngleX = headPitch * ((float)Math.PI / 180F);
 		this.leg1.rotateAngleX = MathHelper.cos(limbSwing * 0.6662F) * 1.4F * limbSwingAmount;
 		this.leg2.rotateAngleX = MathHelper.cos(limbSwing * 0.6662F + (float)Math.PI) * 1.4F * limbSwingAmount;
 		this.leg3.rotateAngleX = MathHelper.cos(limbSwing * 0.6662F + (float)Math.PI) * 1.4F * limbSwingAmount;
 		this.leg4.rotateAngleX = MathHelper.cos(limbSwing * 0.6662F) * 1.4F * limbSwingAmount;
-		this.head.rotationPointY = 4.0F;
-		this.body.rotationPointY = 4.0F;
-		this.leg1.setRotationPoint(-2.0F, 16.0F, 4.0F);
-		this.leg2.setRotationPoint(2.0F, 16.0F, 4.0F);
-		this.leg3.setRotationPoint(-2.0F, 16.0F, -4.0F);
-		this.leg4.setRotationPoint(2.0F, 16.0F, -4.0F);
+		this.head.rotationPointY = 6.0F;
+		this.body.rotationPointY = 6.0F;
+		this.leg1.setRotationPoint(-2.0F, 18.0F, 4.0F);
+		this.leg2.setRotationPoint(2.0F, 18.0F, 4.0F);
+		this.leg3.setRotationPoint(-2.0F, 18.0F, -4.0F);
+		this.leg4.setRotationPoint(2.0F, 18.0F, -4.0F);
 
 		if (entity == null || entity.isSitting()) {
-			this.head.rotationPointY += 8.0F;
-			this.body.rotationPointY += 8.0F;
-			this.leg1.rotationPointY += 6.0F;
+			this.head.rotationPointY += 6.0F;
+			this.body.rotationPointY += 6.0F;
+			this.leg1.rotationPointY += 4.0F;
 			this.leg1.rotationPointZ -= 2.0F;
-			this.leg2.rotationPointY += 6.0F;
+			this.leg2.rotationPointY += 4.0F;
 			this.leg2.rotationPointZ -= 2.0F;
-			this.leg3.rotationPointY += 6.0F;
+			this.leg3.rotationPointY += 4.0F;
 			this.leg3.rotationPointZ += 2.0F;
-			this.leg4.rotationPointY += 6.0F;
+			this.leg4.rotationPointY += 4.0F;
 			this.leg4.rotationPointZ += 2.0F;
 			this.leg1.rotateAngleX = 1.5707964F;
 			this.leg2.rotateAngleX = 1.5707964F;

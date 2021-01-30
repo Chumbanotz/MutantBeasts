@@ -7,7 +7,9 @@ import javax.annotation.Nullable;
 
 import chumbanotz.mutantbeasts.client.ClientEventHandler;
 import chumbanotz.mutantbeasts.entity.ai.goal.AvoidDamageGoal;
-import chumbanotz.mutantbeasts.entity.ai.goal.CopyAttackTargetGoal;
+import chumbanotz.mutantbeasts.entity.ai.goal.MBHurtByTargetGoal;
+import chumbanotz.mutantbeasts.entity.ai.goal.MBMeleeAttackGoal;
+import chumbanotz.mutantbeasts.entity.ai.goal.OwnerTargetGoal;
 import chumbanotz.mutantbeasts.item.MBItems;
 import chumbanotz.mutantbeasts.pathfinding.MBGroundPathNavigator;
 import chumbanotz.mutantbeasts.util.EntityUtil;
@@ -22,14 +24,10 @@ import net.minecraft.entity.Pose;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.goal.AvoidEntityGoal;
 import net.minecraft.entity.ai.goal.Goal;
-import net.minecraft.entity.ai.goal.HurtByTargetGoal;
 import net.minecraft.entity.ai.goal.LandOnOwnersShoulderGoal;
 import net.minecraft.entity.ai.goal.LookAtGoal;
 import net.minecraft.entity.ai.goal.LookRandomlyGoal;
-import net.minecraft.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.entity.ai.goal.NonTamedTargetGoal;
-import net.minecraft.entity.ai.goal.OwnerHurtByTargetGoal;
-import net.minecraft.entity.ai.goal.OwnerHurtTargetGoal;
 import net.minecraft.entity.ai.goal.SitGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.WaterAvoidingRandomWalkingGoal;
@@ -37,8 +35,7 @@ import net.minecraft.entity.effect.LightningBoltEntity;
 import net.minecraft.entity.passive.AnimalEntity;
 import net.minecraft.entity.passive.ShoulderRidingEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.DyeColor;
-import net.minecraft.item.DyeItem;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -58,6 +55,7 @@ import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.Difficulty;
+import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 import net.minecraft.world.server.ServerWorld;
 
@@ -65,10 +63,9 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 	private static final DataParameter<Byte> CREEPER_MINION_FLAGS = EntityDataManager.createKey(CreeperMinionEntity.class, DataSerializers.BYTE);
 	private static final DataParameter<Integer> EXPLODE_STATE = EntityDataManager.createKey(CreeperMinionEntity.class, DataSerializers.VARINT);
 	private static final DataParameter<Float> EXPLOSION_RADIUS = EntityDataManager.createKey(CreeperMinionEntity.class, DataSerializers.FLOAT);
-	private static final DataParameter<Integer> COLLAR_COLOR = EntityDataManager.createKey(CreeperMinionEntity.class, DataSerializers.VARINT);
 	private int lastActiveTime;
 	private int timeSinceIgnited;
-	private int fuseTime = 30;
+	private int fuseTime = 26;
 
 	public CreeperMinionEntity(EntityType<? extends CreeperMinionEntity> type, World worldIn) {
 		super(type, worldIn);
@@ -87,7 +84,7 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 				return !isTamed() && super.shouldExecute();
 			}
 		});
-		this.goalSelector.addGoal(4, new MeleeAttackGoal(this, 1.2D, false));
+		this.goalSelector.addGoal(4, new MBMeleeAttackGoal(this, 1.2D));
 		this.goalSelector.addGoal(5, new CreeperMinionEntity.FollowOwnerGoal(this));
 		this.goalSelector.addGoal(6, new WaterAvoidingRandomWalkingGoal(this, 1.0D));
 		this.goalSelector.addGoal(7, new LandOnOwnersShoulderGoal(this) {
@@ -98,11 +95,9 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 		});
 		this.goalSelector.addGoal(8, new LookAtGoal(this, PlayerEntity.class, 8.0F));
 		this.goalSelector.addGoal(8, new LookRandomlyGoal(this));
-		this.targetSelector.addGoal(1, new OwnerHurtByTargetGoal(this));
-		this.targetSelector.addGoal(2, new OwnerHurtTargetGoal(this));
-		this.targetSelector.addGoal(3, new CopyAttackTargetGoal(this, true, this::getOwner));
-		this.targetSelector.addGoal(4, new HurtByTargetGoal(this));
-		this.targetSelector.addGoal(5, new NonTamedTargetGoal<>(this, PlayerEntity.class, true, null));
+		this.targetSelector.addGoal(0, new MBHurtByTargetGoal(this));
+		this.targetSelector.addGoal(1, new OwnerTargetGoal(this));
+		this.targetSelector.addGoal(2, new NonTamedTargetGoal<>(this, PlayerEntity.class, true, null));
 	}
 
 	@Override
@@ -118,7 +113,6 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 		this.dataManager.register(EXPLODE_STATE, -1);
 		this.dataManager.register(CREEPER_MINION_FLAGS, (byte)0);
 		this.dataManager.register(EXPLOSION_RADIUS, 20.0F);
-		this.dataManager.register(COLLAR_COLOR, -1);
 	}
 
 	@Override
@@ -198,16 +192,6 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 		this.dataManager.set(EXPLOSION_RADIUS, radius * 10.0F);
 	}
 
-	@Nullable
-	public DyeColor getCollarColor() {
-		int i = this.dataManager.get(COLLAR_COLOR);
-		return i == -1 ? null : DyeColor.byId(i);
-	}
-
-	public void setCollarColor(DyeColor collarcolor) {
-		this.dataManager.set(COLLAR_COLOR, collarcolor.getId());
-	}
-
 	@Override
 	public void notifyDataManagerChange(DataParameter<?> key) {
 		super.notifyDataManagerChange(key);
@@ -228,17 +212,7 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 
 	@Override
 	public boolean isChild() {
-		return true;
-	}
-
-	@Override
-	protected boolean canDropLoot() {
-		return true;
-	}
-
-	@Override
-	public float getRenderScale() {
-		return 1.0F;
+		return false;
 	}
 
 	@Override
@@ -254,7 +228,7 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 
 	@Override
 	public void tick() {
-		if (!this.isTamed() && !this.world.isRemote && this.world.getDifficulty() == Difficulty.PEACEFUL) {
+		if (!this.world.isRemote && !this.isTamed() && this.world.getDifficulty() == Difficulty.PEACEFUL) {
 			this.remove();
 		}
 
@@ -283,19 +257,21 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 				if (!this.world.isRemote) {
 					MutatedExplosion.create(this, this.getExplosionRadius() + (this.getPowered() ? 2.0F : 0.0F), false, this.canDestroyBlocks() ? MutatedExplosion.Mode.DESTROY : MutatedExplosion.Mode.NONE);
 					if (!this.canExplodeContinuously()) {
+						if (this.world.getGameRules().getBoolean(GameRules.SHOW_DEATH_MESSAGES) && this.getOwner() instanceof ServerPlayerEntity) {
+							this.getOwner().sendMessage(new TranslationTextComponent("death.attack.explosion", this.getDisplayName()));
+						}
+
 						this.dead = true;
 						this.remove();
 						EntityUtil.spawnLingeringCloud(this);
 					}
 				}
 
-				this.setExplodeState(-30);
+				this.setExplodeState(-this.fuseTime);
 			}
 
-			if (!this.onGround && this.getMotion().lengthSquared() > 0.8F) {
-				if (this.collided || this.getAttackTarget() != null && this.getBoundingBox().expand(this.getMotion()).grow(0.5D).intersects(this.getAttackTarget().getBoundingBox())) {
-					this.timeSinceIgnited = this.fuseTime;
-				}
+			if (this.getMotion().lengthSquared() > 0.8F && this.getAttackTarget() != null && this.getBoundingBox().expand(this.getMotion()).grow(0.5D).intersects(this.getAttackTarget().getBoundingBox())) {
+				this.timeSinceIgnited = this.fuseTime;
 			}
 		}
 
@@ -317,19 +293,15 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 		if (this.isTamed()) {
 			if (item == MBItems.CREEPER_MINION_TRACKER) {
 				player.addStat(Stats.ITEM_USED.get(item));
-				ClientEventHandler.INSTANCE.displayCreeperMinionTrackerGUI(this);
+				if (this.world.isRemote) {
+					ClientEventHandler.INSTANCE.displayCreeperMinionTrackerGUI(this);
+				}
+
 				return true;
 			}
 
 			if (this.isOwner(player)) {
-				if (item instanceof DyeItem) {
-					DyeColor dyecolor = ((DyeItem)item).getDyeColor();
-					if (dyecolor != this.getCollarColor()) {
-						this.setCollarColor(dyecolor);
-						itemstack.shrink(1);
-						return true;
-					}
-				} else if (item == Items.GUNPOWDER) {
+				if (item == Items.GUNPOWDER) {
 					if (this.getHealth() < this.getMaxHealth()) {
 						this.heal(1.0F);
 						itemstack.shrink(1);
@@ -393,7 +365,7 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 
 	@Override
 	public boolean shouldAttackEntity(LivingEntity target, LivingEntity owner) {
-		return EntityUtil.shouldAttackEntity(target, owner, true);
+		return EntityUtil.shouldAttackEntity(this, target, owner, true);
 	}
 
 	@Override
@@ -443,13 +415,13 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 	@Override
 	@Nullable
 	public Team getTeam() {
-        LivingEntity owner = this.getOwner();
+		LivingEntity owner = this.getOwner();
 		return owner != null ? owner.getTeam() : super.getTeam();
 	}
 
 	@Override
 	public boolean isOnSameTeam(Entity entityIn) {
-        LivingEntity owner = this.getOwner();
+		LivingEntity owner = this.getOwner();
 		return owner != null && (entityIn == owner || owner.isOnSameTeam(entityIn)) || super.isOnSameTeam(entityIn);
 	}
 
@@ -463,6 +435,11 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 		if (this.getAttackTarget() == null && !this.hasIgnited()) {
 			super.playAmbientSound();
 		}
+	}
+
+	@Override
+	protected float getSoundPitch() {
+		return (this.rand.nextFloat() - this.rand.nextFloat()) * 0.2F + 1.5F;
 	}
 
 	@Override
@@ -482,7 +459,7 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 
 	@Override
 	public SoundCategory getSoundCategory() {
-		return !this.isTamed() ? SoundCategory.HOSTILE : SoundCategory.NEUTRAL;
+		return this.isTamed() ? SoundCategory.NEUTRAL : SoundCategory.HOSTILE;
 	}
 
 	@Override
@@ -493,12 +470,8 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 		compound.putBoolean("DestroysBlocks", this.canDestroyBlocks());
 		compound.putBoolean("CanRideOnShoulder", this.canRideOnShoulder());
 		compound.putBoolean("Ignited", this.hasIgnited());
-		compound.putShort("Fuse", (short)this.fuseTime);
+//		compound.putShort("Fuse", (short)this.fuseTime);
 		compound.putFloat("ExplosionRadius", this.getExplosionRadius());
-
-		if (this.getCollarColor() != null) {
-			compound.putByte("CollarColor", (byte)this.getCollarColor().getId());
-		}
 
 		if (this.getPowered()) {
 			compound.putBoolean("Powered", true);
@@ -519,13 +492,9 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 		this.setPowered(compound.getBoolean("Powered"));
 		this.setExplosionRadius(compound.getFloat("ExplosionRadius"));
 
-		if (compound.contains("CollarColor", 99)) {
-			this.setCollarColor(DyeColor.byId(compound.getInt("CollarColor")));
-		}
-
-		if (compound.contains("Fuse", 99)) {
-			this.fuseTime = compound.getShort("Fuse");
-		}
+//		if (compound.contains("Fuse", 99)) {
+//			this.fuseTime = compound.getShort("Fuse");
+//		}
 
 		if (compound.getBoolean("Ignited")) {
 			this.ignite();
@@ -540,7 +509,7 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 		@Override
 		public boolean shouldExecute() {
 			LivingEntity livingentity = getAttackTarget();
-			return !isSitting() && (getExplodeState() > 0 || livingentity != null && getDistanceSq(livingentity) < 9.0D);
+			return !isSitting() && (getExplodeState() > 0 || livingentity != null && getDistanceSq(livingentity) < 9.0D && canEntityBeSeen(livingentity));
 		}
 
 		@Override

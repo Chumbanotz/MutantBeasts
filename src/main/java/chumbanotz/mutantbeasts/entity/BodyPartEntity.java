@@ -18,6 +18,7 @@ import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.RayTraceResult;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TranslationTextComponent;
 import net.minecraft.world.GameRules;
@@ -26,7 +27,6 @@ import net.minecraftforge.fml.network.FMLPlayMessages;
 import net.minecraftforge.fml.network.NetworkHooks;
 
 public class BodyPartEntity extends Entity {
-	private static final DataParameter<String> OWNER_TYPE = EntityDataManager.createKey(BodyPartEntity.class, DataSerializers.STRING);
 	private static final DataParameter<Byte> PART = EntityDataManager.createKey(BodyPartEntity.class, DataSerializers.BYTE);
 	private final boolean yawPositive;
 	private final boolean pitchPositive;
@@ -58,16 +58,7 @@ public class BodyPartEntity extends Entity {
 
 	@Override
 	protected void registerData() {
-		this.dataManager.register(OWNER_TYPE, "mutant_skeleton");
 		this.dataManager.register(PART, (byte)0);
-	}
-
-	public String getOwnerType() {
-		return this.dataManager.get(OWNER_TYPE);
-	}
-
-	public void setOwnerType(String ownerType) {
-		this.dataManager.set(OWNER_TYPE, "mutant_skeleton");
 	}
 
 	public int getPart() {
@@ -121,7 +112,7 @@ public class BodyPartEntity extends Entity {
 			this.setMotion(this.getMotion().scale(0.7D));
 		}
 
-		if (!this.onGround && this.motionMultiplier.length() == 0.0D) {
+		if (!this.onGround && this.motionMultiplier == Vec3d.ZERO) {
 			this.rotationYaw += 10.0F * (float)(this.yawPositive ? 1 : -1);
 			this.rotationPitch += 15.0F * (float)(this.pitchPositive ? 1 : -1);
 			for (Entity entity : this.world.getEntitiesInAABBexcluding(this, this.getBoundingBox(), this::canHarm)) {
@@ -162,7 +153,7 @@ public class BodyPartEntity extends Entity {
 	}
 
 	private boolean canHarm(Entity entity) {
-		return entity.canBeCollidedWith() && entity.getType() != this.getType() && entity.getType() != this.getOwnerEntityType();
+		return entity.canBeCollidedWith() && entity.getType() != MBEntityType.MUTANT_SKELETON;
 	}
 
 	@Override
@@ -172,51 +163,37 @@ public class BodyPartEntity extends Entity {
 
 	public Item getItemByPart() {
 		int part = this.getPart();
-		switch (this.getOwnerType()) {
-		default:
-		case "mutant_skeleton":
-			if (part == 0) {
-				return MBItems.MUTANT_SKELETON_PELVIS;
-			}
-
-			if (part >= 1 && part < 19) {
-				return MBItems.MUTANT_SKELETON_RIB;
-			}
-
-			if (part == 19) {
-				return MBItems.MUTANT_SKELETON_SKULL;
-			}
-
-			if (part >= 21 && part < 29) {
-				return MBItems.MUTANT_SKELETON_LIMB;
-			}
-
-			if (part == 29 || part == 30) {
-				return MBItems.MUTANT_SKELETON_SHOULDER_PAD;
-			}
-
+		if (part == 0) {
 			return MBItems.MUTANT_SKELETON_PELVIS;
 		}
-	}
 
-	public EntityType<?> getOwnerEntityType() {
-		switch (this.getOwnerType()) {
-		default:
-		case "mutant_skeleton":
-			return MBEntityType.MUTANT_SKELETON;
+		if (part >= 1 && part < 19) {
+			return MBItems.MUTANT_SKELETON_RIB;
 		}
+
+		if (part == 19) {
+			return MBItems.MUTANT_SKELETON_SKULL;
+		}
+
+		if (part >= 21 && part < 29) {
+			return MBItems.MUTANT_SKELETON_LIMB;
+		}
+
+		if (part == 29 || part == 30) {
+			return MBItems.MUTANT_SKELETON_SHOULDER_PAD;
+		}
+
+		return MBItems.MUTANT_SKELETON_PELVIS;
 	}
 
 	@Override
 	protected void writeAdditional(CompoundNBT compound) {
-		compound.putString("OwnerType", this.getOwnerType());
 		compound.putByte("Part", (byte)this.getPart());
 		compound.putShort("DespawnTimer", (short)this.despawnTimer);
 	}
 
 	@Override
 	protected void readAdditional(CompoundNBT compound) {
-		this.setOwnerType(compound.getString("OwnerType"));
 		this.setPart(compound.getByte("Part"));
 		this.despawnTimer = compound.getShort("DespawnTimer");
 	}

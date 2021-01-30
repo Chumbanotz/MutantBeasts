@@ -6,6 +6,7 @@ import net.minecraft.block.AbstractRailBlock;
 import net.minecraft.block.AbstractSkullBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.block.CactusBlock;
 import net.minecraft.block.CampfireBlock;
 import net.minecraft.block.DoorBlock;
@@ -43,10 +44,6 @@ public class MBWalkNodeProcessor extends WalkNodeProcessor {
 			nodeType = PathNodeType.BLOCKED;
 		}
 
-		if (nodeType == PathNodeType.RAIL && !(blockaccessIn.getBlockState(pos).getBlock() instanceof AbstractRailBlock) && !(blockaccessIn.getBlockState(pos.down()).getBlock() instanceof AbstractRailBlock)) {
-			nodeType = PathNodeType.FENCE;
-		}
-
 		if (nodeType == PathNodeType.LEAVES) {
 			nodeType = PathNodeType.BLOCKED;
 		}
@@ -62,16 +59,17 @@ public class MBWalkNodeProcessor extends WalkNodeProcessor {
 					for (int j = -1; j <= 1; ++j) {
 						if (i != 0 || j != 0) {
 							BlockPos newPos = pos.setPos(i + x, y, j + z);
-							PathNodeType pathNodeType = this.getPathNodeTypeRaw(blockaccessIn, newPos.getX(), newPos.getY(), newPos.getZ());
-							switch (pathNodeType) {
-							case LAVA:
-							case DAMAGE_FIRE:
-							case DANGER_FIRE:
+							switch (this.getPathNodeTypeRaw(blockaccessIn, newPos.getX(), newPos.getY(), newPos.getZ())) {
 							case DAMAGE_CACTUS:
+								return PathNodeType.DANGER_CACTUS;
+							case DANGER_FIRE:
+							case DAMAGE_FIRE:
+								return PathNodeType.DANGER_FIRE;
 							case DAMAGE_OTHER:
 							case DANGER_OTHER:
-								nodeType = pathNodeType;
-								break;
+								return PathNodeType.DANGER_OTHER;
+							case LAVA:
+								return PathNodeType.LAVA;
 							default:
 								break;
 							}
@@ -88,10 +86,8 @@ public class MBWalkNodeProcessor extends WalkNodeProcessor {
 	public PathNodeType getPathNodeType(IBlockReader blockaccessIn, int x, int y, int z) {
 		PathNodeType pathNode = this.getPathNodeTypeRaw(blockaccessIn, x, y, z);
 		if (pathNode == PathNodeType.OPEN && y >= 1) {
-			BlockState blockStateBelow = blockaccessIn.getBlockState(new BlockPos(x, y - 1, z));
 			PathNodeType pathNodeBelow = this.getPathNodeTypeRaw(blockaccessIn, x, y - 1, z);
 			pathNode = pathNodeBelow != PathNodeType.WALKABLE && pathNodeBelow != PathNodeType.OPEN && pathNodeBelow != PathNodeType.WATER && pathNodeBelow != PathNodeType.LAVA ? PathNodeType.WALKABLE : PathNodeType.OPEN;
-
 			switch (pathNodeBelow) {
 			case DAMAGE_FIRE:
 			case DAMAGE_CACTUS:
@@ -101,10 +97,6 @@ public class MBWalkNodeProcessor extends WalkNodeProcessor {
 				break;
 			default:
 				break;
-			}
-
-			if (blockStateBelow.getBlock() instanceof TrapDoorBlock && blockStateBelow.get(TrapDoorBlock.OPEN)) {
-				pathNode = PathNodeType.BLOCKED;
 			}
 		}
 
@@ -116,9 +108,9 @@ public class MBWalkNodeProcessor extends WalkNodeProcessor {
 	protected PathNodeType getPathNodeTypeRaw(IBlockReader blockaccessIn, int x, int y, int z) {
 		BlockPos blockPos = new BlockPos(x, y, z);
 		BlockState blockState = blockaccessIn.getBlockState(blockPos);
-		PathNodeType forgeType = blockState.getAiPathNodeType(blockaccessIn, blockPos, this.currentEntity);
-		if (forgeType != null) return forgeType;
 		Block block = blockState.getBlock();
+		PathNodeType forgeType = blockState.getAiPathNodeType(blockaccessIn, blockPos, this.currentEntity);
+		if (forgeType != null && block != Blocks.LAVA) return forgeType; //https://github.com/MinecraftForge/MinecraftForge/issues/6755
 		Material material = blockState.getMaterial();
 		if (blockState.isAir(blockaccessIn, blockPos)) {
 			return PathNodeType.OPEN;

@@ -8,6 +8,7 @@ import java.util.UUID;
 
 import com.google.common.collect.Multimap;
 
+import chumbanotz.mutantbeasts.util.EntityUtil;
 import chumbanotz.mutantbeasts.util.SeismicWave;
 import net.minecraft.block.BlockState;
 import net.minecraft.entity.LivingEntity;
@@ -20,12 +21,14 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.stats.Stats;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.ActionResultType;
+import net.minecraft.util.Direction;
 import net.minecraft.util.Hand;
 import net.minecraft.util.SoundCategory;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.BlockRayTraceResult;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.RayTraceContext.FluidMode;
+import net.minecraft.util.math.RayTraceContext;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -65,15 +68,13 @@ public class HulkHammerItem extends Item {
 	@Override
 	public ActionResult<ItemStack> onItemRightClick(World worldIn, PlayerEntity playerIn, Hand handIn) {
 		ItemStack heldItemStack = playerIn.getHeldItem(handIn);
-		if (rayTrace(worldIn, playerIn, FluidMode.SOURCE_ONLY).getType() == RayTraceResult.Type.MISS) {
+		RayTraceResult result = EntityUtil.rayTrace(playerIn, playerIn.getAttribute(PlayerEntity.REACH_DISTANCE).getValue(), RayTraceContext.FluidMode.ANY);
+		if (result.getType() == RayTraceResult.Type.MISS || result.getType() == RayTraceResult.Type.BLOCK && ((BlockRayTraceResult)result).getFace().getOpposite() != Direction.DOWN) {
 			return new ActionResult<>(ActionResultType.FAIL, heldItemStack);
 		} else {
 			if (!worldIn.isRemote) {
 				List<SeismicWave> list = new ArrayList<>();
-				float temp = playerIn.rotationPitch;
-				playerIn.rotationPitch = 0.0F;
-				Vec3d vec = playerIn.getLookVec();
-				playerIn.rotationPitch = temp;
+				Vec3d vec = Vec3d.fromPitchYaw(0.0F, playerIn.rotationYaw);
 				int x = MathHelper.floor(playerIn.posX + vec.x * 1.0D);
 				int y = MathHelper.floor(playerIn.getBoundingBox().minY);
 				int z = MathHelper.floor(playerIn.posZ + vec.z * 1.0D);

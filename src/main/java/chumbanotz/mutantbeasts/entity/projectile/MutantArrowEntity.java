@@ -2,9 +2,6 @@ package chumbanotz.mutantbeasts.entity.projectile;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
-
-import javax.annotation.Nullable;
 
 import chumbanotz.mutantbeasts.entity.MBEntityType;
 import chumbanotz.mutantbeasts.entity.mutant.MutantSkeletonEntity;
@@ -12,7 +9,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.nbt.CompoundNBT;
-import net.minecraft.nbt.ListNBT;
 import net.minecraft.network.IPacket;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
@@ -26,7 +22,6 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
-import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.fml.network.FMLPlayMessages;
 import net.minecraftforge.fml.network.NetworkHooks;
 
@@ -39,7 +34,7 @@ public class MutantArrowEntity extends Entity {
 	private int damage = 10 + this.rand.nextInt(3);
 	private final List<Entity> pointedEntities = new ArrayList<>();
 	private EffectInstance potionEffect;
-	private UUID shooter;
+	private LivingEntity shooter;
 
 	public MutantArrowEntity(EntityType<? extends MutantArrowEntity> type, World world) {
 		super(type, world);
@@ -48,7 +43,7 @@ public class MutantArrowEntity extends Entity {
 
 	public MutantArrowEntity(World world, LivingEntity shooter, LivingEntity target) {
 		this(MBEntityType.MUTANT_ARROW, world);
-		this.shooter = shooter.getUniqueID();
+		this.shooter = shooter;
 
 		if (!world.isRemote) {
 			this.setTargetX(target.posX);
@@ -138,11 +133,6 @@ public class MutantArrowEntity extends Entity {
 		this.potionEffect = effect;
 	}
 
-	@Nullable
-	public Entity getShooter() {
-		return this.shooter != null && this.world instanceof ServerWorld ? ((ServerWorld)this.world).getEntityByUuid(this.shooter) : null;
-	}
-
 	@Override
 	public void tick() {
 		super.tick();
@@ -194,13 +184,13 @@ public class MutantArrowEntity extends Entity {
 			double y = this.posY + dy * (double)i * 0.5D;
 			double z = this.posZ + dz * (double)i * 0.5D;
 			AxisAlignedBB box = new AxisAlignedBB(x, y, z, x, y, z).grow(0.3D);
-			this.pointedEntities.addAll(this.world.getEntitiesInAABBexcluding(this.getShooter(), box, EntityPredicates.CAN_AI_TARGET.and(Entity::canBeCollidedWith)));
+			this.pointedEntities.addAll(this.world.getEntitiesInAABBexcluding(this.shooter, box, EntityPredicates.CAN_AI_TARGET.and(Entity::canBeCollidedWith)));
 		}
 	}
 
 	protected void handleEntities() {
 		for (Entity entity : this.pointedEntities) {
-			DamageSource damageSource = new IndirectEntityDamageSource("arrow", this, this.getShooter()) {
+			DamageSource damageSource = new IndirectEntityDamageSource("arrow", this, this.shooter) {
 				@Override
 				public Vec3d getDamageLocation() {
 					return null;
@@ -211,12 +201,11 @@ public class MutantArrowEntity extends Entity {
 				damageSource.setExplosion();
 			}
 
-			if (entity.attackEntityFrom(damageSource, (float)this.damage) && !this.isSilent()) {
+			if (entity.attackEntityFrom(damageSource, (float)this.damage)) {
 				this.world.playSound(null, entity.posX, entity.posY, entity.posZ, SoundEvents.ITEM_CROSSBOW_HIT, this.getSoundCategory(), 1.0F, 1.2F / (this.rand.nextFloat() * 0.2F + 0.9F));
-			}
-
-			if (this.potionEffect != null && entity instanceof LivingEntity) {
-				((LivingEntity)entity).addPotionEffect(this.potionEffect);
+				if (this.potionEffect != null && entity instanceof LivingEntity) {
+					((LivingEntity)entity).addPotionEffect(this.potionEffect);
+				}
 			}
 		}
 
@@ -224,43 +213,11 @@ public class MutantArrowEntity extends Entity {
 	}
 
 	@Override
-	public boolean isInvisible() {
-		return true;
-	}
-
-	@Override
 	public void writeAdditional(CompoundNBT compound) {
-		compound.putInt("TicksExisted", this.ticksExisted);
-		compound.put("Target", this.newDoubleNBTList(this.getTargetX(), this.getTargetY(), this.getTargetZ()));
-		compound.putFloat("Speed", this.getSpeed());
-		compound.putInt("Clones", this.getClones());
-		if (this.potionEffect != null) {
-			compound.put("Effect", this.potionEffect.write(new CompoundNBT()));
-		}
-
-		if (this.shooter != null) {
-			compound.putUniqueId("OwnerUUID", this.shooter);
-		}
 	}
 
 	@Override
 	public void readAdditional(CompoundNBT compound) {
-		this.ticksExisted = compound.getInt("TicksExisted");
-		this.setSpeed(compound.getFloat("Speed"));
-		this.setClones(compound.getInt("Clones"));
-		if (compound.contains("Target", 9) && compound.getList("Target", 6).size() == 3) {
-			ListNBT listnbt1 = compound.getList("Target", 6);
-			this.setTargetX(listnbt1.getDouble(0));
-			this.setTargetY(listnbt1.getDouble(1));
-			this.setTargetZ(listnbt1.getDouble(2));
-		}
-		if (compound.contains("Effect", 9)) {
-			this.setPotionEffect(EffectInstance.read(compound.getCompound("Effect")));
-		}
-
-		if (compound.hasUniqueId("OwnerUUID")) {
-			this.shooter = compound.getUniqueId("OwnerUUID");
-		}
 	}
 
 	@Override

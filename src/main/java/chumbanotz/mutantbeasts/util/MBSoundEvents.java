@@ -42,6 +42,9 @@ public class MBSoundEvents {
 	@ObjectHolder("entity.mutant_creeper.hurt")
 	public static final SoundEvent ENTITY_MUTANT_CREEPER_HURT = null;
 
+	@ObjectHolder("entity.mutant_creeper.primed")
+	public static final SoundEvent ENTITY_MUTANT_CREEPER_PRIMED = null;
+
 	@ObjectHolder("entity.mutant_enderman.ambient")
 	public static final SoundEvent ENTITY_MUTANT_ENDERMAN_AMBIENT = null;
 

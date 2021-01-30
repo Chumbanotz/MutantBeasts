@@ -2,25 +2,20 @@ package chumbanotz.mutantbeasts.client.renderer.entity;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 
-import chumbanotz.mutantbeasts.MutantBeasts;
 import chumbanotz.mutantbeasts.client.renderer.entity.layers.CreeperChargeLayer;
 import chumbanotz.mutantbeasts.client.renderer.entity.model.CreeperMinionModel;
 import chumbanotz.mutantbeasts.entity.CreeperMinionEntity;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
-import net.minecraft.client.renderer.entity.IEntityRenderer;
 import net.minecraft.client.renderer.entity.MobRenderer;
-import net.minecraft.client.renderer.entity.layers.LayerRenderer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
 
 public class CreeperMinionRenderer extends MobRenderer<CreeperMinionEntity, CreeperMinionModel> {
 	public static final ResourceLocation TEXTURE = new ResourceLocation("textures/entity/creeper/creeper.png");
-	public static final ResourceLocation COLLAR_TEXTURE = MutantBeasts.getEntityTexture("creeper_minion_collar");
 
 	public CreeperMinionRenderer(EntityRendererManager manager) {
-		super(manager, new CreeperMinionModel(), 0.5F);
-		this.addLayer(new CreeperChargeLayer<>(this, new CreeperMinionModel(2.0F), CreeperMinionEntity::getPowered));
-		this.addLayer(new CreeperMinionRenderer.CollarLayer(this));
+		super(manager, new CreeperMinionModel(), 0.25F);
+		this.addLayer(new CreeperChargeLayer<>(this, new CreeperMinionModel(2.0F)));
 	}
 
 	@Override
@@ -33,7 +28,6 @@ public class CreeperMinionRenderer extends MobRenderer<CreeperMinionEntity, Cree
 		float f2 = (1.0F + f * 0.4F) * f1 * 0.5F;
 		float f3 = (1.0F + f * 0.1F) / f1 * 0.5F;
 		GlStateManager.scalef(f2, f3, f2);
-		GlStateManager.translatef(0.0F, entitylivingbaseIn.isSitting() ? -0.02F : 0.1F, 0.0F);
 	}
 
 	@Override
@@ -52,29 +46,5 @@ public class CreeperMinionRenderer extends MobRenderer<CreeperMinionEntity, Cree
 	@Override
 	protected ResourceLocation getEntityTexture(CreeperMinionEntity entity) {
 		return TEXTURE;
-	}
-
-	static class CollarLayer extends LayerRenderer<CreeperMinionEntity, CreeperMinionModel> {
-		private final CreeperMinionModel creeperMinionModel = new CreeperMinionModel(0.01F);
-
-		public CollarLayer(IEntityRenderer<CreeperMinionEntity, CreeperMinionModel> entityRendererIn) {
-			super(entityRendererIn);
-		}
-
-		@Override
-		public void render(CreeperMinionEntity entityIn, float p_212842_2_, float p_212842_3_, float p_212842_4_, float p_212842_5_, float p_212842_6_, float p_212842_7_, float p_212842_8_) {
-			if (!entityIn.isInvisible() && entityIn.getCollarColor() != null) {
-				this.bindTexture(COLLAR_TEXTURE);
-				float[] afloat = entityIn.getCollarColor().getColorComponentValues();
-				GlStateManager.color3f(afloat[0], afloat[1], afloat[2]);
-				this.getEntityModel().setModelAttributes(this.creeperMinionModel);
-				this.creeperMinionModel.render(entityIn, p_212842_2_, p_212842_3_, p_212842_5_, p_212842_6_, p_212842_7_, p_212842_8_);
-			}
-		}
-
-		@Override
-		public boolean shouldCombineTextures() {
-			return true;
-		}
 	}
 }

@@ -2,30 +2,23 @@ package chumbanotz.mutantbeasts.util;
 
 import java.util.List;
 
+import chumbanotz.mutantbeasts.packet.FluidParticlePacket;
+import chumbanotz.mutantbeasts.packet.MBPacketHandler;
 import net.minecraft.block.BellBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.block.DoorBlock;
-import net.minecraft.block.SilverfishBlock;
 import net.minecraft.block.TNTBlock;
-import net.minecraft.block.TurtleEggBlock;
 import net.minecraft.block.material.Material;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.particles.ParticleTypes;
-import net.minecraft.tags.BlockTags;
-import net.minecraft.tags.FluidTags;
 import net.minecraft.util.Direction;
-import net.minecraft.util.SoundCategory;
-import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
-import net.minecraft.world.server.ServerWorld;
-import net.minecraftforge.common.Tags;
+import net.minecraftforge.fml.network.PacketDistributor;
 
 public class SeismicWave extends BlockPos {
 	private boolean first;
@@ -107,45 +100,36 @@ public class SeismicWave extends BlockPos {
 	}
 
 	public void affectBlocks(World world, LivingEntity livingEntity) {
+		if (!this.spawnParticles) {
+			return;
+		}
+
 		BlockPos posAbove = this.up();
 		BlockState blockstate = world.getBlockState(this);
 		Block block = blockstate.getBlock();
         PlayerEntity playerEntity = livingEntity instanceof PlayerEntity ? (PlayerEntity)livingEntity : null;
 
 		if (playerEntity != null && playerEntity.isAllowEdit() || net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(world, livingEntity)) {
-			if (block != Blocks.DIRT && (block == Blocks.GRASS_BLOCK || block == Blocks.FARMLAND || block == Blocks.PODZOL || block == Blocks.MYCELIUM || block == Blocks.GRASS_PATH)) {
-				world.setBlockState(this, Blocks.DIRT.getDefaultState(), 2);
+			if (block == Blocks.GRASS_BLOCK || block == Blocks.FARMLAND || block == Blocks.PODZOL || block == Blocks.MYCELIUM || block == Blocks.GRASS_PATH) {
+				world.setBlockState(this, Blocks.DIRT.getDefaultState());
 			}
 
-			if (block.isIn(BlockTags.ICE) || block.isIn(BlockTags.LEAVES) || block.isIn(Tags.Blocks.GLASS)) {
-				world.destroyBlock(this, false);
-			}
-
-			if (world.getBlockState(posAbove).getBlockHardness(world, posAbove) <= 1.0F && !net.minecraft.tags.BlockTags.WITHER_IMMUNE.contains(block)) {
-				world.destroyBlock(posAbove, true);
+			float hardness = world.getBlockState(posAbove).getBlockHardness(world, posAbove);
+			if (hardness > -1.0F && hardness <= 1.0F) {
+				world.destroyBlock(posAbove, playerEntity != null);
 			}
 
 			if (block instanceof DoorBlock) {
 				if (blockstate.getMaterial() == Material.WOOD) {
-					world.removeBlock(posAbove, false);
 					world.playEvent(1021, posAbove, 0);
 				} else if (blockstate.getMaterial() == Material.IRON) {
 					world.playEvent(1020, posAbove, 0);
 				}
 			}
 
-			if (block instanceof SilverfishBlock) {
-				blockstate.spawnAdditionalDrops(world, this, ItemStack.EMPTY);
-				world.removeBlock(this, false);
-			}
-
 			if (block instanceof TNTBlock) {
 				block.catchFire(blockstate, world, this, null, playerEntity);
 				world.removeBlock(this, false);
-			}
-
-			if (block instanceof TurtleEggBlock) {
-				block.onFallenUpon(world, this, livingEntity, 0.0F);
 			}
 		}
 
@@ -161,18 +145,10 @@ public class SeismicWave extends BlockPos {
 			block.onEntityWalk(world, this, livingEntity);
 		}
 
-		if (this.spawnParticles) {
-			if (blockstate.getFluidState().isEmpty()) {
-				world.playEvent(2001, posAbove, Block.getStateId(blockstate));
-			} else if (world instanceof ServerWorld) {
-				if (world.getFluidState(this).isTagged(FluidTags.WATER)) {
-					world.playSound(null, posAbove, SoundEvents.ENTITY_GENERIC_SPLASH, SoundCategory.BLOCKS, 1.0F, 1.0F + (world.rand.nextFloat() - world.rand.nextFloat()) * 0.4F);
-					((ServerWorld)world).spawnParticle(ParticleTypes.SPLASH, posAbove.getX() + 0.5D, posAbove.getY(), posAbove.getZ() + 0.5D, 100, 0.5D, 0.5D, 0.5D, 10);
-				} else if (world.getFluidState(this).isTagged(FluidTags.LAVA)) {
-					world.playSound(null, posAbove, SoundEvents.BLOCK_LAVA_POP, SoundCategory.BLOCKS, 1.0F, 0.9F + world.rand.nextFloat() * 0.15F);
-					((ServerWorld)world).spawnParticle(ParticleTypes.FALLING_LAVA, posAbove.getX() + 0.5D, posAbove.getY(), posAbove.getZ() + 0.5D, 100, 0.5, 0.5, 0.5, 10);
-				}
-			}
+		if (blockstate.getFluidState().isEmpty()) {
+			world.playEvent(2001, posAbove, Block.getStateId(blockstate));
+		} else {
+			MBPacketHandler.INSTANCE.send(PacketDistributor.NEAR.with(() -> new PacketDistributor.TargetPoint(getX(), getY(), getZ(), 1024.0D, livingEntity.dimension)), new FluidParticlePacket(blockstate, this));
 		}
 	}
 }

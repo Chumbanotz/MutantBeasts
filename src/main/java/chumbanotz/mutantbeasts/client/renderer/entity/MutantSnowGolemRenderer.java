@@ -10,20 +10,37 @@ import net.minecraft.block.Blocks;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.client.renderer.entity.IEntityRenderer;
+import net.minecraft.client.renderer.entity.MobRenderer;
 import net.minecraft.client.renderer.entity.layers.LayerRenderer;
 import net.minecraft.client.renderer.texture.AtlasTexture;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.text.ITextComponent;
 
-public class MutantSnowGolemRenderer extends MutantRenderer<MutantSnowGolemEntity, MutantSnowGolemModel> {
-	static final ResourceLocation TEXTURE = MutantBeasts.getEntityTexture("mutant_snow_golem/mutant_snow_golem");
+public class MutantSnowGolemRenderer extends MobRenderer<MutantSnowGolemEntity, MutantSnowGolemModel> {
+	private static final ResourceLocation TEXTURE = MutantBeasts.getEntityTexture("mutant_snow_golem/mutant_snow_golem");
 	private static final ResourceLocation JACK_O_LANTERN_TEXTURE = MutantBeasts.getEntityTexture("mutant_snow_golem/jack_o_lantern");
 	private static final ResourceLocation GLOW_TEXTURE = MutantBeasts.getEntityTexture("mutant_snow_golem/glow");
 
 	public MutantSnowGolemRenderer(EntityRendererManager manager) {
 		super(manager, new MutantSnowGolemModel(), 0.7F);
 		this.addLayer(new MutantSnowGolemRenderer.JackOLanternLayer(this));
+		this.addLayer(new MutantSnowGolemRenderer.GlowLayer(this));
 		this.addLayer(new MutantSnowGolemRenderer.HeldBlockLayer(this));
+	}
+
+	@Override
+	public void renderName(MutantSnowGolemEntity entity, double x, double y, double z) {
+		super.renderName(entity, x, y, z);
+		if (entity.getOwner() != null) {
+			ITextComponent textComponent = entity.getOwner().getDisplayName();
+			textComponent.getStyle().setItalic(true);
+			if (this.canRenderName(entity)) {
+				y += (double)(9.0F * 1.15F * 0.025F);
+			}
+
+			this.renderEntityName(entity, x, y, z, textComponent.getFormattedText(), 64);
+		}
 	}
 
 	@Override
@@ -38,12 +55,26 @@ public class MutantSnowGolemRenderer extends MutantRenderer<MutantSnowGolemEntit
 
 		@Override
 		public void render(MutantSnowGolemEntity entityIn, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch, float scale) {
-			if (entityIn.isPumpkinEquipped()) {
-				if (!entityIn.isInvisible()) {
-					this.bindTexture(JACK_O_LANTERN_TEXTURE);
-					this.getEntityModel().render(entityIn, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scale);
-				}
+			if (entityIn.hasJackOLantern() && !entityIn.isInvisible()) {
+				this.bindTexture(JACK_O_LANTERN_TEXTURE);
+				this.getEntityModel().render(entityIn, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scale);
+			}
+		}
 
+		@Override
+		public boolean shouldCombineTextures() {
+			return true;
+		}
+	}
+
+	static class GlowLayer extends LayerRenderer<MutantSnowGolemEntity, MutantSnowGolemModel> {
+		public GlowLayer(IEntityRenderer<MutantSnowGolemEntity, MutantSnowGolemModel> entityRendererIn) {
+			super(entityRendererIn);
+		}
+
+		@Override
+		public void render(MutantSnowGolemEntity entityIn, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch, float scale) {
+			if (entityIn.hasJackOLantern()) {
 				this.bindTexture(GLOW_TEXTURE);
 				GlStateManager.disableLighting();
 				GLX.glMultiTexCoord2f(GLX.GL_TEXTURE1, 61680.0F, 0.0F);
@@ -75,8 +106,8 @@ public class MutantSnowGolemRenderer extends MutantRenderer<MutantSnowGolemEntit
 			if (entityIn.isThrowing() && entityIn.getThrowingTick() < 7) {
 				GlStateManager.enableRescaleNormal();
 				GlStateManager.pushMatrix();
-				GlStateManager.translatef(0.4F, 0.0F, 0.0F);
-				this.getEntityModel().postRenderArm(0.0625F);
+				GlStateManager.translatef(entityIn.isLeftHanded() ? -0.4F : 0.4F, 0.0F, 0.0F);
+				this.getEntityModel().postRenderArm(0.0625F, entityIn.isLeftHanded());
 				GlStateManager.translatef(0.0F, 0.9F, 0.0F);
 				GlStateManager.scalef(-0.8F, -0.8F, 0.8F);
 				int i = entityIn.getBrightnessForRender();

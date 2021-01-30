@@ -1,14 +1,17 @@
 package chumbanotz.mutantbeasts.entity.ai.goal;
 
+import java.util.UUID;
+
 import net.minecraft.entity.CreatureEntity;
 import net.minecraft.entity.EntityPredicate;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MobEntity;
 import net.minecraft.entity.ai.goal.HurtByTargetGoal;
+import net.minecraft.entity.passive.TameableEntity;
 
 public class MBHurtByTargetGoal extends HurtByTargetGoal {
-	public MBHurtByTargetGoal(CreatureEntity creatureIn) {
-		super(creatureIn);
+	public MBHurtByTargetGoal(CreatureEntity creatureIn, Class<?>... excludeReinforcementTypes) {
+		super(creatureIn, excludeReinforcementTypes);
 	}
 
 	@Override
@@ -44,13 +47,22 @@ public class MBHurtByTargetGoal extends HurtByTargetGoal {
 	protected boolean isSuitableTarget(LivingEntity potentialTarget, EntityPredicate targetPredicate) {
 		if (potentialTarget instanceof net.minecraft.entity.boss.WitherEntity && this.goalOwner.isEntityUndead()) {
 			return false;
+		} else if (potentialTarget instanceof TameableEntity && this.goalOwner instanceof TameableEntity) {
+			UUID targetOwnerUUID = ((TameableEntity)potentialTarget).getOwnerId();
+			UUID attackerOwnerUUID = ((TameableEntity)this.goalOwner).getOwnerId();
+			return targetOwnerUUID == null || attackerOwnerUUID == null || !targetOwnerUUID.equals(attackerOwnerUUID);
 		} else {
-			return super.isSuitableTarget(potentialTarget, targetPredicate);
+			return potentialTarget != null && targetPredicate.canTarget(this.goalOwner, potentialTarget);
 		}
 	}
 
 	@Override
 	protected void setAttackTarget(MobEntity mobIn, LivingEntity targetIn) {
 		mobIn.setRevengeTarget(targetIn);
+	}
+
+	@Override
+	protected double getTargetDistance() {
+		return super.getTargetDistance() * 2.0D;
 	}
 }

@@ -1,5 +1,7 @@
 package chumbanotz.mutantbeasts.entity;
 
+import java.util.List;
+
 import chumbanotz.mutantbeasts.MBConfig;
 import chumbanotz.mutantbeasts.MutantBeasts;
 import chumbanotz.mutantbeasts.entity.mutant.MutantCreeperEntity;
@@ -11,6 +13,7 @@ import chumbanotz.mutantbeasts.entity.mutant.SpiderPigEntity;
 import chumbanotz.mutantbeasts.entity.projectile.ChemicalXEntity;
 import chumbanotz.mutantbeasts.entity.projectile.MutantArrowEntity;
 import chumbanotz.mutantbeasts.entity.projectile.ThrowableBlockEntity;
+import net.minecraft.entity.EntityClassification;
 import net.minecraft.entity.EntitySpawnPlacementRegistry;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.MobEntity;
@@ -42,12 +45,21 @@ public class MBEntityType {
 
 	public static void addSpawns() {
 		for (Biome biome : ForgeRegistries.BIOMES) {
+			if (biome.getRegistryName() == null || !MBConfig.biomeWhitelist.contains(biome.getRegistryName().toString())) {
+				continue;
+			}
+
+			List<Biome.SpawnListEntry> monsterEntries = biome.getSpawns(EntityClassification.MONSTER);
+			if (monsterEntries.isEmpty()) {
+				continue;
+			}
+
 			if (biome.getCategory() != Biome.Category.MUSHROOM && biome != Biomes.THE_VOID) {
-				addSpawn(biome, MUTANT_ENDERMAN, MBConfig.mutantEndermanSpawnWeight, 1, 1);
+				addSpawn(monsterEntries, MUTANT_ENDERMAN, MBConfig.mutantEndermanSpawnWeight, 1, 1);
 				if (biome.getCategory() != Biome.Category.THEEND && biome.getCategory() != Biome.Category.NETHER) {
-					addSpawn(biome, MUTANT_CREEPER, MBConfig.mutantCreeperSpawnWeight, 1, 1);
-					addSpawn(biome, MUTANT_SKELETON, MBConfig.mutantSkeletonSpawnWeight, 1, 1);
-					addSpawn(biome, MUTANT_ZOMBIE, MBConfig.mutantZombieSpawnWeight, 1, 1);
+					addSpawn(monsterEntries, MUTANT_CREEPER, MBConfig.mutantCreeperSpawnWeight, 1, 1);
+					addSpawn(monsterEntries, MUTANT_SKELETON, MBConfig.mutantSkeletonSpawnWeight, 1, 1);
+					addSpawn(monsterEntries, MUTANT_ZOMBIE, MBConfig.mutantZombieSpawnWeight, 1, 1);
 				}
 			}
 		}
@@ -61,9 +73,9 @@ public class MBEntityType {
 		EntitySpawnPlacementRegistry.register(SPIDER_PIG, EntitySpawnPlacementRegistry.PlacementType.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, AnimalEntity::func_223316_b);
 	}
 
-	private static void addSpawn(Biome biome, EntityType<? extends MobEntity> entityType, int weight, int min, int max) {
+	private static void addSpawn(List<Biome.SpawnListEntry> entries, EntityType<? extends MobEntity> entityType, int weight, int min, int max) {
 		if (weight > 0) {
-			biome.getSpawns(entityType.getClassification()).add(new Biome.SpawnListEntry(entityType, weight, min, max));
+			entries.add(new Biome.SpawnListEntry(entityType, weight, min, max));
 		}
 	}
 }

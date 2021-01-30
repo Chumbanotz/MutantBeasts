@@ -16,10 +16,10 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 	private final RendererModel neck;
 	private final RendererModel head;
 	private final RendererModel mouth;
-	private final Arm rightArm;
-	private final Arm leftArm;
-	private final Arm lowerRightArm;
-	private final Arm lowerLeftArm;
+	private final MutantEndermanModel.Arm rightArm;
+	private final MutantEndermanModel.Arm leftArm;
+	private final MutantEndermanModel.Arm lowerRightArm;
+	private final MutantEndermanModel.Arm lowerLeftArm;
 	private final RendererModel legjoint1;
 	private final RendererModel legjoint2;
 	private final RendererModel leg1;
@@ -86,8 +86,9 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 	public void render(MutantEndermanEntity entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch, float scale) {
 		this.setAngles();
 		this.animate(entity, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scale);
-		this.lowerRightArm.arm.setScale(entity.getArmScale(this.partialTick));
-		this.lowerLeftArm.arm.setScale(entity.getArmScale(this.partialTick));
+		float armScale = entity.getArmScale(this.partialTick);
+		this.lowerRightArm.arm.setScale(armScale);
+		this.lowerLeftArm.arm.setScale(armScale);
 		this.pelvis.render(scale);
 	}
 
@@ -746,6 +747,7 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 			float f1 = MathHelper.sin(tick * (float)Math.PI / 2.0F);
 			this.head.rotateAngleX += f * 0.4F;
 			this.neck.rotateAngleX += f * 0.4F - 0.1F;
+			this.mouth.rotateAngleX += f1 * 0.6F;
 			this.chest.rotateAngleX += -f1 * 0.8F;
 			this.abdomen.rotateAngleX += -f1 * 0.2F;
 			this.pelvis.rotationPointY += -12.0F;
@@ -775,6 +777,7 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 			this.foreleg2.rotateAngleX += f * 1.6F;
 		} else {
 			this.neck.rotateAngleX += -0.1F;
+			this.mouth.rotateAngleX += 0.6F;
 			this.chest.rotateAngleX += -0.8F;
 			this.abdomen.rotateAngleX += -0.2F;
 			this.pelvis.rotationPointY += -12.0F;

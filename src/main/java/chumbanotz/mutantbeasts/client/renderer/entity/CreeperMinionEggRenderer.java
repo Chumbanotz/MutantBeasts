@@ -6,7 +6,6 @@ import chumbanotz.mutantbeasts.MutantBeasts;
 import chumbanotz.mutantbeasts.client.renderer.entity.layers.CreeperChargeLayer;
 import chumbanotz.mutantbeasts.client.renderer.entity.model.CreeperMinionEggModel;
 import chumbanotz.mutantbeasts.entity.CreeperMinionEggEntity;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.util.ResourceLocation;
@@ -25,42 +24,25 @@ public class CreeperMinionEggRenderer extends EntityRenderer<CreeperMinionEggEnt
 	public void doRender(CreeperMinionEggEntity entity, double x, double y, double z, float entityYaw, float partialTicks) {
         super.doRender(entity, x, y, z, entityYaw, partialTicks);
 	    GlStateManager.pushMatrix();
-	    GlStateManager.translatef((float)x, (float)y + 0.2F, (float)z);
-	    GlStateManager.rotatef(180.0F, 0, 0, 1.0F);
+	    GlStateManager.translatef((float)x, (float)y, (float)z);
+        GlStateManager.enableRescaleNormal();
+        GlStateManager.scalef(-1.0F, -1.0F, 1.0F);
 	    GlStateManager.scalef(1.5F, 1.5F, 1.5F);
+        GlStateManager.translatef(0.0F, -1.501F, 0.0F);
 	    this.bindEntityTexture(entity);
 		if (this.renderOutlines) {
 			GlStateManager.enableColorMaterial();
 			GlStateManager.setupSolidRenderingTextureCombine(this.getTeamColor(entity));
 		}
 
-	    this.eggModel.render();
+	    this.eggModel.render(entity, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0625F);
 		if (this.renderOutlines) {
 			GlStateManager.tearDownSolidRenderingTextureCombine();
 			GlStateManager.disableColorMaterial();
 		}
 
 		if (entity.isCharged()) {
-			GlStateManager.depthMask(!entity.isInvisible());
-			this.bindTexture(CreeperChargeLayer.LIGHTNING_TEXTURE);
-			GlStateManager.matrixMode(5890);
-			GlStateManager.loadIdentity();
-			float f = (float)entity.ticksExisted + partialTicks;
-			GlStateManager.translatef(f * 0.01F, f * 0.01F, 0.0F);
-			GlStateManager.matrixMode(5888);
-			GlStateManager.enableBlend();
-			GlStateManager.color4f(0.5F, 0.5F, 0.5F, 1.0F);
-			GlStateManager.disableLighting();
-			GlStateManager.blendFunc(GlStateManager.SourceFactor.ONE, GlStateManager.DestFactor.ONE);
-			Minecraft.getInstance().gameRenderer.setupFogColor(true);
-			this.chargedModel.render();
-			Minecraft.getInstance().gameRenderer.setupFogColor(false);
-			GlStateManager.matrixMode(5890);
-			GlStateManager.loadIdentity();
-			GlStateManager.matrixMode(5888);
-			GlStateManager.enableLighting();
-			GlStateManager.disableBlend();
-			GlStateManager.depthMask(true);
+			CreeperChargeLayer.render(entity, 0.0F, 0.0F, partialTicks, (float)entity.ticksExisted + partialTicks, 0.0F, 0.0F, 0.0625F, this.eggModel, this.chargedModel);
 		}
 
 	    GlStateManager.popMatrix();

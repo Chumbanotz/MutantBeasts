@@ -6,6 +6,7 @@ import java.util.List;
 
 import chumbanotz.mutantbeasts.client.animationapi.IAnimatedEntity;
 import chumbanotz.mutantbeasts.entity.BodyPartEntity;
+import chumbanotz.mutantbeasts.entity.MBEntityType;
 import chumbanotz.mutantbeasts.entity.ai.goal.AvoidDamageGoal;
 import chumbanotz.mutantbeasts.entity.ai.goal.MBHurtByTargetGoal;
 import chumbanotz.mutantbeasts.entity.ai.goal.MBMeleeAttackGoal;
@@ -30,26 +31,35 @@ import net.minecraft.entity.monster.MonsterEntity;
 import net.minecraft.entity.passive.IronGolemEntity;
 import net.minecraft.entity.passive.WolfEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.network.IPacket;
 import net.minecraft.pathfinding.PathNavigator;
-import net.minecraft.pathfinding.PathNodeType;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.potion.Effects;
 import net.minecraft.util.DamageSource;
-import net.minecraft.util.EntityPredicates;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
+import net.minecraftforge.fml.network.FMLPlayMessages;
+import net.minecraftforge.fml.network.NetworkHooks;
 
 public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEntity {
-	public static final byte MELEE_ATTACK = 4, SHOOT_ATTACK = 5, MULTI_SHOT_ATTACK = 6, CONSTRICT_RIBS_ATTACK = 7;
+	public static final byte MELEE_ATTACK = 1;
+	public static final byte SHOOT_ATTACK = 2;
+	public static final byte MULTI_SHOT_ATTACK = 3;
+	public static final byte CONSTRICT_RIBS_ATTACK = 4;
 	private int attackID;
 	private int attackTick;
 
 	public MutantSkeletonEntity(EntityType<? extends MutantSkeletonEntity> type, World worldIn) {
 		super(type, worldIn);
-		this.stepHeight = 1.5F;
+		this.stepHeight = 1.0F;
 		this.experienceValue = 30;
+	}
+
+	public MutantSkeletonEntity(FMLPlayMessages.SpawnEntity packet, World world) {
+		this(MBEntityType.MUTANT_SKELETON, world);
 	}
 
 	@Override
@@ -58,14 +68,14 @@ public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEnti
 		this.goalSelector.addGoal(0, new MutantSkeletonEntity.ShootGoal());
 		this.goalSelector.addGoal(0, new MutantSkeletonEntity.MultiShotGoal());
 		this.goalSelector.addGoal(0, new MutantSkeletonEntity.ConstrictRibsAttackGoal());
-		this.goalSelector.addGoal(2, new MBMeleeAttackGoal(this, 1.1D).setMaxAttackTick(6));
-		this.goalSelector.addGoal(3, new AvoidDamageGoal(this, 1.1D));
-		this.goalSelector.addGoal(4, new WaterAvoidingRandomWalkingGoal(this, 1.0D));
-		this.goalSelector.addGoal(5, new LookAtGoal(this, PlayerEntity.class, 8.0F));
+		this.goalSelector.addGoal(1, new MBMeleeAttackGoal(this, 1.1D).setMaxAttackTick(0));
+		this.goalSelector.addGoal(2, new AvoidDamageGoal(this, 1.0D));
+		this.goalSelector.addGoal(3, new WaterAvoidingRandomWalkingGoal(this, 1.0D));
+		this.goalSelector.addGoal(4, new LookAtGoal(this, PlayerEntity.class, 8.0F));
 		this.goalSelector.addGoal(5, new LookRandomlyGoal(this));
-		this.targetSelector.addGoal(1, new MBHurtByTargetGoal(this));
-		this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, PlayerEntity.class, true).setUnseenMemoryTicks(300));
-		this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, IronGolemEntity.class, true));
+		this.targetSelector.addGoal(0, new MBHurtByTargetGoal(this));
+		this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, PlayerEntity.class, true).setUnseenMemoryTicks(300));
+		this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, IronGolemEntity.class, true));
 		this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, WolfEntity.class, true, true));
 	}
 
@@ -109,8 +119,8 @@ public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEnti
 
 	@Override
 	public void handleStatusUpdate(byte id) {
-		if (id == 0 || id >= 4 && id <= 7) {
-			this.attackID = id;
+		if (id <= 0) {
+			this.attackID = Math.abs(id);
 			this.attackTick = 0;
 		} else {
 			super.handleStatusUpdate(id);
@@ -120,13 +130,12 @@ public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEnti
 	@Override
 	public void livingTick() {
 		super.livingTick();
-		this.setPathPriority(PathNodeType.WATER, this.isInWaterOrBubbleColumn() ? 16.0F : -1.0F);
 
 		if (this.attackID != 0) {
 			++this.attackTick;
 		}
 
-		if (this.isAlive() && this.ticksExisted % 100 == 0 && !this.world.isDaytime() && this.getHealth() < this.getMaxHealth()) {
+		if (!this.world.isDaytime() && this.ticksExisted % 100 == 0 && this.isAlive() && this.getHealth() < this.getMaxHealth()) {
 			this.heal(2.0F);
 		}
 	}
@@ -135,9 +144,9 @@ public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEnti
 	public boolean attackEntityAsMob(Entity entityIn) {
 		if (!this.world.isRemote && this.attackID == 0) {
 			if (this.rand.nextInt(4) != 0) {
-				this.setAttackID(MELEE_ATTACK);
-			} else if (this.onGround || this.world.containsAnyLiquid(this.getBoundingBox())) {
-				this.setAttackID(CONSTRICT_RIBS_ATTACK);
+				this.attackID = MELEE_ATTACK;
+			} else {
+				this.attackID = CONSTRICT_RIBS_ATTACK;
 			}
 		}
 
@@ -161,7 +170,6 @@ public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEnti
 
 	@Override
 	protected void constructKnockBackVector(LivingEntity livingEntity) {
-		livingEntity.applyEntityCollision(this);
 		livingEntity.velocityChanged = true;
 	}
 
@@ -171,8 +179,24 @@ public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEnti
 	}
 
 	@Override
+	public void setAnimationID(int id) {
+		this.attackID = id;
+	}
+
+	@Override
 	public int getAnimationTick() {
 		return this.attackTick;
+	}
+
+	@Override
+	public void setAnimationTick(int tick) {
+		this.attackTick = tick;
+	}
+
+	private void setAttackID(int id) {
+		this.attackID = id;
+		this.attackTick = 0;
+		this.world.setEntityState(this, (byte)-id);
 	}
 
 	@Override
@@ -268,10 +292,9 @@ public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEnti
 		this.playSound(MBSoundEvents.ENTITY_MUTANT_SKELETON_STEP, 0.15F, 1.0F);
 	}
 
-	private void setAttackID(int id) {
-		this.attackID = id;
-		this.attackTick = 0;
-		this.world.setEntityState(this, (byte)id);
+	@Override
+	public IPacket<?> createSpawnPacket() {
+		return NetworkHooks.getEntitySpawningPacket(this);
 	}
 
 	class MeleeGoal extends Goal {
@@ -291,7 +314,7 @@ public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEnti
 
 		@Override
 		public void startExecuting() {
-			attackTick = 0;
+			setAttackID(MELEE_ATTACK);
 		}
 	
 		@Override
@@ -301,7 +324,7 @@ public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEnti
 			}
 
 			if (attackTick == 3) {
-				for (Entity entity : world.getEntitiesInAABBexcluding(MutantSkeletonEntity.this, getBoundingBox().grow(4.0D), EntityPredicates.CAN_AI_TARGET)) {
+				for (Entity entity : world.getEntitiesWithinAABBExcludingEntity(MutantSkeletonEntity.this, getBoundingBox().grow(4.0D))) {
 					double dist = (double)getDistance(entity);
 					double x = posX - entity.posX;
 					double z = posZ - entity.posZ;
@@ -344,7 +367,7 @@ public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEnti
 
 		@Override
 		public void startExecuting() {
-			attackTick = 0;
+			setAttackID(CONSTRICT_RIBS_ATTACK);
 		}
 
 		@Override
@@ -355,7 +378,7 @@ public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEnti
 				this.attackTarget.attackEntityFrom(DamageSource.causeMobDamage(MutantSkeletonEntity.this), (float)getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getValue() + 7.0F);
 				this.attackTarget.setMotion((double)((1.0F + rand.nextFloat() * 0.4F) * (float)(rand.nextBoolean() ? 1 : -1)), (double)(0.4F + rand.nextFloat() * 0.8F), (double)((1.0F + rand.nextFloat() * 0.4F) * (float)(rand.nextBoolean() ? 1 : -1)));
 				playSound(SoundEvents.ENTITY_GENERIC_EXPLODE, 0.5F, 0.8F + rand.nextFloat() * 0.4F);
-				EntityUtil.disableShield(this.attackTarget, DamageSource.causeMobDamage(MutantSkeletonEntity.this), 100);
+				EntityUtil.disableShield(this.attackTarget, 100);
 				EntityUtil.sendPlayerVelocityPacket(this.attackTarget);
 			}
 		}
@@ -377,7 +400,7 @@ public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEnti
 		@Override
 		public boolean shouldExecute() {
 			this.attackTarget = getAttackTarget();
-			return this.attackTarget != null && canEntityBeSeen(this.attackTarget) && getDistanceSq(this.attackTarget) > 4.0D && attackID == 0 && rand.nextInt(12) == 0;
+			return this.attackTarget != null && attackID == 0 && getDistanceSq(this.attackTarget) > 4.0D && rand.nextInt(12) == 0 && canEntityBeSeen(this.attackTarget);
 		}
 
 		@Override
@@ -406,7 +429,7 @@ public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEnti
 			if (attackTick == 26) {
 				MutantArrowEntity arrowEntity = new MutantArrowEntity(world, MutantSkeletonEntity.this, this.attackTarget);
 
-				if (hurtTime > 0 && lastDamage > 0.0F) {
+				if (hurtTime > 0 && lastDamage > 0.0F && getLastDamageSource().isProjectile()) {
 					arrowEntity.randomize((float)hurtTime / 2.0F);
 				} else if (!canEntityBeSeen(this.attackTarget)) {
 					arrowEntity.randomize(0.5F + rand.nextFloat());
@@ -447,7 +470,7 @@ public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEnti
 		@Override
 		public boolean shouldExecute() {
 			this.attackTarget = getAttackTarget();
-			return this.attackTarget != null && (onGround || world.containsAnyLiquid(getBoundingBox())) && attackID == 0 && rand.nextInt(26) == 0 && canEntityBeSeen(this.attackTarget);
+			return this.attackTarget != null && onGround && attackID == 0 && rand.nextInt(26) == 0 && canEntityBeSeen(this.attackTarget);
 		}
 
 		@Override
@@ -474,6 +497,7 @@ public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEnti
 					scale *= 5.0D;
 				}
 
+				motionMultiplier = Vec3d.ZERO;
 				setMotion(x * (double)scale, 1.100000023841858D, z * (double)scale);
 			}
 

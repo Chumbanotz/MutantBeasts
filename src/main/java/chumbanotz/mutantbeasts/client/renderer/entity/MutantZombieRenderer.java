@@ -9,7 +9,7 @@ import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
 
-public class MutantZombieRenderer extends MutantRenderer<MutantZombieEntity, MutantZombieModel> {
+public class MutantZombieRenderer extends AlternateMobRenderer<MutantZombieEntity, MutantZombieModel> {
 	private static final ResourceLocation TEXTURE = MutantBeasts.getEntityTexture("mutant_zombie");
 
 	public MutantZombieRenderer(EntityRendererManager manager) {
@@ -73,6 +73,11 @@ public class MutantZombieRenderer extends MutantRenderer<MutantZombieEntity, Mut
 	@Override
 	protected float getDeathMaxRotation(MutantZombieEntity living) {
 		return 80.0F;
+	}
+
+	@Override
+	protected boolean shouldRenderDeathColor(MutantZombieEntity entityliving) {
+		return !entityliving.isAlive() && entityliving.getLives() <= 0;
 	}
 
 	@Override

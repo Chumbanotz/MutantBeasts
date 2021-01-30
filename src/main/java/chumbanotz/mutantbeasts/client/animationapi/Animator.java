@@ -15,6 +15,7 @@ public class Animator {
 	private IAnimatedEntity animEntity;
 	private final Map<RendererModel, Transform> transformMap = new HashMap<>();
 	private final Map<RendererModel, Transform> prevTransformMap = new HashMap<>();
+	private float partialTick;
 
 	public Animator(Model model) {
 		this.mainModel = model;
@@ -24,12 +25,13 @@ public class Animator {
 		return this.animEntity;
 	}
 
-	public void update(IAnimatedEntity entity) {
+	public void update(IAnimatedEntity entity, float partialTick) {
 		this.tempTick = this.prevTempTick = 0;
 		this.correctAnim = false;
 		this.animEntity = entity;
 		this.transformMap.clear();
 		this.prevTransformMap.clear();
+		this.partialTick = partialTick;
 
 		for (RendererModel box : this.mainModel.boxList) {
 			box.rotateAngleX = 0.0F;
@@ -97,7 +99,7 @@ public class Animator {
 						model.rotationPointZ += transform.getOffsetZ();
 					}
 				} else {
-					float tick = ((float)(animTick - this.prevTempTick) + 1.0F) / (float)(this.tempTick - this.prevTempTick);
+					float tick = ((float)(animTick - this.prevTempTick) + this.partialTick) / (float)(this.tempTick - this.prevTempTick);
 					float inc = MathHelper.sin(tick * (float)Math.PI / 2.0F);
 					float dec = 1.0F - inc;
 

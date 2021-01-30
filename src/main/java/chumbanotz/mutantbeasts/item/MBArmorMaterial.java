@@ -25,7 +25,7 @@ public enum MBArmorMaterial implements IArmorMaterial {
 	private final LazyLoadBase<Ingredient> repairMaterial;
 
 	private MBArmorMaterial(String nameIn, int maxDamageFactorIn, int[] damageReductionAmountsIn, int enchantabilityIn, SoundEvent equipSoundIn, float toughness, Supplier<Ingredient> repairMaterialSupplier) {
-		this.name = nameIn;
+		this.name = MutantBeasts.MOD_ID + ':' + nameIn;
 		this.maxDamageFactor = maxDamageFactorIn;
 		this.damageReductionAmountArray = damageReductionAmountsIn;
 		this.enchantability = enchantabilityIn;
@@ -61,7 +61,7 @@ public enum MBArmorMaterial implements IArmorMaterial {
 
 	@Override
 	public String getName() {
-		return MutantBeasts.MOD_ID + ':' + this.name;
+		return this.name;
 	}
 
 	@Override

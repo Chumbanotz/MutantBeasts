@@ -41,8 +41,10 @@ import net.minecraft.pathfinding.PathNavigator;
 import net.minecraft.tags.Tag;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.EntityPredicates;
+import net.minecraft.util.Hand;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.Explosion;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.IBlockReader;
@@ -54,7 +56,9 @@ public class MutantCreeperEntity extends MonsterEntity {
 	public static final int MAX_CHARGE_TIME = 100;
 	public static final int MAX_DEATH_TIME = 100;
 	private int chargeTime;
-	private int chargeHits;
+	private int chargeHits = 3 + this.rand.nextInt(3);
+	private int lastJumpTick;
+	private int jumpTick;
 	private boolean summonLightning;
 	private DamageSource deathCause;
 
@@ -71,13 +75,13 @@ public class MutantCreeperEntity extends MonsterEntity {
 		this.goalSelector.addGoal(1, new MutantCreeperEntity.SpawnMinionsGoal());
 		this.goalSelector.addGoal(1, new MutantCreeperEntity.ChargeAttackGoal());
 		this.goalSelector.addGoal(2, new MBMeleeAttackGoal(this, 1.3D));
-		this.goalSelector.addGoal(3, new AvoidDamageGoal(this, 1.3D));
+		this.goalSelector.addGoal(3, new AvoidDamageGoal(this, 1.1D));
 		this.goalSelector.addGoal(4, new WaterAvoidingRandomWalkingGoal(this, 1.0D));
 		this.goalSelector.addGoal(5, new LookAtGoal(this, PlayerEntity.class, 8.0F));
 		this.goalSelector.addGoal(5, new LookRandomlyGoal(this));
-		this.targetSelector.addGoal(1, new MBHurtByTargetGoal(this));
-		this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, PlayerEntity.class, true).setUnseenMemoryTicks(300));
-		this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, AnimalEntity.class, 100, true, true, EntityUtil::isFeline));
+		this.targetSelector.addGoal(0, new MBHurtByTargetGoal(this));
+		this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, PlayerEntity.class, true).setUnseenMemoryTicks(300));
+		this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, AnimalEntity.class, 100, true, true, EntityUtil::isFeline));
 	}
 
 	@Override
@@ -119,9 +123,9 @@ public class MutantCreeperEntity extends MonsterEntity {
 		return (this.dataManager.get(STATUS) & 4) != 0;
 	}
 
-	private void setCharging(boolean flag) {
+	private void setCharging(boolean charging) {
 		byte b0 = this.dataManager.get(STATUS);
-		this.dataManager.set(STATUS, flag ? (byte)(b0 | 4) : (byte)(b0 & -5));
+		this.dataManager.set(STATUS, charging ? (byte)(b0 | 4) : (byte)(b0 & -5));
 	}
 
 	@Override
@@ -140,17 +144,13 @@ public class MutantCreeperEntity extends MonsterEntity {
 
 	@Override
 	public boolean attackEntityAsMob(Entity entityIn) {
-		boolean flag = entityIn.attackEntityFrom(DamageSource.causeMobDamage(this), (float)(this.getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getValue()));
 		double x = entityIn.posX - this.posX;
 		double y = entityIn.posY - this.posY;
 		double z = entityIn.posZ - this.posZ;
 		double d = Math.sqrt(x * x + y * y + z * z);
 		entityIn.addVelocity(x / d * 0.5D, y / d * 0.05000000074505806D + 0.15000000596046448D, z / d * 0.5D);
-		if (flag) {
-			this.applyEnchantments(this, entityIn);
-		}
-
-		return flag;
+		this.swingArm(Hand.MAIN_HAND);
+		return super.attackEntityAsMob(entityIn);
 	}
 
 	@Override
@@ -160,35 +160,28 @@ public class MutantCreeperEntity extends MonsterEntity {
 		} else if (this.getPowered() && source.isFireDamage()) {
 			this.extinguish();
 			return false;
+		} else if (source.isExplosion()) {
+			float healAmount = amount / 2.0F;
+
+			if (this.isAlive() && this.getHealth() < this.getMaxHealth() && !(source.getTrueSource() instanceof MutantCreeperEntity)) {
+				this.heal(healAmount);
+				EntityUtil.sendParticlePacket(this, ParticleTypes.HEART, (int)(healAmount / 2.0F));
+			}
+
+			return false;
 		} else {
-			boolean flag = super.attackEntityFrom(source, amount);
-			if (source.isExplosion()) {
-				float healAmount = amount / 2.0F;
-
-				if (this.getHealth() < this.getMaxHealth() && !(source.getTrueSource() instanceof MutantCreeperEntity)) {
-					this.heal(healAmount);
-					if (this.isAlive() && this.world instanceof ServerWorld) {
-						for (int i = 0; i < (int)(healAmount / 2.0F); i++) {
-							double d0 = this.rand.nextGaussian() * 0.02D;
-							double d1 = this.rand.nextGaussian() * 0.02D;
-							double d2 = this.rand.nextGaussian() * 0.02D;
-							((ServerWorld)this.world).spawnParticle(ParticleTypes.HEART, this.posX + (double)(this.rand.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(), this.posY + 0.5D + (double)(this.rand.nextFloat() * this.getHeight()), this.posZ + (double)(this.rand.nextFloat() * this.getWidth() * 2.0F) - (double)this.getWidth(), 0, d0, d1, d2, 1.0D);
-						}
-					}
-				}
-
-				return true;
-			} else if (this.isCharging()) {
+			boolean takenDamage = super.attackEntityFrom(source, amount);
+			if (this.isCharging()) {
 				if (!source.isMagicDamage() && source.getImmediateSource() instanceof LivingEntity) {
 					source.getImmediateSource().attackEntityFrom(DamageSource.causeMobDamage(this).setDamageBypassesArmor(), 2.0F);
 				}
 
-				if (!this.world.isRemote && amount > 0.0F && source.getImmediateSource() != null && flag) {
+				if (takenDamage && amount > 0.0F) {
 					--this.chargeHits;
 				}
 			}
 
-			return flag;
+			return takenDamage;
 		}
 	}
 
@@ -223,16 +216,20 @@ public class MutantCreeperEntity extends MonsterEntity {
 	@Override
 	public void tick() {
 		super.tick();
-
-		if (!this.world.isRemote) {
-			if (this.isJumpAttacking()) {
-				if (this.onGround || this.motionMultiplier.lengthSquared() > 0.0D || this.world.containsAnyLiquid(this.getBoundingBox())) {
-					this.setJumpAttacking(false);
-					MutatedExplosion.create(this, this.getPowered() ? 6.0F : 4.0F, false, MutatedExplosion.Mode.DESTROY);
-				}
-			} else if (this.isAlive() && !this.isAIDisabled() && this.isEntityInsideOpaqueBlock() && this.ticksExisted % 30 == 0) {
-				this.setJumpAttacking(true);
+		this.lastJumpTick = this.jumpTick;
+		if (this.isJumpAttacking()) {
+			if (this.jumpTick == 0 && !this.isSilent()) {
+				this.world.playMovingSound(null, this, MBSoundEvents.ENTITY_MUTANT_CREEPER_PRIMED, this.getSoundCategory(), 2.0F, this.getSoundPitch());
 			}
+
+			this.jumpTick++;
+			this.motionMultiplier = Vec3d.ZERO;
+			if (!this.world.isRemote && (this.onGround || !this.getBlockState().getFluidState().isEmpty())) {
+				MutatedExplosion.create(this, this.getPowered() ? 6.0F : 4.0F, false, MutatedExplosion.Mode.DESTROY);
+				this.setJumpAttacking(false);
+			}
+		} else if (this.jumpTick > 0) {
+			this.jumpTick = 0;
 		}
 	}
 
@@ -248,26 +245,25 @@ public class MutantCreeperEntity extends MonsterEntity {
 
 	@Override
 	protected void constructKnockBackVector(LivingEntity livingEntity) {
-		livingEntity.applyEntityCollision(this);
 		livingEntity.velocityChanged = true;
 	}
 
-	public int getExplosionColor() {
-		float f = (float)this.deathTime / (float)MAX_DEATH_TIME;
-
-		if (this.isCharging()) {
-			f = this.ticksExisted % 20 < 10 ? 0.6F : 0.0F;
+	public float getExplosionColor(float partialTicks) {
+		if (this.deathTime > 0) {
+			return ((float)this.deathTime / (float)MAX_DEATH_TIME) * 255.0F;
+		} else if (this.isCharging()) {
+			 return (this.ticksExisted % 20 < 10 ? 0.6F : 0.0F) * 255.0F;
+		} else {
+	        return ((float)this.lastJumpTick + (float)(this.jumpTick - this.lastJumpTick) * partialTicks) / (float)(30 - 2);
 		}
-
-		return (int)(f * 255.0F);
 	}
 
 	@Override
 	public void onDeath(DamageSource cause) {
-		EntityUtil.onDeath(this, cause);
 		if (!this.world.isRemote) {
 			this.deathCause = cause;
 			this.setCharging(false);
+			this.world.setEntityState(this, (byte)3);
 
 			if (!this.isSilent()) {
 				this.world.playMovingSound(null, this, MBSoundEvents.ENTITY_MUTANT_CREEPER_DEATH, this.getSoundCategory(), 2.0F, 1.0F);
@@ -281,6 +277,7 @@ public class MutantCreeperEntity extends MonsterEntity {
 
 	@Override
 	protected void onDeathUpdate() {
+		++this.deathTime;
 		float power = this.getPowered() ? 12.0F : 8.0F;
 		float radius = power * 1.5F;
 
@@ -290,20 +287,15 @@ public class MutantCreeperEntity extends MonsterEntity {
 			double z = this.posZ - entity.posZ;
 			double d = Math.sqrt(x * x + y * y + z * z);
 			float scale = (float)this.deathTime / (float)MAX_DEATH_TIME;
-			entity.addVelocity(x / d * (double)scale * 0.09D, y / d * (double)scale * 0.09D, z / d * (double)scale * 0.09D);
+			entity.setMotion(entity.getMotion().add(x / d * (double)scale * 0.09D, y / d * (double)scale * 0.09D, z / d * (double)scale * 0.09D));
 		}
 
-		this.setPosition(this.posX + (double)(this.rand.nextFloat() * 0.2F) - 0.10000000149011612D, this.posY, this.posZ + (double)(this.rand.nextFloat() * 0.2F) - 0.10000000149011612D);
+		this.setMotion(this.getMotion().add((double)(this.rand.nextFloat() * 0.2F) - 0.10000000149011612D, 0.0D, (double)(this.rand.nextFloat() * 0.2F) - 0.10000000149011612D));
 
-		if (!this.world.areCollisionShapesEmpty(this)) {
-			this.pushOutOfBlocks(this.posX, (this.getBoundingBox().minY + this.getBoundingBox().maxY) / 2.0D, this.posZ);
-		}
-
-		if (++this.deathTime >= MAX_DEATH_TIME) {
+		if (this.deathTime >= MAX_DEATH_TIME) {
 			if (!this.world.isRemote) {
 				MutatedExplosion.create(this, power, this.isBurning(), MutatedExplosion.Mode.DESTROY);
-				EntityUtil.spawnLingeringCloud(this);
-				this.spawnDrops(this.deathCause != null ? this.deathCause : DamageSource.GENERIC);
+				super.onDeath(this.deathCause != null ? this.deathCause : DamageSource.GENERIC);
 
 				if (this.world.getGameRules().getBoolean(GameRules.DO_MOB_LOOT) && this.attackingPlayer != null) {
 					CreeperMinionEggEntity egg = new CreeperMinionEggEntity(this.world, this.attackingPlayer);
@@ -313,7 +305,7 @@ public class MutantCreeperEntity extends MonsterEntity {
 				}
 			}
 
-			EntityUtil.dropExperience(this, this.recentlyHit, this::getExperiencePoints, this.attackingPlayer);
+			EntityUtil.dropExperience(this, this.recentlyHit, this.experienceValue, this.attackingPlayer);
 			this.remove();
 		}
 	}
@@ -325,7 +317,7 @@ public class MutantCreeperEntity extends MonsterEntity {
 
 	@Override
 	public float getExplosionResistance(Explosion explosionIn, IBlockReader worldIn, BlockPos pos, BlockState blockStateIn, IFluidState fluidState, float resistance) {
-		return this.getPowered() && !net.minecraft.tags.BlockTags.WITHER_IMMUNE.contains(blockStateIn.getBlock()) ? Math.min(0.8F, resistance) : resistance;
+		return this.getPowered() && blockStateIn.getBlockHardness(worldIn, pos) != -1.0F ? Math.min(0.8F, resistance) : resistance;
 	}
 
 	@Override
@@ -347,7 +339,7 @@ public class MutantCreeperEntity extends MonsterEntity {
 
 	@Override
 	protected SoundEvent getDeathSound() {
-		return null;
+		return MBSoundEvents.ENTITY_MUTANT_CREEPER_HURT;
 	}
 
 	@Override
@@ -378,7 +370,7 @@ public class MutantCreeperEntity extends MonsterEntity {
 	class SpawnMinionsGoal extends Goal {
 		@Override
 		public boolean shouldExecute() {
-			float chance = !hasPath() || getLastDamageSource() != null && getLastDamageSource().isProjectile() ? 2.5F : 0.6F;
+			float chance = !hasPath() || getLastDamageSource() != null && getLastDamageSource().isProjectile() ? 0.9F : 0.6F;
 			return getAttackTarget() != null && getDistanceSq(getAttackTarget()) <= 1024.0D && !isCharging() && !isJumpAttacking() && rand.nextFloat() * 100.0F < chance;
 		}
 
@@ -389,8 +381,7 @@ public class MutantCreeperEntity extends MonsterEntity {
 
 		@Override
 		public void startExecuting() {
-			int maxSpawn = world.getDifficulty().getId() * 2;
-			for (int i = (int)Math.ceil((double)getHealth() / getMaxHealth() * (double)maxSpawn); i > 0; --i) {
+			for (int i = (int)Math.ceil((double)(getHealth() / getMaxHealth()) * 4.0D); i > 0; --i) {
 				CreeperMinionEntity creeper = MBEntityType.CREEPER_MINION.create(world);
 				double x = posX + (double)(rand.nextFloat() - rand.nextFloat());
 				double y = posY + (double)(rand.nextFloat() * 0.5F);
@@ -402,7 +393,10 @@ public class MutantCreeperEntity extends MonsterEntity {
 				creeper.setLocationAndAngles(x, y, z, rotationYaw, rotationPitch);
 				creeper.setOwnerId(entityUniqueID);
 				creeper.setAttackTarget(getAttackTarget());
-				creeper.setPowered(getPowered());
+				if (getPowered()) {
+					creeper.setPowered(true);
+				}
+
 				world.addEntity(creeper);
 			}
 		}
@@ -472,19 +466,23 @@ public class MutantCreeperEntity extends MonsterEntity {
 	class JumpAttackGoal extends Goal {
 		@Override
 		public boolean shouldExecute() {
-			LivingEntity target = getAttackTarget();
-			return target != null && getDistanceSq(target) <= 1024.0D && onGround && !isCharging() && rand.nextFloat() * 100.0F < 0.9F;
+			return onGround && !isCharging() && (getAttackTarget() != null && getDistanceSq(getAttackTarget()) <= 1024.0D && rand.nextFloat() * 100.0F < 0.9F || ticksExisted % 60 == 0 && isEntityInsideOpaqueBlock());
 		}
 
 		@Override
 		public boolean shouldContinueExecuting() {
-			return false;
+			return isJumpAttacking();
 		}
 
 		@Override
 		public void startExecuting() {
+			motionMultiplier = Vec3d.ZERO;
 			setJumpAttacking(true);
-			setMotion((getAttackTarget().posX - posX) * 0.2D, 1.4D, (getAttackTarget().posZ - posZ) * 0.2D);
+			if (getAttackTarget() != null) {
+				setMotion((getAttackTarget().posX - posX) * 0.2D, 1.4D, (getAttackTarget().posZ - posZ) * 0.2D);
+			} else {
+				setMotion(0.0D, 1.4D, 0.0D);
+			}
 		}
 	}
 }

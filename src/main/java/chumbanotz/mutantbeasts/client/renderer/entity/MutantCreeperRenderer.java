@@ -8,13 +8,14 @@ import chumbanotz.mutantbeasts.client.renderer.entity.model.MutantCreeperModel;
 import chumbanotz.mutantbeasts.entity.mutant.MutantCreeperEntity;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.util.ResourceLocation;
+import net.minecraft.util.math.MathHelper;
 
-public class MutantCreeperRenderer extends MutantRenderer<MutantCreeperEntity, MutantCreeperModel> {
+public class MutantCreeperRenderer extends AlternateMobRenderer<MutantCreeperEntity, MutantCreeperModel> {
 	private static final ResourceLocation TEXTURE = MutantBeasts.getEntityTexture("mutant_creeper");
 
 	public MutantCreeperRenderer(EntityRendererManager manager) {
 		super(manager, new MutantCreeperModel(), 1.5F);
-		this.addLayer(new CreeperChargeLayer<>(this, new MutantCreeperModel(2.0F), MutantCreeperEntity::getPowered));
+		this.addLayer(new CreeperChargeLayer<>(this, new MutantCreeperModel(2.0F)));
 	}
 
 	@Override
@@ -30,7 +31,18 @@ public class MutantCreeperRenderer extends MutantRenderer<MutantCreeperEntity, M
 
 	@Override
 	protected int getColorMultiplier(MutantCreeperEntity livingEntity, float lightBrightness, float partialTickTime) {
-		int a = livingEntity.getExplosionColor();
+		float color = livingEntity.getExplosionColor(partialTickTime);
+		if (livingEntity.isJumpAttacking() && livingEntity.deathTime == 0) {
+			if ((int)(color * 10.0F) % 2 == 0) {
+				return 0;
+			} else {
+				int i = (int)(color * 0.2F * 255.0F);
+				i = MathHelper.clamp(i, 0, 255);
+				return i << 24 | 822083583;
+			}
+		}
+
+		int a = (int)color;
 		int r = 255;
 		int g = 255;
 		int b = 255;
