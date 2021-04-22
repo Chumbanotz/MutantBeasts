@@ -332,9 +332,9 @@ public class MutantZombieModel extends EntityModel<MutantZombieEntity> {
 			this.arm2.rotateAngleZ += f * (float)Math.PI / 8.0F;
 		} else if (zombie.getAttackTick() < 5) {
 			this.chest.rotateAngleX -= 0.4F;
-			--this.arm1.rotateAngleX;
+			this.arm1.rotateAngleX -= 1.8F;
 			this.arm1.rotateAngleZ = 0.0F;
-			--this.arm2.rotateAngleX;
+			this.arm2.rotateAngleX -= 1.8F;
 			this.arm2.rotateAngleZ = 0.0F;
 		} else {
 			float f1;

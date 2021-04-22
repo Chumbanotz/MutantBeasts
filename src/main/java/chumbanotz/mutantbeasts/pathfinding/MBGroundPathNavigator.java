@@ -26,7 +26,7 @@ public class MBGroundPathNavigator extends GroundPathNavigator {
 	protected void trimPath() {
 		super.trimPath();
 		if (this.shouldAvoidRain && this.world.isRaining()) {
-			if (this.world.isRainingAt(new BlockPos(this.entity.posX, this.entity.getBoundingBox().minY + 0.5D, this.entity.posZ))) {
+			if (this.world.isRainingAt(this.entity.getPosition())) {
 				return;
 			}
 

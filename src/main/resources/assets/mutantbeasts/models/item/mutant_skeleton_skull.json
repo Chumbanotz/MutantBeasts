@@ -1,3 +1,6 @@
 {
-    "parent": "item/template_skull"
+	"parent": "item/generated",
+	"textures": {
+		"layer0": "mutantbeasts:item/mutant_skeleton/skull"
+	}
 }

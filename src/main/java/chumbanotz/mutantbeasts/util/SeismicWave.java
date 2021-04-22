@@ -17,6 +17,7 @@ import net.minecraft.util.Direction;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.BlockRayTraceResult;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.GameRules;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.network.PacketDistributor;
 
@@ -44,12 +45,7 @@ public class SeismicWave extends BlockPos {
 		int z = z1;
 		int deltaX2 = deltaX * 2;
 		int deltaZ2 = deltaZ * 2;
-		SeismicWave wave = addWave(world, list, x1, y, z1);
-
-		if (wave != null) {
-			wave.first = true;
-		}
-
+		addWave(world, list, x, y, z, true);
 		int error;
 		int i;
 
@@ -65,7 +61,7 @@ public class SeismicWave extends BlockPos {
 					error -= deltaX2;
 				}
 
-				addWave(world, list, x, y, z);
+				addWave(world, list, x, y, z, false);
 			}
 		} else {
 			error = deltaZ;
@@ -79,17 +75,22 @@ public class SeismicWave extends BlockPos {
 					error -= deltaZ2;
 				}
 
-				addWave(world, list, x, y, z);
+				addWave(world, list, x, y, z, false);
 			}
 		}
 	}
 
-	public static SeismicWave addWave(World world, List<SeismicWave> list, int x, int y, int z) {
+	public static SeismicWave addWave(World world, List<SeismicWave> list, int x, int y, int z, boolean first) {
 		y = ZombieResurrection.getSuitableGround(world, x, y, z, 3, false);
 		SeismicWave wave = null;
 
-		if (y != -1) {
-			list.add(wave = new SeismicWave(x, y, z, true));
+		if (y != -1 || first) {
+			wave = new SeismicWave(x, y, z, y != -1);
+			if (first) {
+				wave.first = true;
+			}
+
+			list.add(wave);
 		}
 
 		if (world.rand.nextInt(2) == 0) {
@@ -109,7 +110,7 @@ public class SeismicWave extends BlockPos {
 		Block block = blockstate.getBlock();
         PlayerEntity playerEntity = livingEntity instanceof PlayerEntity ? (PlayerEntity)livingEntity : null;
 
-		if (playerEntity != null && playerEntity.isAllowEdit() || net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(world, livingEntity)) {
+		if (playerEntity != null && playerEntity.isAllowEdit() || world.getGameRules().getBoolean(GameRules.MOB_GRIEFING)) {
 			if (block == Blocks.GRASS_BLOCK || block == Blocks.FARMLAND || block == Blocks.PODZOL || block == Blocks.MYCELIUM || block == Blocks.GRASS_PATH) {
 				world.setBlockState(this, Blocks.DIRT.getDefaultState());
 			}

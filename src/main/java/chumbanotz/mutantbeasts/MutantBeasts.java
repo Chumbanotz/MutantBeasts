@@ -4,12 +4,15 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import chumbanotz.mutantbeasts.entity.MBEntityType;
-import chumbanotz.mutantbeasts.item.ChemicalXItem;
 import chumbanotz.mutantbeasts.item.MBItems;
 import chumbanotz.mutantbeasts.packet.MBPacketHandler;
 import net.minecraft.block.Block;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.item.crafting.Ingredient;
+import net.minecraft.potion.PotionUtils;
+import net.minecraft.potion.Potions;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.Tag;
 import net.minecraft.util.ResourceLocation;
@@ -41,10 +44,12 @@ public class MutantBeasts {
 	@SuppressWarnings("deprecation")
 	private void onCommonSetup(FMLCommonSetupEvent event) {
 		MBPacketHandler.register();
-		BrewingRecipeRegistry.addRecipe(new ChemicalXItem.BrewingRecipe());
 		net.minecraftforge.fml.DeferredWorkQueue.runLater(() -> {
 			MBEntityType.addSpawns();
 			RegistryHandler.registerDispenseBehavior();
+			Ingredient input = Ingredient.fromStacks(PotionUtils.addPotionToItemStack(new ItemStack(Items.SPLASH_POTION), Potions.AWKWARD));
+			Ingredient ingredients = Ingredient.fromItems(MBItems.CREEPER_SHARD, MBItems.ENDERSOUL_HAND, MBItems.HULK_HAMMER, MBItems.MUTANT_SKELETON_SKULL);
+			BrewingRecipeRegistry.addRecipe(input, ingredients, new ItemStack(MBItems.CHEMICAL_X));
 		});
 	}
 

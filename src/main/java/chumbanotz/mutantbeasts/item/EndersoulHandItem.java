@@ -73,7 +73,7 @@ public class EndersoulHandItem extends Item {
 			return ActionResultType.FAIL;
 		} else {
 			if (!world.isRemote) {
-				world.addEntity(new ThrowableBlockEntity(world, playerEntity, blockState, pos));
+				world.addEntity(new ThrowableBlockEntity(world, playerEntity, blockState.getBlock().getDefaultState(), pos));
 				world.removeBlock(pos, false);
 			}
 

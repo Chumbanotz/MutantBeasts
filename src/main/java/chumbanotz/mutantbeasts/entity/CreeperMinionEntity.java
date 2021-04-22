@@ -7,9 +7,8 @@ import javax.annotation.Nullable;
 
 import chumbanotz.mutantbeasts.client.ClientEventHandler;
 import chumbanotz.mutantbeasts.entity.ai.goal.AvoidDamageGoal;
-import chumbanotz.mutantbeasts.entity.ai.goal.MBHurtByTargetGoal;
+import chumbanotz.mutantbeasts.entity.ai.goal.HurtByNearestTargetGoal;
 import chumbanotz.mutantbeasts.entity.ai.goal.MBMeleeAttackGoal;
-import chumbanotz.mutantbeasts.entity.ai.goal.OwnerTargetGoal;
 import chumbanotz.mutantbeasts.item.MBItems;
 import chumbanotz.mutantbeasts.pathfinding.MBGroundPathNavigator;
 import chumbanotz.mutantbeasts.util.EntityUtil;
@@ -28,6 +27,8 @@ import net.minecraft.entity.ai.goal.LandOnOwnersShoulderGoal;
 import net.minecraft.entity.ai.goal.LookAtGoal;
 import net.minecraft.entity.ai.goal.LookRandomlyGoal;
 import net.minecraft.entity.ai.goal.NonTamedTargetGoal;
+import net.minecraft.entity.ai.goal.OwnerHurtByTargetGoal;
+import net.minecraft.entity.ai.goal.OwnerHurtTargetGoal;
 import net.minecraft.entity.ai.goal.SitGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.WaterAvoidingRandomWalkingGoal;
@@ -95,9 +96,10 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 		});
 		this.goalSelector.addGoal(8, new LookAtGoal(this, PlayerEntity.class, 8.0F));
 		this.goalSelector.addGoal(8, new LookRandomlyGoal(this));
-		this.targetSelector.addGoal(0, new MBHurtByTargetGoal(this));
-		this.targetSelector.addGoal(1, new OwnerTargetGoal(this));
-		this.targetSelector.addGoal(2, new NonTamedTargetGoal<>(this, PlayerEntity.class, true, null));
+		this.targetSelector.addGoal(0, new OwnerHurtByTargetGoal(this));
+		this.targetSelector.addGoal(1, new OwnerHurtTargetGoal(this));
+		this.targetSelector.addGoal(2, new HurtByNearestTargetGoal(this));
+		this.targetSelector.addGoal(3, new NonTamedTargetGoal<>(this, PlayerEntity.class, true, null));
 	}
 
 	@Override
@@ -112,7 +114,7 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 		super.registerData();
 		this.dataManager.register(EXPLODE_STATE, -1);
 		this.dataManager.register(CREEPER_MINION_FLAGS, (byte)0);
-		this.dataManager.register(EXPLOSION_RADIUS, 20.0F);
+		this.dataManager.register(EXPLOSION_RADIUS, 2.0F);
 	}
 
 	@Override
@@ -185,11 +187,11 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 	}
 
 	public float getExplosionRadius() {
-		return this.dataManager.get(EXPLOSION_RADIUS) / 10.0F;
+		return this.dataManager.get(EXPLOSION_RADIUS);
 	}
 
 	public void setExplosionRadius(float radius) {
-		this.dataManager.set(EXPLOSION_RADIUS, radius * 10.0F);
+		this.dataManager.set(EXPLOSION_RADIUS, radius);
 	}
 
 	@Override
@@ -365,7 +367,7 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 
 	@Override
 	public boolean shouldAttackEntity(LivingEntity target, LivingEntity owner) {
-		return EntityUtil.shouldAttackEntity(this, target, owner, true);
+		return EntityUtil.shouldAttackEntity(target, owner, true);
 	}
 
 	@Override
@@ -509,12 +511,12 @@ public class CreeperMinionEntity extends ShoulderRidingEntity {
 		@Override
 		public boolean shouldExecute() {
 			LivingEntity livingentity = getAttackTarget();
-			return !isSitting() && (getExplodeState() > 0 || livingentity != null && getDistanceSq(livingentity) < 9.0D && canEntityBeSeen(livingentity));
+			return !isSitting() && (getExplodeState() > 0 || livingentity != null && getDistanceSq(livingentity) < 9.0D && getEntitySenses().canSee(livingentity));
 		}
 
 		@Override
 		public void startExecuting() {
-			navigator.clearPath();
+			getNavigator().clearPath();
 		}
 
 		@Override

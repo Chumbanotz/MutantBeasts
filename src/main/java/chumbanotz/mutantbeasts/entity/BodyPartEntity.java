@@ -1,7 +1,5 @@
 package chumbanotz.mutantbeasts.entity;
 
-import java.lang.ref.WeakReference;
-
 import chumbanotz.mutantbeasts.item.MBItems;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -30,7 +28,6 @@ public class BodyPartEntity extends Entity {
 	private static final DataParameter<Byte> PART = EntityDataManager.createKey(BodyPartEntity.class, DataSerializers.BYTE);
 	private final boolean yawPositive;
 	private final boolean pitchPositive;
-	private WeakReference<MobEntity> owner;
 	private double velocityX;
 	private double velocityY;
 	private double velocityZ;
@@ -46,7 +43,6 @@ public class BodyPartEntity extends Entity {
 
 	public BodyPartEntity(World world, MobEntity owner, int part) {
 		this(MBEntityType.BODY_PART, world);
-		this.owner = new WeakReference<>(owner);
 		this.setPart(part);
 		this.setPosition(owner.posX, owner.posY + (double)(3.2F * (0.25F + this.rand.nextFloat() * 0.5F)), owner.posZ);
 		this.setFireTimer(owner.getFireTimer());
@@ -117,30 +113,27 @@ public class BodyPartEntity extends Entity {
 			this.rotationPitch += 15.0F * (float)(this.pitchPositive ? 1 : -1);
 			for (Entity entity : this.world.getEntitiesInAABBexcluding(this, this.getBoundingBox(), this::canHarm)) {
 				entity.setFire(this.getFireTimer() / 20);
-				entity.attackEntityFrom(DamageSource.causeThrownDamage(this, this.owner != null ? this.owner.get() : this), 4.0F + (float)this.rand.nextInt(4));
+				entity.attackEntityFrom(DamageSource.causeThrownDamage(this, this), 4.0F + (float)this.rand.nextInt(4));
 			}
-
-			if (this.despawnTimer > 0) {
-				--this.despawnTimer;
-			}
-		} else {
-			++this.despawnTimer;
 		}
 
-		if (!this.world.isRemote && this.despawnTimer >= 6000) {
+		if (!this.world.isRemote && ++this.despawnTimer >= 6000) {
 			this.remove();
 		}
 	}
 
 	@Override
 	public boolean processInitialInteract(PlayerEntity player, Hand hand) {
-		if (this.world.getGameRules().getBoolean(GameRules.DO_ENTITY_DROPS)) {
-			player.swingArm(hand);
+		if (this.isAlive()) {
 			if (!this.world.isRemote) {
-				this.entityDropItem(this.getItemByPart()).setNoPickupDelay();
+				if (this.world.getGameRules().getBoolean(GameRules.DO_ENTITY_DROPS)) {
+					this.entityDropItem(this.getItemByPart()).setNoPickupDelay();
+				}
+
+				this.remove();
 			}
 
-			this.remove();
+			player.swingArm(hand);
 			return true;
 		} else {
 			return false;
@@ -158,7 +151,7 @@ public class BodyPartEntity extends Entity {
 
 	@Override
 	public ITextComponent getName() {
-		return this.hasCustomName() ? this.getCustomName() : new TranslationTextComponent(this.getItemByPart().getTranslationKey());
+		return this.hasCustomName() ? super.getName() : new TranslationTextComponent(this.getItemByPart().getTranslationKey());
 	}
 
 	public Item getItemByPart() {

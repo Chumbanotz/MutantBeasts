@@ -23,6 +23,8 @@ import net.minecraft.particles.ParticleTypes;
 import net.minecraft.potion.Effects;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.Util;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.BlockRayTraceResult;
 import net.minecraft.util.math.EntityRayTraceResult;
 import net.minecraft.util.math.RayTraceResult;
 import net.minecraft.world.World;
@@ -90,6 +92,13 @@ public class ChemicalXEntity extends ProjectileItemEntity {
 
 	@Override
 	protected void onImpact(RayTraceResult result) {
+		if (result.getType() == RayTraceResult.Type.BLOCK) {
+			BlockPos blockPos = ((BlockRayTraceResult)result).getPos();
+			if (this.world.getBlockState(blockPos).getCollisionShape(this.world, blockPos).isEmpty()) {
+				return;
+			}
+		}
+
 		if (!this.world.isRemote) {
 			MobEntity target = null;
 			boolean directHit = false;

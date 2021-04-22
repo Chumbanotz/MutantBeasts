@@ -16,14 +16,14 @@ import net.minecraftforge.fml.LogicalSidedProvider;
 import net.minecraftforge.fml.network.NetworkEvent;
 
 public class SpawnParticlePacket {
-	private IParticleData particle;
-	private double posX;
-	private double posY;
-	private double posZ;
-	private double motionX;
-	private double motionY;
-	private double motionZ;
-	private int amount;
+	private final IParticleData particle;
+	private final double posX;
+	private final double posY;
+	private final double posZ;
+	private final double motionX;
+	private final double motionY;
+	private final double motionZ;
+	private final int amount;
 	private final Random random = new Random();
 
 	public SpawnParticlePacket(IParticleData particle, double posX, double posY, double posZ, double motionX, double motionY, double motionZ, int amount) {

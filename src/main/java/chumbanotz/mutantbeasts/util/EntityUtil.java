@@ -2,16 +2,12 @@ package chumbanotz.mutantbeasts.util;
 
 import java.lang.reflect.Field;
 import java.util.Collection;
-import java.util.UUID;
 
 import javax.annotation.Nullable;
 
-import chumbanotz.mutantbeasts.MutantBeasts;
 import chumbanotz.mutantbeasts.packet.MBPacketHandler;
 import chumbanotz.mutantbeasts.packet.SpawnParticlePacket;
 import chumbanotz.mutantbeasts.particles.MBParticleTypes;
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.entity.AreaEffectCloudEntity;
 import net.minecraft.entity.Entity;
@@ -37,6 +33,7 @@ import net.minecraft.nbt.ListNBT;
 import net.minecraft.network.play.server.SEntityVelocityPacket;
 import net.minecraft.particles.IParticleData;
 import net.minecraft.potion.EffectInstance;
+import net.minecraft.util.Direction;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
@@ -50,7 +47,10 @@ import net.minecraftforge.fml.network.PacketDistributor;
 public class EntityUtil {
 	private static final Field STUN_TICK = ObfuscationReflectionHelper.findField(RavagerEntity.class, "field_213692_bA");
 
-	/** Copied from {@link CreeperEntity#spawnLingeringCloud()}. */
+	public static float getHeadAngle(float rotationYawHead, double x, double z) {
+		return MathHelper.degreesDifferenceAbs((float)(Math.atan2(z, x) * 180.0D / Math.PI) + 90.0F, rotationYawHead);
+	}
+
 	public static void spawnLingeringCloud(LivingEntity livingEntity) {
 		Collection<EffectInstance> collection = livingEntity.getActivePotionEffects();
 
@@ -79,7 +79,7 @@ public class EntityUtil {
 					livingEntity.world.setEntityState(livingEntity, (byte)39);
 				}
 			} catch (IllegalArgumentException | IllegalAccessException e) {
-				MutantBeasts.LOGGER.error("Failed to access ravager stunTick", e);
+				throw new RuntimeException("Failed to access ravager stunTick", e);
 			}
 		}
 	}
@@ -106,42 +106,20 @@ public class EntityUtil {
 		return livingEntity instanceof OcelotEntity || livingEntity instanceof CatEntity;
 	}
 
-	/** To be used for {@link TameableEntity#shouldAttackEntity(LivingEntity, LivingEntity)} */
-	public static boolean shouldAttackEntity(TameableEntity tameableEntity, LivingEntity target, LivingEntity owner, boolean canTargetCreepers) {
-		if (owner instanceof PlayerEntity) {
-			if (target instanceof CreeperEntity) {
-				return canTargetCreepers;
-			} else if (target instanceof TameableEntity) {
-				UUID targetOwnerUUID = ((TameableEntity)target).getOwnerId();
-				UUID attackerOwnerUUID = tameableEntity.getOwnerId();
-				return targetOwnerUUID == null || attackerOwnerUUID == null || !targetOwnerUUID.equals(attackerOwnerUUID);
-			} else if (target instanceof PlayerEntity && owner instanceof PlayerEntity && !((PlayerEntity)owner).canAttackPlayer((PlayerEntity)target)) {
-				return false;
-			} else if (target instanceof GolemEntity && !(target instanceof IMob)) {
-				return false;
-			} else {
-				return !(target instanceof AbstractHorseEntity) || !((AbstractHorseEntity)target).isTame();
-			}
+	public static boolean shouldAttackEntity(LivingEntity target, LivingEntity owner, boolean canTargetCreepers) {
+		if (target instanceof CreeperEntity) {
+			return canTargetCreepers;
+		} else if (target instanceof TameableEntity && ((TameableEntity)target).isOwner(owner)) {
+			return false;
+		} else if (target instanceof PlayerEntity && owner instanceof PlayerEntity && !((PlayerEntity)owner).canAttackPlayer((PlayerEntity)target)) {
+			return false;
+		} else if (target instanceof GolemEntity && !(target instanceof IMob)) {
+			return false;
 		} else {
-			return true;
+			return !(target instanceof AbstractHorseEntity) || !((AbstractHorseEntity)target).isTame();
 		}
 	}
 
-	public static boolean isFacing(float rotationYawHead, double x, double z, float maxDifference) {
-		float rot;
-
-		for (rot = (float)(Math.atan2(z, x) * 180.0D / Math.PI) + 90.0F; rot > rotationYawHead + 180.0F; rot -= 360.0F) {
-			;
-		}
-
-		while (rot <= rotationYawHead - 180.0F) {
-			rot += 360.0F;
-		}
-
-		return Math.abs(rotationYawHead - rot) < maxDifference;
-	}
-
-	/** Based off of {@link LivingEntity#onDeathUpdate()} */
 	public static void dropExperience(MobEntity mob, int recentlyHit, int experienceValue, PlayerEntity attackingPlayer) {
 		if (!mob.world.isRemote && recentlyHit > 0 && mob.world.getGameRules().getBoolean(GameRules.DO_MOB_LOOT)) {
 			experienceValue = net.minecraftforge.event.ForgeEventFactory.getExperienceDrop(mob, attackingPlayer, experienceValue);
@@ -255,43 +233,21 @@ public class EntityUtil {
 		return new Vec3d((double)(-MathHelper.sin(rad) * scale), 0.0D, (double)(MathHelper.cos(rad) * scale));
 	}
 
-	/** Similar to {@link LivingEntity#attemptTeleport(double, double, double, boolean)} */
 	public static boolean teleportTo(MobEntity mob, double x, double y, double z) {
-		double oldX = mob.posX;
-		double oldY = mob.posY;
-		double oldZ = mob.posZ;
-		int teleX = MathHelper.floor(x);
-		int teleY = MathHelper.floor(y);
-		int teleZ = MathHelper.floor(z);
-		boolean success = false;
+		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(x, y, z);
+		if (mob.world.isBlockPresent(pos)) {
+			do {
+				pos.move(Direction.DOWN);
+			} while (pos.getY() > 0 && !mob.world.getBlockState(pos).getMaterial().blocksMovement());
 
-		if (mob.world.isBlockPresent(new BlockPos(teleX, teleY, teleZ))) {
-			boolean temp = false;
-
-			while (!temp && teleY > 0) {
-				Block block = mob.world.getBlockState(new BlockPos(teleX, teleY - 1, teleZ)).getBlock();
-
-				if (block != Blocks.AIR && mob.world.getBlockState(new BlockPos(teleX, teleY - 1, teleZ)).getMaterial().blocksMovement()) {
-					temp = true;
-				} else {
-					--teleY;
-				}
-			}
-
-			if (temp) {
-				mob.setPosition(x, (double)teleY, z);
-
-				if (mob.world.isCollisionBoxesEmpty(mob, mob.getBoundingBox()) && !mob.world.containsAnyLiquid(mob.getBoundingBox())) {
-					success = true;
-				}
-			}
+			pos.move(Direction.UP);
 		}
 
-		if (!success) {
-			mob.setPosition(oldX, oldY, oldZ);
+		if (!mob.isOffsetPositionInLiquid(pos.getX() - MathHelper.floor(mob.posX), pos.getY() - MathHelper.floor(mob.posY), pos.getZ() - MathHelper.floor(mob.posZ))) {
 			return false;
 		} else {
 			mob.getNavigator().clearPath();
+			mob.setPosition((double)pos.getX() + 0.5D, (double)pos.getY(), (double)pos.getZ() + 0.5D);
 			return true;
 		}
 	}

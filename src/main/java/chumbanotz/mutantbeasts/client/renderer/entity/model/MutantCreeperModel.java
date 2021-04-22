@@ -114,7 +114,7 @@ public class MutantCreeperModel extends EntityModel<MutantCreeperEntity> {
 	}
 
 	private void animate(MutantCreeperEntity entity, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch, float scale) {
-		float breatheAnim = MathHelper.sin(ageInTicks * 0.1F);
+		float breatheAnim = entity.deathTime > 0 ? 0.0F : MathHelper.sin(ageInTicks * 0.1F);
 		float walkAnim1 = (MathHelper.sin(limbSwing * (float)Math.PI / 4.0F) + 0.4F) * limbSwingAmount;
 		float walkAnim2 = (MathHelper.sin(limbSwing * (float)Math.PI / 4.0F + (float)Math.PI) + 0.4F) * limbSwingAmount;
 

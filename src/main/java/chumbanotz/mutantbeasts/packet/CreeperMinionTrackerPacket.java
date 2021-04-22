@@ -7,9 +7,9 @@ import net.minecraft.network.PacketBuffer;
 import net.minecraftforge.fml.network.NetworkEvent;
 
 public class CreeperMinionTrackerPacket {
-	private int entityId;
-	private byte optionsId;
-	private boolean setOption;
+	private final int entityId;
+	private final byte optionsId;
+	private final boolean setOption;
 
 	public CreeperMinionTrackerPacket(CreeperMinionEntity creeperMinion, int optionsId, boolean setOption) {
 		this.entityId = creeperMinion.getEntityId();

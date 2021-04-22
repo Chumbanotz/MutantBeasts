@@ -4,14 +4,13 @@ import javax.vecmath.Matrix4f;
 
 import org.apache.commons.lang3.tuple.Pair;
 
+import net.minecraft.client.renderer.entity.model.EntityModel;
 import net.minecraft.client.renderer.entity.model.RendererModel;
 import net.minecraft.client.renderer.model.IBakedModel;
-import net.minecraft.client.renderer.model.Model;
+import net.minecraft.entity.Entity;
 import net.minecraftforge.client.model.BakedModelWrapper;
 
-public class EndersoulHandModel extends Model {
-//	public static final ResourceLocation GUI_LOCATION = new ModelResourceLocation(MutantBeasts.prefix("endersoul_hand_gui"), "inventory");
-//	public static final ResourceLocation MODEL_LOCATION = new ModelResourceLocation(MutantBeasts.prefix("endersoul_hand_model"), "inventory");
+public class EndersoulHandModel extends EntityModel<Entity> {
 	private final RendererModel hand;
 	private final RendererModel[] finger = new RendererModel[3];
 	private final RendererModel[] foreFinger = new RendererModel[3];
@@ -75,53 +74,11 @@ public class EndersoulHandModel extends Model {
 		this.thumb.rotateAngleZ = -0.3926991F;
 	}
 
-	public void render() {
+	@Override
+	public void render(Entity entityIn, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch, float scale) {
 		this.setAngles();
 		this.hand.render(0.0625F);
 	}
-
-//	public static enum Loader implements ICustomModelLoader {
-//		INSTANCE;
-//
-//		@Override
-//		public void onResourceManagerReload(IResourceManager resourceManager) {
-//		}
-//
-//		@Override
-//		public boolean accepts(ResourceLocation modelLocation) {
-//			return modelLocation.getNamespace().equals(MutantBeasts.MOD_ID) && modelLocation.getPath().equals("endersoul_hand");
-//		}
-//
-//		@Override
-//		public IUnbakedModel loadModel(ResourceLocation modelLocation) throws Exception {
-//			return new EndersoulHandModel.Unbaked();
-//		}
-//	}
-//
-
-//	static class Unbaked implements IUnbakedModel {
-//		@Override
-//		public IBakedModel bake(ModelBakery bakery, Function<ResourceLocation, TextureAtlasSprite> spriteGetter, ISprite sprite, VertexFormat format) {
-//			try {
-//				IBakedModel guiModel = ModelLoaderRegistry.getModel(GUI_LOCATION).bake(bakery, spriteGetter, sprite, format);
-//				IBakedModel bakedModel = ModelLoaderRegistry.getModel(MODEL_LOCATION).bake(bakery, spriteGetter, sprite, format);
-//				return new EndersoulHandModel.Baked(guiModel, bakedModel);
-//			} catch (Exception exception) {
-//				MutantBeasts.LOGGER.warn("Failed to load models for the endersoul hand", exception);
-//				return null;
-//			}
-//		}
-//
-//		@Override
-//		public Collection<ResourceLocation> getDependencies() {
-//			return ImmutableList.of(GUI_LOCATION, MODEL_LOCATION);
-//		}
-//
-//		@Override
-//		public Collection<ResourceLocation> getTextures(Function<ResourceLocation, IUnbakedModel> modelGetter, Set<String> missingTextureErrors) {
-//			return ImmutableList.of();
-//		}
-//	}
 
 	public static class Baked extends BakedModelWrapper<IBakedModel> {
 		private final IBakedModel bakedModel;

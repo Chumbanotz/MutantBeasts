@@ -1,9 +1,7 @@
 package chumbanotz.mutantbeasts.entity;
 
-import java.lang.ref.WeakReference;
 import java.util.function.Predicate;
 
-import chumbanotz.mutantbeasts.entity.mutant.MutantEndermanEntity;
 import chumbanotz.mutantbeasts.item.MBItems;
 import chumbanotz.mutantbeasts.util.EntityUtil;
 import chumbanotz.mutantbeasts.util.MBSoundEvents;
@@ -35,21 +33,16 @@ public class EndersoulFragmentEntity extends Entity {
 	private static final DataParameter<Boolean> TAMED = EntityDataManager.createKey(EndersoulFragmentEntity.class, DataSerializers.BOOLEAN);
 	private int explodeTick = 20 + this.rand.nextInt(20);
 	public final float[][] stickRotations = new float[8][3];
-	private WeakReference<MutantEndermanEntity> spawner;
 	private PlayerEntity owner;
 
 	public EndersoulFragmentEntity(EntityType<? extends EndersoulFragmentEntity> type, World world) {
 		super(type, world);
+		this.preventEntitySpawning = true;
 		for (int i = 0; i < this.stickRotations.length; ++i) {
 			for (int j = 0; j < this.stickRotations[i].length; ++j) {
 				this.stickRotations[i][j] = this.rand.nextFloat() * 2.0F * (float)Math.PI;
 			}
 		}
-	}
-
-	public EndersoulFragmentEntity(World world, MutantEndermanEntity spawner) {
-		this(MBEntityType.ENDERSOUL_FRAGMENT, world);
-		this.spawner = new WeakReference<>(spawner);
 	}
 
 	public EndersoulFragmentEntity(FMLPlayMessages.SpawnEntity packet, World world) {
@@ -182,7 +175,7 @@ public class EndersoulFragmentEntity extends Entity {
 				}
 
 				if (hitChance) {
-					entity.attackEntityFrom(DamageSource.causeThrownDamage(this, this.spawner != null ? this.spawner.get() : this).setDamageBypassesArmor(), 1.0F);
+					entity.attackEntityFrom(DamageSource.MAGIC, 1.0F);
 				}
 			}
 		}

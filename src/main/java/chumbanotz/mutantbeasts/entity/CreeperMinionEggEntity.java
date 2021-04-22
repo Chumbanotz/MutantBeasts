@@ -32,7 +32,7 @@ import net.minecraftforge.fml.network.FMLPlayMessages;
 import net.minecraftforge.fml.network.NetworkHooks;
 
 public class CreeperMinionEggEntity extends Entity {
-	private static final DataParameter<Boolean> CHARGED = EntityDataManager.createKey(CreeperMinionEggEntity.class, DataSerializers.BOOLEAN);
+	private static final DataParameter<Boolean> POWERED = EntityDataManager.createKey(CreeperMinionEggEntity.class, DataSerializers.BOOLEAN);
 	private int health = 8;
 	private int age = (60 + this.rand.nextInt(40)) * 1200;
 	private int recentlyHit;
@@ -57,15 +57,15 @@ public class CreeperMinionEggEntity extends Entity {
 
 	@Override
 	protected void registerData() {
-		this.dataManager.register(CHARGED, false);
+		this.dataManager.register(POWERED, false);
 	}
 
-	public boolean isCharged() {
-		return this.dataManager.get(CHARGED);
+	public boolean isPowered() {
+		return this.dataManager.get(POWERED);
 	}
 
-	public void setCharged(boolean charged) {
-		this.dataManager.set(CHARGED, charged);
+	public void setPowered(boolean powered) {
+		this.dataManager.set(POWERED, powered);
 	}
 
 	@Override
@@ -132,7 +132,7 @@ public class CreeperMinionEggEntity extends Entity {
 			}
 		}
 
-		if (this.isCharged()) {
+		if (this.isPowered()) {
 			minion.setPowered(true);
 		}
 
@@ -145,7 +145,7 @@ public class CreeperMinionEggEntity extends Entity {
 	@Override
 	public void onStruckByLightning(LightningBoltEntity lightningBolt) {
 		super.onStruckByLightning(lightningBolt);
-		this.setCharged(true);
+		this.setPowered(true);
 	}
 
 	@Override
@@ -219,9 +219,9 @@ public class CreeperMinionEggEntity extends Entity {
 				this.health = (int)((float)this.health - amount);
 
 				if (this.health <= 0) {
-					MutatedExplosion.create(this, this.isCharged() ? 2.0F : 0.0F, false, MutatedExplosion.Mode.BREAK);
+					MutatedExplosion.create(this, this.isPowered() ? 2.0F : 0.0F, false, MutatedExplosion.Mode.BREAK);
 					if (this.world.getGameRules().getBoolean(GameRules.DO_ENTITY_DROPS)) {
-						if (this.isCharged() || this.rand.nextInt(3) == 0) {
+						if (this.isPowered() || this.rand.nextInt(3) == 0) {
 							this.entityDropItem(MBItems.CREEPER_SHARD);
 						} else for (int i = 5 + this.rand.nextInt(6); i > 0; --i) {
 							this.entityDropItem(Items.GUNPOWDER);
@@ -243,8 +243,8 @@ public class CreeperMinionEggEntity extends Entity {
 		compound.putInt("Health", this.health);
 		compound.putInt("Age", this.age);
 		compound.putInt("RecentlyHit", this.recentlyHit);
-		if (this.isCharged()) {
-			compound.putBoolean("Charged", true);
+		if (this.isPowered()) {
+			compound.putBoolean("Powered", true);
 		}
 
 		if (this.ownerUUID != null) {
@@ -263,7 +263,7 @@ public class CreeperMinionEggEntity extends Entity {
 		}
 
 		this.recentlyHit = compound.getInt("RecentlyHit");
-		this.setCharged(compound.getBoolean("Charged"));
+		this.setPowered(compound.getBoolean("Charged") || compound.getBoolean("Powered"));
 		if (compound.hasUniqueId("OwnerUUID")) {
 			this.ownerUUID = compound.getUniqueId("OwnerUUID");
 		}

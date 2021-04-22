@@ -6,7 +6,6 @@ import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.platform.GlStateManager;
 
 import chumbanotz.mutantbeasts.MutantBeasts;
-import chumbanotz.mutantbeasts.client.renderer.entity.layers.EndersoulLayer;
 import chumbanotz.mutantbeasts.client.renderer.entity.model.MutantEndermanModel;
 import chumbanotz.mutantbeasts.entity.mutant.MutantEndermanEntity;
 import net.minecraft.block.Block;
@@ -14,6 +13,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.culling.ICamera;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
 import net.minecraft.client.renderer.entity.IEntityRenderer;
+import net.minecraft.client.renderer.entity.MobRenderer;
 import net.minecraft.client.renderer.entity.layers.LayerRenderer;
 import net.minecraft.client.renderer.entity.model.EndermanModel;
 import net.minecraft.client.renderer.entity.model.EntityModel;
@@ -23,7 +23,7 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 
-public class MutantEndermanRenderer extends AlternateMobRenderer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> {
+public class MutantEndermanRenderer extends MobRenderer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> {
 	private static final Field RENDER_POS_X = ObfuscationReflectionHelper.findField(EntityRendererManager.class, "field_78725_b");
 	private static final Field RENDER_POS_Y = ObfuscationReflectionHelper.findField(EntityRendererManager.class, "field_78726_c");
 	private static final Field RENDER_POS_Z = ObfuscationReflectionHelper.findField(EntityRendererManager.class, "field_78723_d");
@@ -37,7 +37,7 @@ public class MutantEndermanRenderer extends AlternateMobRenderer<MutantEndermanE
 	public MutantEndermanRenderer(EntityRendererManager manager) {
 		super(manager, new MutantEndermanModel(), 0.8F);
 		this.addLayer(new MutantEndermanRenderer.EyesLayer(this));
-		this.addLayer(new MutantEndermanRenderer.SoulLayer(this));
+		this.addLayer(new MutantEndermanRenderer.EndersoulLayer(this));
 		this.addLayer(new MutantEndermanRenderer.HeldBlocksLayer(this));
 	}
 
@@ -49,7 +49,7 @@ public class MutantEndermanRenderer extends AlternateMobRenderer<MutantEndermanE
 			if (livingEntity.getAttackID() == MutantEndermanEntity.TELEPORT_ATTACK) {
 				BlockPos pos = livingEntity.getTeleportPosition();
 				AxisAlignedBB bb = livingEntity.getType().func_220328_a((double)pos.getX() + 0.5D, pos.getY(), (double)pos.getZ() + 0.5D);
-				return camera.isBoundingBoxInFrustum(bb);
+				return camera.isBoundingBoxInFrustum(bb.grow(4.5D));
 			}
 
 			return false;
@@ -112,7 +112,7 @@ public class MutantEndermanRenderer extends AlternateMobRenderer<MutantEndermanE
 				super.doRender(entity, renderPosX, renderPosY, renderPosZ, entityYaw, partialTicks);
 				this.doRenderShadowAndFire(entity, renderPosX, renderPosY, renderPosZ, entityYaw, partialTicks);
 			} catch (IllegalArgumentException | IllegalAccessException exception) {
-				MutantBeasts.LOGGER.error("Failed to render mutant enderman teleport position", exception);
+				throw new RuntimeException("Failed to render mutant enderman teleport position", exception);
 			}
 		}
 	}
@@ -153,8 +153,8 @@ public class MutantEndermanRenderer extends AlternateMobRenderer<MutantEndermanE
 		}
 	}
 
-	class SoulLayer extends EndersoulLayer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> {
-		public SoulLayer(IEntityRenderer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> entityRendererIn) {
+	class EndersoulLayer extends LayerRenderer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> {
+		public EndersoulLayer(IEntityRenderer<MutantEndermanEntity, EntityModel<MutantEndermanEntity>> entityRendererIn) {
 			super(entityRendererIn);
 		}
 
@@ -166,21 +166,29 @@ public class MutantEndermanRenderer extends AlternateMobRenderer<MutantEndermanE
 
 			if (teleport || scream || clone) {
 				float glowScale = 2.0F;
+				float alpha = 1.0F;
 
 				if (teleport) {
 					glowScale = 1.2F + ((float)entityIn.getAttackTick() + partialTicks) / 10.0F;
 					if (teleportAttack) {
 						glowScale = 2.2F - ((float)entityIn.getAttackTick() + partialTicks) / 10.0F;
+						if (entityIn.getAttackTick() < 2) {
+							alpha = ((float)entityIn.getAttackTick() + partialTicks) / 2.0F;
+						}
+					} else if (entityIn.getAttackTick() >= 8) {
+						alpha -= ((float)(entityIn.getAttackTick() - 8) + partialTicks) / 2.0F;
 					}
 				}
 
 				if (scream) {
 					if (entityIn.getAttackTick() < 40) {
 						glowScale = 1.2F + ((float)entityIn.getAttackTick() + partialTicks) / 40.0F;
+						alpha = ((float)entityIn.getAttackTick() + partialTicks) / 40.0F;
 					} else if (entityIn.getAttackTick() < 160) {
 						glowScale = 2.2F;
 					} else {
 						glowScale = 2.2F - ((float)entityIn.getAttackTick() + partialTicks) / 10.0F;
+						alpha = 1.0F - ((float)entityIn.getAttackTick() + partialTicks) / 40.0F;
 					}
 				}
 
@@ -189,7 +197,7 @@ public class MutantEndermanRenderer extends AlternateMobRenderer<MutantEndermanE
 					GlStateManager.scalef(glowScale, glowScale * 0.8F, glowScale);
 				}
 
-				super.render(entityIn, limbSwing, limbSwingAmount, partialTicks, ageInTicks, netHeadYaw, headPitch, scale);
+				EndersoulCloneRenderer.render(entityIn, limbSwing, limbSwingAmount, ageInTicks, netHeadYaw, headPitch, scale, this.getEntityModel(), alpha);
 
 				if (!clone) {
 					GlStateManager.popMatrix();
@@ -198,27 +206,8 @@ public class MutantEndermanRenderer extends AlternateMobRenderer<MutantEndermanE
 		}
 
 		@Override
-		protected float getAlpha(MutantEndermanEntity entity, float partialTicks) {
-			float alpha = 1.0F;
-			if (entity.getAttackID() == MutantEndermanEntity.TELEPORT_ATTACK) {
-				if (!teleportAttack && entity.getAttackTick() >= 8) {
-					alpha -= ((float)(entity.getAttackTick() - 8) + partialTicks) / 2.0F;
-				}
-
-				if (teleportAttack && entity.getAttackTick() < 2) {
-					alpha = ((float)entity.getAttackTick() + partialTicks) / 2.0F;
-				}
-			}
-
-			if (entity.getAttackID() == MutantEndermanEntity.SCREAM_ATTACK) {
-				if (entity.getAttackTick() < 40) {
-					alpha = ((float)entity.getAttackTick() + partialTicks) / 40.0F;
-				} else if (entity.getAttackTick() >= 160) {
-					alpha = 1.0F - ((float)entity.getAttackTick() + partialTicks) / 40.0F;
-				}
-			}
-
-			return alpha;
+		public boolean shouldCombineTextures() {
+			return false;
 		}
 	}
 
@@ -229,10 +218,14 @@ public class MutantEndermanRenderer extends AlternateMobRenderer<MutantEndermanE
 
 		@Override
 		public void render(MutantEndermanEntity entityIn, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch, float scale) {
+			if (!(this.getEntityModel() instanceof MutantEndermanModel)) {
+				return;
+			}
+
 			GlStateManager.enableRescaleNormal();
 
 			for (int i = 1; i < entityIn.heldBlock.length; i++) {
-				if (entityIn.heldBlock[i] != 0 && !entityIn.isClone()) {
+				if (entityIn.heldBlock[i] != 0) {
 					GlStateManager.pushMatrix();
 					((MutantEndermanModel)this.getEntityModel()).postRenderArm(0.0625F, i);
 					GlStateManager.translatef(0.0F, 1.2F, 0.0F);

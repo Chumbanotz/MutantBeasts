@@ -8,10 +8,10 @@ import javax.annotation.Nullable;
 
 import chumbanotz.mutantbeasts.entity.CreeperMinionEntity;
 import chumbanotz.mutantbeasts.entity.MBEntityType;
+import chumbanotz.mutantbeasts.entity.ai.controller.FixedBodyController;
 import chumbanotz.mutantbeasts.entity.ai.goal.AvoidDamageGoal;
-import chumbanotz.mutantbeasts.entity.ai.goal.MBHurtByTargetGoal;
+import chumbanotz.mutantbeasts.entity.ai.goal.HurtByNearestTargetGoal;
 import chumbanotz.mutantbeasts.entity.ai.goal.MBMeleeAttackGoal;
-import chumbanotz.mutantbeasts.entity.ai.goal.OwnerTargetGoal;
 import chumbanotz.mutantbeasts.util.EntityUtil;
 import chumbanotz.mutantbeasts.util.MBSoundEvents;
 import net.minecraft.block.BlockState;
@@ -27,6 +27,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MobEntity;
 import net.minecraft.entity.Pose;
 import net.minecraft.entity.SharedMonsterAttributes;
+import net.minecraft.entity.ai.controller.BodyController;
 import net.minecraft.entity.ai.goal.BreedGoal;
 import net.minecraft.entity.ai.goal.FollowOwnerGoal;
 import net.minecraft.entity.ai.goal.FollowParentGoal;
@@ -34,6 +35,8 @@ import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.goal.LookAtGoal;
 import net.minecraft.entity.ai.goal.LookRandomlyGoal;
 import net.minecraft.entity.ai.goal.NonTamedTargetGoal;
+import net.minecraft.entity.ai.goal.OwnerHurtByTargetGoal;
+import net.minecraft.entity.ai.goal.OwnerHurtTargetGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.TemptGoal;
 import net.minecraft.entity.ai.goal.WaterAvoidingRandomWalkingGoal;
@@ -74,7 +77,7 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 	private int chargingTick;
 	private int chargeExhaustion;
 	private boolean chargeExhausted;
-	private final List<SpiderPigEntity.WebPos> webList = new ArrayList<>(12);
+	private final List<SpiderPigEntity.WebPos> webList = new ArrayList<>();
 
 	public SpiderPigEntity(EntityType<? extends SpiderPigEntity> type, World worldIn) {
 		super(type, worldIn);
@@ -83,20 +86,20 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 	@Override
 	protected void registerGoals() {
 		this.goalSelector.addGoal(0, new SwimGoal(this));
-		this.goalSelector.addGoal(1, new MBMeleeAttackGoal(this, 1.1D).setMaxAttackTick(16));
+		this.goalSelector.addGoal(1, new MBMeleeAttackGoal(this, 1.1D).setMaxAttackTick(15));
 		this.goalSelector.addGoal(2, new SpiderPigEntity.LeapAttackGoal());
-		this.goalSelector.addGoal(3, new AvoidDamageGoal(this, 1.1D, this::isChild));
+		this.goalSelector.addGoal(3, new AvoidDamageGoal(this, 1.1D));
 		this.goalSelector.addGoal(4, new FollowOwnerGoal(this, 1.0D, 10.0F, 5.0F));
 		this.goalSelector.addGoal(5, new BreedGoal(this, 1.0D));
-		this.goalSelector.addGoal(6, new TemptGoal(this, 1.1D, false, Ingredient.fromItems(Items.CARROT_ON_A_STICK)));
 		this.goalSelector.addGoal(6, new TemptGoal(this, 1.1D, false, TEMPTATION_ITEMS));
 		this.goalSelector.addGoal(7, new FollowParentGoal(this, 1.1D));
 		this.goalSelector.addGoal(8, new WaterAvoidingRandomWalkingGoal(this, 1.0D));
 		this.goalSelector.addGoal(9, new LookAtGoal(this, PlayerEntity.class, 8.0F));
 		this.goalSelector.addGoal(10, new LookRandomlyGoal(this));
-		this.targetSelector.addGoal(0, new MBHurtByTargetGoal(this).setCallsForHelp());
-		this.targetSelector.addGoal(1, new OwnerTargetGoal(this));
-		this.targetSelector.addGoal(2, new NonTamedTargetGoal<>(this, MobEntity.class, true, SpiderPigEntity::isPigOrSpider));
+		this.targetSelector.addGoal(0, new OwnerHurtByTargetGoal(this));
+		this.targetSelector.addGoal(1, new OwnerHurtTargetGoal(this));
+		this.targetSelector.addGoal(2, new HurtByNearestTargetGoal(this).setCallsForHelp());
+		this.targetSelector.addGoal(3, new NonTamedTargetGoal<>(this, MobEntity.class, true, SpiderPigEntity::isPigOrSpider));
 	}
 
 	@Override
@@ -143,6 +146,11 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 	@Override
 	protected PathNavigator createNavigator(World worldIn) {
 		return new ClimberPathNavigator(this, worldIn);
+	}
+
+	@Override
+	protected BodyController createBodyController() {
+		return new FixedBodyController(this);
 	}
 
 	@Override
@@ -198,7 +206,7 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 			for (int i = 0; i < this.webList.size(); ++i) {
 				SpiderPigEntity.WebPos coord = this.webList.get(i);
 
-				if (this.world.getBlockState(coord) != Blocks.COBWEB.getDefaultState()) {
+				if (this.world.getBlockState(coord).getBlock() != Blocks.COBWEB) {
 					this.webList.remove(i);
 					--i;
 				} else {
@@ -211,19 +219,23 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 
 				if (first.timeLeft < 0) {
 					this.webList.remove(0);
-					this.removeWeb(first);
+					if (net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this.world, this)) {
+						this.removeWeb(first);
+					}
 				}
 			}
 		}
 
 		while (this.webList.size() > 12) {
 			first = this.webList.remove(0);
-			this.removeWeb(first);
+			if (net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this.world, this)) {
+				this.removeWeb(first);
+			}
 		}
 	}
 
 	private void removeWeb(BlockPos pos) {
-		if (this.world.getBlockState(pos) == Blocks.COBWEB.getDefaultState()) {
+		if (this.world.getBlockState(pos).getBlock() == Blocks.COBWEB) {
 			this.world.destroyBlock(pos, false);
 		}
 	}
@@ -284,7 +296,7 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 
 	@Override
 	public boolean shouldAttackEntity(LivingEntity target, LivingEntity owner) {
-		return EntityUtil.shouldAttackEntity(this, target, owner, true);
+		return EntityUtil.shouldAttackEntity(target, owner, true);
 	}
 
 	@Override
@@ -307,7 +319,7 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 		}
 
 		float damage = (float)this.getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getValue();
-		if (this.world.isMaterialInBB(entityIn.getBoundingBox(), Material.WEB) && !(entityIn instanceof SpiderEntity || entityIn instanceof SpiderPigEntity)) {
+		if (!(entityIn instanceof SpiderEntity || entityIn instanceof SpiderPigEntity) && this.world.isMaterialInBB(entityIn.getBoundingBox(), Material.WEB)) {
 			damage += 4.0F;
 		}
 
@@ -321,7 +333,7 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 
 	@Override
 	public boolean canJump() {
-		return this.isSaddled() && !this.chargeExhausted && this.onGround;
+		return this.isSaddled() && !this.chargeExhausted && (this.onGround || this.collidedHorizontally);
 	}
 
 	@Override
@@ -480,7 +492,7 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 	@Override
 	public void remove() {
 		super.remove();
-		if (!this.world.isRemote && !this.webList.isEmpty()) {
+		if (!this.world.isRemote && !this.webList.isEmpty() && net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this.world, this)) {
 			for (SpiderPigEntity.WebPos webPos : this.webList) {
 				this.removeWeb(webPos);
 			}
@@ -544,7 +556,7 @@ public class SpiderPigEntity extends TameableEntity implements IJumpingMount {
 		@Override
 		public boolean shouldExecute() {
 			LivingEntity target = getAttackTarget();
-			return target != null && leapCooldown <= 0 && (onGround || !getBlockState().getFluidState().isEmpty()) && (getDistanceSq(target) < 64.0D && rand.nextInt(8) == 0 || getDistanceSq(target) < 6.25D);
+			return target != null && leapCooldown <= 0 && (onGround || collidedHorizontally || !getBlockState().getFluidState().isEmpty()) && (getDistanceSq(target) < 64.0D && rand.nextInt(8) == 0 || getDistanceSq(target) < 6.25D);
 		}
 
 		@Override

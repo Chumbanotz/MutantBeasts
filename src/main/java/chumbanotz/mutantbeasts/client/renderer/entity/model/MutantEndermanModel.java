@@ -52,11 +52,11 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 		this.mouth = new RendererModel(this, 0, 24);
 		this.mouth.addBox(-4.0F, 3.0F, -8.0F, 8, 2, 8);
 		this.head.addChild(this.mouth);
-		this.rightArm = new Arm(this, this.chest, true);
-		this.leftArm = new Arm(this, this.chest, false);
-		this.lowerRightArm = new Arm(this, this.chest, true);
+		this.rightArm = new MutantEndermanModel.Arm(this, this.chest, true);
+		this.leftArm = new MutantEndermanModel.Arm(this, this.chest, false);
+		this.lowerRightArm = new MutantEndermanModel.Arm(this, this.chest, true);
 		this.lowerRightArm.arm.rotationPointY += 6.0F;
-		this.lowerLeftArm = new Arm(this, this.chest, false);
+		this.lowerLeftArm = new MutantEndermanModel.Arm(this, this.chest, false);
 		this.lowerLeftArm.arm.rotationPointY += 6.0F;
 		this.legjoint1 = new RendererModel(this);
 		this.legjoint1.setRotationPoint(-1.5F, 0.0F, 0.75F);
@@ -159,7 +159,7 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 
 		if (enderman.getAttackID() == MutantEndermanEntity.SCREAM_ATTACK) {
 			this.animateScream(enderman.getAttackTick());
-			float scale = 1.0F - MathHelper.clamp((float)enderman.deathTime / 6.0F, 0.0F, 1.0F);
+			float scale = 1.0F - MathHelper.clamp((float)enderman.getAttackTick() / 6.0F, 0.0F, 1.0F);
 			faceYaw *= scale;
 			facePitch *= scale;
 			walkAnim1 *= scale;
@@ -292,7 +292,7 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 
 	private void animateMelee(int fullTick, int armID) {
 		int right = (armID & 1) == 1 ? 1 : -1;
-		Arm arm = this.getArmFromID(armID);
+		MutantEndermanModel.Arm arm = this.getArmFromID(armID);
 		float tick;
 		float f;
 		if (fullTick < 2) {
@@ -658,7 +658,7 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 			this.rightArm.arm.rotateAngleX += -f1 * 0.8F;
 			this.rightArm.arm.rotateAngleY += 0.2F;
 			this.rightArm.arm.rotateAngleZ += 0.8F;
-			++this.rightArm.hand.rotateAngleY;
+			this.rightArm.hand.rotateAngleY += 1.7F;
 			this.leftArm.arm.rotateAngleX += -f1 * 0.8F;
 			this.leftArm.arm.rotateAngleY += -0.2F;
 			this.leftArm.arm.rotateAngleZ += -0.8F;
@@ -666,7 +666,7 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 			this.lowerRightArm.arm.rotateAngleX += -f1 * 0.9F;
 			this.lowerRightArm.arm.rotateAngleY += 0.2F;
 			this.lowerRightArm.arm.rotateAngleZ += 0.6F;
-			++this.lowerRightArm.hand.rotateAngleY;
+			this.lowerRightArm.hand.rotateAngleY += 1.7F;
 			this.lowerLeftArm.arm.rotateAngleX += -f1 * 0.9F;
 			this.lowerLeftArm.arm.rotateAngleY += -0.2F;
 			this.lowerLeftArm.arm.rotateAngleZ += -0.6F;
@@ -675,7 +675,7 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 			this.rightArm.arm.rotateAngleX += -0.8F;
 			this.rightArm.arm.rotateAngleY += 0.2F;
 			this.rightArm.arm.rotateAngleZ += 0.8F;
-			++this.rightArm.hand.rotateAngleY;
+			this.rightArm.hand.rotateAngleY += 1.7F;
 			this.leftArm.arm.rotateAngleX += -0.8F;
 			this.leftArm.arm.rotateAngleY += -0.2F;
 			this.leftArm.arm.rotateAngleZ += -0.8F;
@@ -683,7 +683,7 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 			this.lowerRightArm.arm.rotateAngleX += -0.9F;
 			this.lowerRightArm.arm.rotateAngleY += 0.2F;
 			this.lowerRightArm.arm.rotateAngleZ += 0.6F;
-			++this.lowerRightArm.hand.rotateAngleY;
+			this.lowerRightArm.hand.rotateAngleY += 1.7F;
 			this.lowerLeftArm.arm.rotateAngleX += -0.9F;
 			this.lowerLeftArm.arm.rotateAngleY += -0.2F;
 			this.lowerLeftArm.arm.rotateAngleZ += -0.6F;
@@ -781,10 +781,10 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 			this.chest.rotateAngleX += -0.8F;
 			this.abdomen.rotateAngleX += -0.2F;
 			this.pelvis.rotationPointY += -12.0F;
-			++this.rightArm.arm.rotateAngleY;
+			this.rightArm.arm.rotateAngleY += 1.8F;
 			this.leftArm.arm.rotateAngleY += -1.8F;
 			this.lowerRightArm.arm.rotateAngleX += 0.1F;
-			++this.lowerRightArm.arm.rotateAngleY;
+			this.lowerRightArm.arm.rotateAngleY += 1.5F;
 			this.lowerLeftArm.arm.rotateAngleX += 0.1F;
 			this.lowerLeftArm.arm.rotateAngleY += -1.5F;
 			this.leg1.rotateAngleX += 0.8F;
@@ -794,7 +794,7 @@ public class MutantEndermanModel extends EntityModel<MutantEndermanEntity> {
 		}
 	}
 
-	private Arm getArmFromID(int armID) {
+	private MutantEndermanModel.Arm getArmFromID(int armID) {
 		return armID == 1 ? this.rightArm : (armID == 2 ? this.leftArm : (armID == 3 ? this.lowerRightArm : this.lowerLeftArm));
 	}
 

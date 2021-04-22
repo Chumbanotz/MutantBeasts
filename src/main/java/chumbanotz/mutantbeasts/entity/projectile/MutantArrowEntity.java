@@ -15,7 +15,6 @@ import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
 import net.minecraft.potion.EffectInstance;
 import net.minecraft.util.DamageSource;
-import net.minecraft.util.EntityPredicates;
 import net.minecraft.util.IndirectEntityDamageSource;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.AxisAlignedBB;
@@ -26,9 +25,9 @@ import net.minecraftforge.fml.network.FMLPlayMessages;
 import net.minecraftforge.fml.network.NetworkHooks;
 
 public class MutantArrowEntity extends Entity {
-	private static final DataParameter<Integer> TARGET_X = EntityDataManager.createKey(MutantArrowEntity.class, DataSerializers.VARINT);
-	private static final DataParameter<Integer> TARGET_Y = EntityDataManager.createKey(MutantArrowEntity.class, DataSerializers.VARINT);
-	private static final DataParameter<Integer> TARGET_Z = EntityDataManager.createKey(MutantArrowEntity.class, DataSerializers.VARINT);
+	private static final DataParameter<Float> TARGET_X = EntityDataManager.createKey(MutantArrowEntity.class, DataSerializers.FLOAT);
+	private static final DataParameter<Float> TARGET_Y = EntityDataManager.createKey(MutantArrowEntity.class, DataSerializers.FLOAT);
+	private static final DataParameter<Float> TARGET_Z = EntityDataManager.createKey(MutantArrowEntity.class, DataSerializers.FLOAT);
 	private static final DataParameter<Float> SPEED = EntityDataManager.createKey(MutantArrowEntity.class, DataSerializers.FLOAT);
 	private static final DataParameter<Integer> CLONES = EntityDataManager.createKey(MutantArrowEntity.class, DataSerializers.VARINT);
 	private int damage = 10 + this.rand.nextInt(3);
@@ -39,6 +38,7 @@ public class MutantArrowEntity extends Entity {
 	public MutantArrowEntity(EntityType<? extends MutantArrowEntity> type, World world) {
 		super(type, world);
 		this.noClip = true;
+		this.ignoreFrustumCheck = true;
 	}
 
 	public MutantArrowEntity(World world, LivingEntity shooter, LivingEntity target) {
@@ -72,35 +72,35 @@ public class MutantArrowEntity extends Entity {
 
 	@Override
 	protected void registerData() {
-		this.dataManager.register(TARGET_X, 0);
-		this.dataManager.register(TARGET_Y, 0);
-		this.dataManager.register(TARGET_Z, 0);
+		this.dataManager.register(TARGET_X, 0.0F);
+		this.dataManager.register(TARGET_Y, 0.0F);
+		this.dataManager.register(TARGET_Z, 0.0F);
 		this.dataManager.register(SPEED, 12.0F);
 		this.dataManager.register(CLONES, 10);
 	}
 
 	public double getTargetX() {
-		return (double)this.dataManager.get(TARGET_X) / 10000.0D;
+		return (double)this.dataManager.get(TARGET_X);
 	}
 
 	public void setTargetX(double targetX) {
-		this.dataManager.set(TARGET_X, (int)(targetX * 10000.0D));
+		this.dataManager.set(TARGET_X, (float)targetX);
 	}
 
 	public double getTargetY() {
-		return (double)this.dataManager.get(TARGET_Y) / 10000.0D;
+		return (double)this.dataManager.get(TARGET_Y);
 	}
 
 	public void setTargetY(double targetY) {
-		this.dataManager.set(TARGET_Y, (int)(targetY * 10000.0D));
+		this.dataManager.set(TARGET_Y, (float)targetY);
 	}
 
 	public double getTargetZ() {
-		return (double)this.dataManager.get(TARGET_Z) / 10000.0D;
+		return (double)this.dataManager.get(TARGET_Z);
 	}
 
 	public void setTargetZ(double targetZ) {
-		this.dataManager.set(TARGET_Z, (int)(targetZ * 10000.0D));
+		this.dataManager.set(TARGET_Z, (float)targetZ);
 	}
 
 	public float getSpeed() {
@@ -131,6 +131,11 @@ public class MutantArrowEntity extends Entity {
 
 	public void setPotionEffect(EffectInstance effect) {
 		this.potionEffect = effect;
+	}
+
+	@Override
+	public boolean isInRangeToRenderDist(double distance) {
+		return distance < 16384.0D;
 	}
 
 	@Override
@@ -167,7 +172,7 @@ public class MutantArrowEntity extends Entity {
 		}
 	}
 
-	protected void hitEntities(int offset) {
+	private void hitEntities(int offset) {
 		double targetX = this.getTargetX();
 		double targetY = this.getTargetY();
 		double targetZ = this.getTargetZ();
@@ -184,24 +189,21 @@ public class MutantArrowEntity extends Entity {
 			double y = this.posY + dy * (double)i * 0.5D;
 			double z = this.posZ + dz * (double)i * 0.5D;
 			AxisAlignedBB box = new AxisAlignedBB(x, y, z, x, y, z).grow(0.3D);
-			this.pointedEntities.addAll(this.world.getEntitiesInAABBexcluding(this.shooter, box, EntityPredicates.CAN_AI_TARGET.and(Entity::canBeCollidedWith)));
+			this.pointedEntities.addAll(this.world.getEntitiesWithinAABBExcludingEntity(this.shooter, box));
 		}
 	}
 
-	protected void handleEntities() {
-		for (Entity entity : this.pointedEntities) {
-			DamageSource damageSource = new IndirectEntityDamageSource("arrow", this, this.shooter) {
-				@Override
-				public Vec3d getDamageLocation() {
-					return null;
-				}
-			}.setProjectile();
-
-			if (entity instanceof net.minecraft.entity.boss.dragon.EnderDragonPartEntity) {
-				damageSource.setExplosion();
+	private void handleEntities() {
+		DamageSource damageSource = new IndirectEntityDamageSource("arrow", this, this.shooter) {
+			@Override
+			public Vec3d getDamageLocation() {
+				return null;
 			}
+		}.setProjectile();
 
-			if (entity.attackEntityFrom(damageSource, (float)this.damage)) {
+		for (Entity entity : this.pointedEntities) {
+			if (entity instanceof net.minecraft.entity.boss.dragon.EnderDragonPartEntity && entity.attackEntityFrom(DamageSource.causeExplosionDamage(this.shooter), (float)this.damage) || entity.canBeCollidedWith() && entity.attackEntityFrom(damageSource, (float)this.damage)) {
+				this.applyEnchantments(this.shooter, entity);
 				this.world.playSound(null, entity.posX, entity.posY, entity.posZ, SoundEvents.ITEM_CROSSBOW_HIT, this.getSoundCategory(), 1.0F, 1.2F / (this.rand.nextFloat() * 0.2F + 0.9F));
 				if (this.potionEffect != null && entity instanceof LivingEntity) {
 					((LivingEntity)entity).addPotionEffect(this.potionEffect);

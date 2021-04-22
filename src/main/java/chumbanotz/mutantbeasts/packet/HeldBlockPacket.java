@@ -5,15 +5,16 @@ import java.util.function.Supplier;
 
 import chumbanotz.mutantbeasts.entity.mutant.MutantEndermanEntity;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.entity.Entity;
 import net.minecraft.network.PacketBuffer;
 import net.minecraft.world.World;
 import net.minecraftforge.fml.LogicalSidedProvider;
 import net.minecraftforge.fml.network.NetworkEvent;
 
 public class HeldBlockPacket {
-	private int entityId;
-	private int blockId;
-	private byte blockIndex;
+	private final int entityId;
+	private final int blockId;
+	private final byte blockIndex;
 
 	public HeldBlockPacket(MutantEndermanEntity enderman, int bId, int index) {
 		this.entityId = enderman.getEntityId();
@@ -37,10 +38,9 @@ public class HeldBlockPacket {
 		context.get().enqueueWork(() -> {
 			Optional<World> optionalWorld = LogicalSidedProvider.CLIENTWORLD.get(context.get().getDirection().getReceptionSide());
 			optionalWorld.filter(ClientWorld.class::isInstance).ifPresent(world -> {
-				MutantEndermanEntity enderman = (MutantEndermanEntity)world.getEntityByID(this.entityId);
-				if (enderman != null && this.blockIndex > 0 && this.blockId != -1) {
-					enderman.heldBlock[this.blockIndex] = this.blockId;
-					enderman.heldBlockTick[this.blockIndex] = 0;
+				Entity entity = world.getEntityByID(this.entityId);
+				if (entity instanceof MutantEndermanEntity && this.blockIndex > 0 && this.blockId != -1) {
+					((MutantEndermanEntity)entity).sendHoldBlock(this.blockIndex, this.blockId);
 				}
 			});
 		});

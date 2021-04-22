@@ -30,14 +30,14 @@ public class MutantArrowModel extends EntityModel<MutantArrowEntity> {
 		this.point4.addBox(-0.5F, 0.0F, 0.0F, 1, 3, 1, 0.251F);
 		this.point4.setRotationPoint(0.0F, 0.0F, -13.0F);
 		this.stick.addChild(this.point4);
-	}
-
-	@Override
-	public void render(MutantArrowEntity entityIn, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch, float scale) {
 		this.point1.rotateAngleY = 0.7853982F;
 		this.point2.rotateAngleY = -0.7853982F;
 		this.point3.rotateAngleX = -0.7853982F;
 		this.point4.rotateAngleX = 0.7853982F;
+	}
+
+	@Override
+	public void render(MutantArrowEntity entityIn, float limbSwing, float limbSwingAmount, float ageInTicks, float netHeadYaw, float headPitch, float scale) {
 		this.stick.render(scale);
 	}
 }

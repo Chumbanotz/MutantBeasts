@@ -1,9 +1,6 @@
 package chumbanotz.mutantbeasts.client;
 
-import java.util.Map;
-
 import chumbanotz.mutantbeasts.MutantBeasts;
-import chumbanotz.mutantbeasts.block.MBSkullBlock;
 import chumbanotz.mutantbeasts.client.gui.screen.CreeperMinionTrackerScreen;
 import chumbanotz.mutantbeasts.client.particle.EndersoulParticle;
 import chumbanotz.mutantbeasts.client.particle.SkullSpiritParticle;
@@ -22,7 +19,6 @@ import chumbanotz.mutantbeasts.client.renderer.entity.SpiderPigRenderer;
 import chumbanotz.mutantbeasts.client.renderer.entity.ThrowableBlockRenderer;
 import chumbanotz.mutantbeasts.client.renderer.entity.layers.CreeperMinionShoulderLayer;
 import chumbanotz.mutantbeasts.client.renderer.entity.model.EndersoulHandModel;
-import chumbanotz.mutantbeasts.client.renderer.entity.model.SkullModel;
 import chumbanotz.mutantbeasts.entity.BodyPartEntity;
 import chumbanotz.mutantbeasts.entity.CreeperMinionEggEntity;
 import chumbanotz.mutantbeasts.entity.CreeperMinionEntity;
@@ -39,16 +35,15 @@ import chumbanotz.mutantbeasts.entity.projectile.ChemicalXEntity;
 import chumbanotz.mutantbeasts.entity.projectile.MutantArrowEntity;
 import chumbanotz.mutantbeasts.entity.projectile.ThrowableBlockEntity;
 import chumbanotz.mutantbeasts.particles.MBParticleTypes;
-import net.minecraft.block.SkullBlock;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.PlayerRenderer;
 import net.minecraft.client.renderer.entity.SpriteRenderer;
-import net.minecraft.client.renderer.entity.model.GenericHeadModel;
+import net.minecraft.client.renderer.entity.model.BipedModel;
+import net.minecraft.client.renderer.entity.model.RendererModel;
 import net.minecraft.client.renderer.model.IBakedModel;
 import net.minecraft.client.renderer.model.ModelResourceLocation;
 import net.minecraft.client.renderer.model.ModelRotation;
-import net.minecraft.client.renderer.tileentity.SkullTileEntityRenderer;
 import net.minecraft.client.renderer.vertex.DefaultVertexFormats;
 import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
@@ -60,15 +55,22 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.client.registry.ClientRegistry;
 import net.minecraftforge.fml.client.registry.RenderingRegistry;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
-import net.minecraftforge.fml.common.ObfuscationReflectionHelper;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 
 @EventBusSubscriber(modid = MutantBeasts.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public enum ClientEventHandler {
 	INSTANCE;
+	private BipedModel<?> mutantSkeletonArmor;
 
+	@SuppressWarnings("deprecation")
 	@SubscribeEvent
 	public static void onClientSetup(FMLClientSetupEvent event) {
+		net.minecraftforge.fml.DeferredWorkQueue.runLater(() -> {
+			for (PlayerRenderer renderer : event.getMinecraftSupplier().get().getRenderManager().getSkinMap().values()) {
+				renderer.addLayer(new CreeperMinionShoulderLayer<>(renderer));
+			}
+		});
+
 		ClientRegistry.registerEntityShader(CreeperMinionEntity.class, new ResourceLocation("shaders/post/creeper.json"));
 		ClientRegistry.registerEntityShader(EndersoulCloneEntity.class, new ResourceLocation("shaders/post/invert.json"));
 		ClientRegistry.registerEntityShader(MutantCreeperEntity.class, new ResourceLocation("shaders/post/creeper.json"));
@@ -93,15 +95,6 @@ public enum ClientEventHandler {
 		});
 		RenderingRegistry.registerEntityRenderingHandler(SpiderPigEntity.class, SpiderPigRenderer::new);
 		RenderingRegistry.registerEntityRenderingHandler(ThrowableBlockEntity.class, ThrowableBlockRenderer::new);
-
-		for (PlayerRenderer renderer : event.getMinecraftSupplier().get().getRenderManager().getSkinMap().values()) {
-			renderer.addLayer(new CreeperMinionShoulderLayer<>(renderer));
-		}
-
-		Map<SkullBlock.ISkullType, GenericHeadModel> MODELS_MAP = ObfuscationReflectionHelper.getPrivateValue(SkullTileEntityRenderer.class, SkullTileEntityRenderer.instance, "field_199358_e");
-		Map<SkullBlock.ISkullType, ResourceLocation> SKIN_MAP = ObfuscationReflectionHelper.getPrivateValue(SkullTileEntityRenderer.class, SkullTileEntityRenderer.instance, "field_199357_d");
-		MODELS_MAP.put(MBSkullBlock.Types.MUTANT_SKELETON, new SkullModel());
-		SKIN_MAP.put(MBSkullBlock.Types.MUTANT_SKELETON, MutantBeasts.getEntityTexture("mutant_skeleton"));
 	}
 
 	@SubscribeEvent
@@ -126,5 +119,21 @@ public enum ClientEventHandler {
 
 	public void displayCreeperMinionTrackerGUI(CreeperMinionEntity creeperMinion) {
 		Minecraft.getInstance().displayGuiScreen(new CreeperMinionTrackerScreen(creeperMinion));
+	}
+
+	public BipedModel<?> getMutantSkeletonArmor() {
+		if (this.mutantSkeletonArmor == null) {
+			this.mutantSkeletonArmor = new BipedModel<>(1.0F);
+			this.mutantSkeletonArmor.bipedHead = new RendererModel(this.mutantSkeletonArmor, 0, 0);
+			this.mutantSkeletonArmor.bipedHead.addBox(-4.0F, -8.0F, -4.0F, 8, 8, 8, 0.4F);
+			RendererModel jaw = new RendererModel(this.mutantSkeletonArmor, 32, 0);
+			jaw.addBox(-4.0F, -3.0F, -8.0F, 8, 3, 8, 0.7F);
+			jaw.setRotationPoint(0.0F, -0.2F, 3.5F);
+			jaw.rotateAngleX = 0.09817477F;
+			this.mutantSkeletonArmor.bipedHead.addChild(jaw);
+			this.mutantSkeletonArmor.bipedHeadwear = new RendererModel(this.mutantSkeletonArmor);
+		}
+
+		return this.mutantSkeletonArmor;
 	}
 }

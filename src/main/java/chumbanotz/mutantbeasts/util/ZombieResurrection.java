@@ -1,6 +1,6 @@
 package chumbanotz.mutantbeasts.util;
 
-import chumbanotz.mutantbeasts.entity.ai.goal.TrackSummonerGoal;
+import chumbanotz.mutantbeasts.entity.ai.goal.CopySummonerTargetGoal;
 import chumbanotz.mutantbeasts.entity.mutant.MutantZombieEntity;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -9,6 +9,7 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.ai.goal.MoveTowardsRestrictionGoal;
 import net.minecraft.entity.monster.ZombieEntity;
+import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -53,9 +54,14 @@ public class ZombieResurrection extends BlockPos {
 				zombieEntity.stopRiding(); //Chicken jockeys seem to cause problems
 				this.world.playEvent(2001, abovePos, Block.getStateId(this.world.getBlockState(abovePos)));
 				zombieEntity.moveToBlockPosAndAngles(abovePos, mutantZombie.rotationYaw, 0.0F);
-				zombieEntity.goalSelector.addGoal(0, new TrackSummonerGoal(zombieEntity, mutantZombie));
 				zombieEntity.goalSelector.addGoal(3, new MoveTowardsRestrictionGoal(zombieEntity, 1.0D));
+				zombieEntity.targetSelector.addGoal(0, new CopySummonerTargetGoal(zombieEntity, mutantZombie));
 				this.world.addEntity(zombieEntity);
+
+				if (mutantZombie.getTeam() != null) {
+					Scoreboard scoreboard = this.world.getScoreboard();
+					scoreboard.addPlayerToTeam(zombieEntity.getScoreboardName(), scoreboard.getTeam(mutantZombie.getTeam().getName()));
+				}
 			}
 
 			return false;
@@ -69,10 +75,12 @@ public class ZombieResurrection extends BlockPos {
 	}
 
 	public static int getSuitableGround(World world, int x, int y, int z, int range, boolean checkDay) {
-		int i = y;
+		BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+		BlockPos.MutableBlockPos abovePos = new BlockPos.MutableBlockPos();
 
-		while (Math.abs(y - i) <= range) {
-			BlockPos pos = new BlockPos(x, i, z);
+		for (int i = y; Math.abs(y - i) <= range;) {
+			pos.setPos(x, i, z);
+			abovePos.setPos(pos).move(0, 1, 0);
 			BlockState blockState = world.getBlockState(pos);
 
 			if (blockState.getBlock() != Blocks.FIRE) {
@@ -82,9 +90,9 @@ public class ZombieResurrection extends BlockPos {
 						continue;
 					}
 
-					if (!world.isAirBlock(pos) && world.isAirBlock(pos.up()) && blockState.getCollisionShape(world, pos).isEmpty()) {
+					if (!world.isAirBlock(pos) && world.isAirBlock(abovePos) && blockState.getCollisionShape(world, pos).isEmpty()) {
 						--i;
-					} else if (!world.isAirBlock(pos) && !world.isAirBlock(pos.up()) && !blockState.getCollisionShape(world, pos.up()).isEmpty()) {
+					} else if (!world.isAirBlock(pos) && !world.isAirBlock(abovePos) && !blockState.getCollisionShape(world, abovePos).isEmpty()) {
 						++i;
 						continue;
 					}
@@ -92,17 +100,14 @@ public class ZombieResurrection extends BlockPos {
 
 				if (checkDay && world.isDaytime()) {
 					BlockPos pos1 = new BlockPos(x, y + 1, z);
-					float f = world.getBrightness(pos1);
-
-					if (f > 0.5F && world.canBlockSeeSky(pos1) && world.rand.nextInt(3) != 0) {
+					float brightness = world.getBrightness(pos1);
+					if (brightness > 0.5F && world.isSkyLightMax(pos1) && world.rand.nextInt(3) != 0) {
 						return -1;
 					}
 				}
 
 				return i;
 			}
-
-			return -1;
 		}
 
 		return -1;
@@ -114,10 +119,12 @@ public class ZombieResurrection extends BlockPos {
 
 		if (biome.getCategory() == Biome.Category.DESERT) {
 			return chance < 80 && world.isSkyLightMax(pos) ? EntityType.HUSK : chance < 1 ? EntityType.ZOMBIE_VILLAGER : EntityType.ZOMBIE;
-		} else if ((biome.getCategory() == Biome.Category.OCEAN || biome.getCategory() == Biome.Category.RIVER) && world.hasWater(pos)) {
-			return EntityType.DROWNED;
 		} else {
 			return chance < 95 ? EntityType.ZOMBIE : EntityType.ZOMBIE_VILLAGER;
 		}
+	}
+
+	public static boolean canBeResurrected(EntityType<?> entityType) {
+		return entityType == EntityType.ZOMBIE || entityType == EntityType.ZOMBIE_VILLAGER || entityType == EntityType.HUSK;
 	}
 }

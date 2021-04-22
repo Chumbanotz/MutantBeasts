@@ -7,8 +7,9 @@ import java.util.List;
 import chumbanotz.mutantbeasts.client.animationapi.IAnimatedEntity;
 import chumbanotz.mutantbeasts.entity.BodyPartEntity;
 import chumbanotz.mutantbeasts.entity.MBEntityType;
+import chumbanotz.mutantbeasts.entity.ai.controller.FixedBodyController;
 import chumbanotz.mutantbeasts.entity.ai.goal.AvoidDamageGoal;
-import chumbanotz.mutantbeasts.entity.ai.goal.MBHurtByTargetGoal;
+import chumbanotz.mutantbeasts.entity.ai.goal.HurtByNearestTargetGoal;
 import chumbanotz.mutantbeasts.entity.ai.goal.MBMeleeAttackGoal;
 import chumbanotz.mutantbeasts.entity.projectile.MutantArrowEntity;
 import chumbanotz.mutantbeasts.pathfinding.MBGroundPathNavigator;
@@ -22,6 +23,7 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.Pose;
 import net.minecraft.entity.SharedMonsterAttributes;
+import net.minecraft.entity.ai.controller.BodyController;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.goal.LookAtGoal;
 import net.minecraft.entity.ai.goal.LookRandomlyGoal;
@@ -68,22 +70,23 @@ public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEnti
 		this.goalSelector.addGoal(0, new MutantSkeletonEntity.ShootGoal());
 		this.goalSelector.addGoal(0, new MutantSkeletonEntity.MultiShotGoal());
 		this.goalSelector.addGoal(0, new MutantSkeletonEntity.ConstrictRibsAttackGoal());
-		this.goalSelector.addGoal(1, new MBMeleeAttackGoal(this, 1.1D).setMaxAttackTick(0));
+		this.goalSelector.addGoal(1, new MBMeleeAttackGoal(this, 1.1D).setMaxAttackTick(5));
 		this.goalSelector.addGoal(2, new AvoidDamageGoal(this, 1.0D));
 		this.goalSelector.addGoal(3, new WaterAvoidingRandomWalkingGoal(this, 1.0D));
 		this.goalSelector.addGoal(4, new LookAtGoal(this, PlayerEntity.class, 8.0F));
 		this.goalSelector.addGoal(5, new LookRandomlyGoal(this));
-		this.targetSelector.addGoal(0, new MBHurtByTargetGoal(this));
+		this.targetSelector.addGoal(0, new HurtByNearestTargetGoal(this));
 		this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, PlayerEntity.class, true).setUnseenMemoryTicks(300));
 		this.targetSelector.addGoal(2, new NearestAttackableTargetGoal<>(this, IronGolemEntity.class, true));
-		this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, WolfEntity.class, true, true));
+		this.targetSelector.addGoal(3, new NearestAttackableTargetGoal<>(this, WolfEntity.class, true));
 	}
 
 	@Override
 	protected void registerAttributes() {
 		super.registerAttributes();
 		this.getAttribute(SharedMonsterAttributes.MAX_HEALTH).setBaseValue(150.0D);
-		this.getAttribute(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(96.0D);
+		this.getAttribute(SharedMonsterAttributes.FOLLOW_RANGE).setBaseValue(50.0D);
+		this.getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).setBaseValue(4.0D);
 		this.getAttribute(SharedMonsterAttributes.MOVEMENT_SPEED).setBaseValue(0.27D);
 		this.getAttribute(SharedMonsterAttributes.KNOCKBACK_RESISTANCE).setBaseValue(1.0D);
 		this.getAttribute(SWIM_SPEED).setBaseValue(5.0D);
@@ -102,6 +105,11 @@ public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEnti
 	@Override
 	protected PathNavigator createNavigator(World worldIn) {
 		return new MBGroundPathNavigator(this, worldIn);
+	}
+
+	@Override
+	protected BodyController createBodyController() {
+		return new FixedBodyController(this);
 	}
 
 	@Override
@@ -160,7 +168,7 @@ public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEnti
 
 	@Override
 	protected boolean canBeRidden(Entity entityIn) {
-		return false;
+		return super.canBeRidden(entityIn) && entityIn instanceof LivingEntity;
 	}
 
 	@Override
@@ -205,7 +213,7 @@ public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEnti
 
 		if (!this.world.isRemote) {
 			for (Entity entity : this.world.getEntitiesWithinAABBExcludingEntity(this, this.getBoundingBox().grow(3.0D, 2.0D, 3.0D))) {
-				entity.attackEntityFrom(DamageSource.causeMobDamage(this).setDamageBypassesArmor(), 7.0F);
+				entity.attackEntityFrom(DamageSource.causeMobDamage(this), 7.0F);
 			}
 
 			for (int i = 0; i < 18; ++i) {
@@ -319,20 +327,24 @@ public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEnti
 	
 		@Override
 		public void tick() {
+			getNavigator().clearPath();
 			if (getAttackTarget() != null && getAttackTarget().isAlive()) {
 				lookController.setLookPositionWithEntity(getAttackTarget(), 30.0F, 30.0F);
 			}
 
 			if (attackTick == 3) {
 				for (Entity entity : world.getEntitiesWithinAABBExcludingEntity(MutantSkeletonEntity.this, getBoundingBox().grow(4.0D))) {
+					if (!entity.canBeCollidedWith() || entity instanceof MutantSkeletonEntity) {
+						continue;
+					}
+
 					double dist = (double)getDistance(entity);
 					double x = posX - entity.posX;
 					double z = posZ - entity.posZ;
 
-					if (dist <= (double)(2.3F + rand.nextFloat() * 0.3F) && EntityUtil.isFacing(rotationYawHead, x, z, 60.0F) && !(entity instanceof MutantSkeletonEntity)) {
+					if (dist <= 3.0D && EntityUtil.getHeadAngle(rotationYawHead, x, z) < 60.0F) {
 						float power = 1.8F + (float)rand.nextInt(5) * 0.15F;
-						entity.stopRiding();
-						entity.attackEntityFrom(DamageSource.causeMobDamage(MutantSkeletonEntity.this), (float)getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getValue() + (float)rand.nextInt(2));
+						entity.attackEntityFrom(DamageSource.causeMobDamage(MutantSkeletonEntity.this), (float)getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getValue());
 						entity.setMotion(-x / dist * (double)power, Math.max(0.2800000011920929D, entity.getMotion().y), -z / dist * (double)power);
 						EntityUtil.sendPlayerVelocityPacket(entity);
 					}
@@ -372,13 +384,16 @@ public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEnti
 
 		@Override
 		public void tick() {
+			getNavigator().clearPath();
 			if (attackTick == 5)
 				this.attackTarget.stopRiding();
 			if (attackTick == 6) {
-				this.attackTarget.attackEntityFrom(DamageSource.causeMobDamage(MutantSkeletonEntity.this), (float)getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getValue() + 7.0F);
+				if (!this.attackTarget.attackEntityFrom(DamageSource.causeMobDamage(MutantSkeletonEntity.this), (float)getAttribute(SharedMonsterAttributes.ATTACK_DAMAGE).getValue() + 5.0F)) {
+					EntityUtil.disableShield(this.attackTarget, 100);
+				}
+
 				this.attackTarget.setMotion((double)((1.0F + rand.nextFloat() * 0.4F) * (float)(rand.nextBoolean() ? 1 : -1)), (double)(0.4F + rand.nextFloat() * 0.8F), (double)((1.0F + rand.nextFloat() * 0.4F) * (float)(rand.nextBoolean() ? 1 : -1)));
 				playSound(SoundEvents.ENTITY_GENERIC_EXPLODE, 0.5F, 0.8F + rand.nextFloat() * 0.4F);
-				EntityUtil.disableShield(this.attackTarget, 100);
 				EntityUtil.sendPlayerVelocityPacket(this.attackTarget);
 			}
 		}
@@ -400,7 +415,7 @@ public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEnti
 		@Override
 		public boolean shouldExecute() {
 			this.attackTarget = getAttackTarget();
-			return this.attackTarget != null && attackID == 0 && getDistanceSq(this.attackTarget) > 4.0D && rand.nextInt(12) == 0 && canEntityBeSeen(this.attackTarget);
+			return this.attackTarget != null && attackID == 0 && getDistanceSq(this.attackTarget) > 4.0D && rand.nextInt(12) == 0 && getEntitySenses().canSee(this.attackTarget);
 		}
 
 		@Override
@@ -415,8 +430,10 @@ public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEnti
 
 		@Override
 		public void tick() {
-			navigator.clearPath();
-			lookController.setLookPositionWithEntity(this.attackTarget, 30.0F, 30.0F);
+			getNavigator().clearPath();
+			if (attackTick < 26) {
+				lookController.setLookPositionWithEntity(this.attackTarget, 30.0F, 30.0F);	
+			}
 
 			if (attackTick == 5) {
 				playSound(SoundEvents.ITEM_CROSSBOW_QUICK_CHARGE_2, 1.0F, 1.0F);
@@ -431,7 +448,7 @@ public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEnti
 
 				if (hurtTime > 0 && lastDamage > 0.0F && getLastDamageSource().isProjectile()) {
 					arrowEntity.randomize((float)hurtTime / 2.0F);
-				} else if (!canEntityBeSeen(this.attackTarget)) {
+				} else if (!getEntitySenses().canSee(this.attackTarget)) {
 					arrowEntity.randomize(0.5F + rand.nextFloat());
 				}
 
@@ -470,7 +487,7 @@ public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEnti
 		@Override
 		public boolean shouldExecute() {
 			this.attackTarget = getAttackTarget();
-			return this.attackTarget != null && onGround && attackID == 0 && rand.nextInt(26) == 0 && canEntityBeSeen(this.attackTarget);
+			return this.attackTarget != null && onGround && attackID == 0 && rand.nextInt(26) == 0 && getEntitySenses().canSee(this.attackTarget);
 		}
 
 		@Override
@@ -485,7 +502,10 @@ public class MutantSkeletonEntity extends MonsterEntity implements IAnimatedEnti
 
 		@Override
 		public void tick() {
-			lookController.setLookPositionWithEntity(this.attackTarget, 30.0F, 30.0F);
+			getNavigator().clearPath();
+			if (attackTick < 26) {
+				lookController.setLookPositionWithEntity(this.attackTarget, 30.0F, 30.0F);	
+			}
 
 			if (attackTick == 10) {
 				double x = this.attackTarget.posX - posX;

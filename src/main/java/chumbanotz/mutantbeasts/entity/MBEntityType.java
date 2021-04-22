@@ -20,8 +20,9 @@ import net.minecraft.entity.MobEntity;
 import net.minecraft.entity.monster.MonsterEntity;
 import net.minecraft.entity.passive.AnimalEntity;
 import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.Biomes;
 import net.minecraft.world.gen.Heightmap;
+import net.minecraft.world.gen.feature.Feature;
+import net.minecraftforge.common.BiomeDictionary;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.ObjectHolder;
 
@@ -44,29 +45,33 @@ public class MBEntityType {
 	public static final EntityType<ThrowableBlockEntity> THROWABLE_BLOCK = null;
 
 	public static void addSpawns() {
+		int mutantCreeperSpawnWeight = MBConfig.COMMON.mutantCreeperSpawnWeight.get();
+		int mutantEndermanSpawnWeight = MBConfig.COMMON.mutantEndermanSpawnWeight.get();
+		int mutantSkeletonSpawnWeight = MBConfig.COMMON.mutantSkeletonSpawnWeight.get();
+		int mutantZombieSpawnWeight = MBConfig.COMMON.mutantZombieSpawnWeight.get();
+		List<? extends String> biomeWhitelist = MBConfig.COMMON.biomeWhitelist.get();
 		for (Biome biome : ForgeRegistries.BIOMES) {
-			if (biome.getRegistryName() == null || !MBConfig.biomeWhitelist.contains(biome.getRegistryName().toString())) {
+			if (biome.getRegistryName() == null || !biomeWhitelist.contains(biome.getRegistryName().getPath())) {
 				continue;
 			}
 
 			List<Biome.SpawnListEntry> monsterEntries = biome.getSpawns(EntityClassification.MONSTER);
-			if (monsterEntries.isEmpty()) {
+			if (monsterEntries.isEmpty() || BiomeDictionary.hasType(biome, BiomeDictionary.Type.MUSHROOM) || BiomeDictionary.hasType(biome, BiomeDictionary.Type.VOID)) {
 				continue;
 			}
 
-			if (biome.getCategory() != Biome.Category.MUSHROOM && biome != Biomes.THE_VOID) {
-				addSpawn(monsterEntries, MUTANT_ENDERMAN, MBConfig.mutantEndermanSpawnWeight, 1, 1);
-				if (biome.getCategory() != Biome.Category.THEEND && biome.getCategory() != Biome.Category.NETHER) {
-					addSpawn(monsterEntries, MUTANT_CREEPER, MBConfig.mutantCreeperSpawnWeight, 1, 1);
-					addSpawn(monsterEntries, MUTANT_SKELETON, MBConfig.mutantSkeletonSpawnWeight, 1, 1);
-					addSpawn(monsterEntries, MUTANT_ZOMBIE, MBConfig.mutantZombieSpawnWeight, 1, 1);
-				}
+			addSpawn(monsterEntries, MUTANT_ENDERMAN, mutantEndermanSpawnWeight, 1, 1);
+			if (!BiomeDictionary.hasType(biome, BiomeDictionary.Type.NETHER) && !BiomeDictionary.hasType(biome, BiomeDictionary.Type.END)) {
+				addSpawn(monsterEntries, MUTANT_CREEPER, mutantCreeperSpawnWeight, 1, 1);
+				addSpawn(monsterEntries, MUTANT_SKELETON, mutantSkeletonSpawnWeight, 1, 1);
+				addSpawn(monsterEntries, MUTANT_ZOMBIE, mutantZombieSpawnWeight, 1, 1);
 			}
 		}
 
+		addSpawn(Feature.NETHER_BRIDGE.getSpawnList(), MUTANT_SKELETON, mutantSkeletonSpawnWeight, 1, 1);
 		EntitySpawnPlacementRegistry.register(CREEPER_MINION, EntitySpawnPlacementRegistry.PlacementType.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, MobEntity::canSpawnOn);
 		EntitySpawnPlacementRegistry.register(MUTANT_CREEPER, EntitySpawnPlacementRegistry.PlacementType.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, MonsterEntity::func_223325_c);
-		EntitySpawnPlacementRegistry.register(MUTANT_ENDERMAN, EntitySpawnPlacementRegistry.PlacementType.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, MutantEndermanEntity::canSpawn);
+		EntitySpawnPlacementRegistry.register(MUTANT_ENDERMAN, EntitySpawnPlacementRegistry.PlacementType.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, MonsterEntity::func_223325_c);
 		EntitySpawnPlacementRegistry.register(MUTANT_SKELETON, EntitySpawnPlacementRegistry.PlacementType.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, MonsterEntity::func_223325_c);
 		EntitySpawnPlacementRegistry.register(MUTANT_SNOW_GOLEM, EntitySpawnPlacementRegistry.PlacementType.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, MobEntity::canSpawnOn);
 		EntitySpawnPlacementRegistry.register(MUTANT_ZOMBIE, EntitySpawnPlacementRegistry.PlacementType.ON_GROUND, Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, MonsterEntity::func_223325_c);

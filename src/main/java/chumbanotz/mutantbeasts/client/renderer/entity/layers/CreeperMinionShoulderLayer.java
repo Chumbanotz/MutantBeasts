@@ -31,9 +31,11 @@ public class CreeperMinionShoulderLayer<T extends PlayerEntity> extends LayerRen
 
 	private void renderOnShoulder(T player, float limbSwing, float limbSwingAmount, float partialTicks, float ageInTicks, float netHeadYaw, float headPitch, float scale, boolean leftShoulder) {
 		CompoundNBT compoundnbt = leftShoulder ? player.getLeftShoulderEntity() : player.getRightShoulderEntity();
-		EntityType.byKey(compoundnbt.getString("id"))
-		.filter(MBEntityType.CREEPER_MINION::equals)
-		.ifPresent(entityType -> {
+		if (compoundnbt.isEmpty()) {
+			return;
+		}
+
+		EntityType.byKey(compoundnbt.getString("id")).filter(MBEntityType.CREEPER_MINION::equals).ifPresent(entityType -> {
 			GlStateManager.pushMatrix();
 			GlStateManager.translatef(leftShoulder ? 0.42F : -0.42F, player.shouldRenderSneaking() ? -0.55F : -0.75F, 0.0F);
 			this.bindTexture(CreeperMinionRenderer.TEXTURE);

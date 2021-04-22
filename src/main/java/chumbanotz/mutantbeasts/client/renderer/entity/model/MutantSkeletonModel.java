@@ -321,7 +321,7 @@ public class MutantSkeletonModel extends EntityModel<MutantSkeletonEntity> {
 
 			this.arm1.getModel().rotateAngleX += -1.0471976F;
 			this.arm1.rotateAngleY += -0.62831855F;
-			++this.arm1.rotateAngleZ;
+			this.arm1.rotateAngleZ += 1.0471976;
 			this.forearm1.rotateAngleX += 0.44879895F;
 			this.arm2.getModel().rotateAngleX += -2.6179938F;
 			this.arm2.rotateAngleY += 0.62831855F;
@@ -471,7 +471,7 @@ public class MutantSkeletonModel extends EntityModel<MutantSkeletonEntity> {
 
 				this.arm1.getModel().rotateAngleX += -1.0471976F;
 				this.arm1.rotateAngleY += -0.62831855F;
-				++this.arm1.rotateAngleZ;
+				this.arm1.rotateAngleZ += 1.0471976F;
 				this.forearm1.rotateAngleX += 0.44879895F;
 				this.arm2.getModel().rotateAngleX += -2.6179938F;
 				this.arm2.rotateAngleY += 0.62831855F;

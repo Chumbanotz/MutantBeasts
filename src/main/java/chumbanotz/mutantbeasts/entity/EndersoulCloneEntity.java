@@ -11,16 +11,21 @@ import net.minecraft.entity.EntityType;
 import net.minecraft.entity.Pose;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.goal.SwimGoal;
+import net.minecraft.entity.boss.dragon.EnderDragonEntity;
 import net.minecraft.entity.monster.MonsterEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.pathfinding.PathNavigator;
 import net.minecraft.pathfinding.PathNodeType;
-import net.minecraft.potion.EffectInstance;
+import net.minecraft.scoreboard.Team;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.Hand;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.world.World;
 
 public class EndersoulCloneEntity extends MonsterEntity {
+	private MutantEndermanEntity cloner;
+
 	public EndersoulCloneEntity(EntityType<? extends EndersoulCloneEntity> type, World worldIn) {
 		super(type, worldIn);
 		this.stepHeight = 1.0F;
@@ -54,7 +59,7 @@ public class EndersoulCloneEntity extends MonsterEntity {
 	}
 
 	public void setCloner(MutantEndermanEntity cloner) {
-		this.hurtResistantTime = 15;
+		this.cloner = cloner;
 		this.getAttribute(SharedMonsterAttributes.MAX_HEALTH).setBaseValue((double)cloner.getMaxHealth());
 		this.setHealth(cloner.getHealth());
 		if (cloner.hasCustomName()) {
@@ -86,29 +91,38 @@ public class EndersoulCloneEntity extends MonsterEntity {
 
 	@Override
 	public boolean attackEntityAsMob(Entity entityIn) {
-		boolean flag = super.attackEntityAsMob(entityIn);
+		boolean damageEntity = super.attackEntityAsMob(entityIn);
 		if (!this.world.isRemote && this.rand.nextInt(3) != 0) {
 			this.teleportToEntity(entityIn);
 		}
 
-		if (flag) {
+		if (damageEntity) {
 			this.heal(2.0F);
 		}
 
 		this.swingArm(Hand.MAIN_HAND);
-		return flag;
+		return damageEntity;
 	}
 
 	@Override
 	public boolean attackEntityFrom(DamageSource source, float amount) {
-		boolean flag = super.attackEntityFrom(source, 0.0F);
-		if (flag) {
+		if (this.isInvulnerableTo(source) || source.getTrueSource() instanceof EnderDragonEntity) {
+			return false;
+		}
+
+		boolean remove = !this.world.isRemote && this.isAlive() && this.ticksExisted > 0;
+		if (remove) {
+			if (source.getTrueSource() instanceof PlayerEntity) {
+				this.attackingPlayer = (PlayerEntity)source.getTrueSource();
+				this.recentlyHit = 100;
+			}
+
 			EntityUtil.dropExperience(this, this.recentlyHit, this.experienceValue, this.attackingPlayer);
 			this.spawnDrops(source);
 			this.remove();
 		}
 
-		return flag;
+		return remove;
 	}
 
 	private boolean teleportToEntity(Entity entity) {
@@ -131,18 +145,28 @@ public class EndersoulCloneEntity extends MonsterEntity {
 	}
 
 	@Override
-	public boolean addPotionEffect(EffectInstance effectInstanceIn) {
-		return false;
-	}
-
-	@Override
 	public boolean preventDespawn() {
-		return this.isAggressive();
+		return super.preventDespawn() || this.cloner != null;
 	}
 
 	@Override
 	public boolean isEntityEqual(Entity entityIn) {
-		return super.isEntityEqual(entityIn) || entityIn instanceof MutantEndermanEntity;
+		return super.isEntityEqual(entityIn) || entityIn == this.cloner;
+	}
+
+	@Override
+	public boolean writeUnlessRemoved(CompoundNBT compound) {
+		return this.cloner == null && super.writeUnlessRemoved(compound);
+	}
+
+	@Override
+	public Team getTeam() {
+		return this.cloner != null ? this.cloner.getTeam() : super.getTeam();
+	}
+
+	@Override
+	public boolean isOnSameTeam(Entity entityIn) {
+		return this.cloner != null && (this.cloner == entityIn || this.cloner.isOnSameTeam(entityIn)) || super.isOnSameTeam(entityIn);
 	}
 
 	@Override

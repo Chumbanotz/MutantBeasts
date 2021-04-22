@@ -20,13 +20,14 @@ public class ThrowableBlockRenderer extends EntityRenderer<ThrowableBlockEntity>
 	@Override
 	public void doRender(ThrowableBlockEntity entity, double x, double y, double z, float entityYaw, float partialTicks) {
 		super.doRender(entity, x, y, z, entityYaw, partialTicks);
+		float ageInTicks = (float)entity.ticksExisted + partialTicks;
 		if (entity.getThrower() instanceof MutantSnowGolemEntity) {
 			GlStateManager.pushMatrix();
 			GlStateManager.translatef((float)x, (float)y + 0.5F, (float)z);
 			GlStateManager.rotatef(entity.rotationYaw, 0.0F, 1.0F, 0.0F);
 			GlStateManager.rotatef(45.0F, 0.0F, 1.0F, 0.0F);
-			GlStateManager.rotatef(((float)entity.ticksExisted + partialTicks) * 20.0F, 1.0F, 0.0F, 0.0F);
-			GlStateManager.rotatef(((float)entity.ticksExisted + partialTicks) * 12.0F, 0.0F, 0.0F, -1.0F);
+			GlStateManager.rotatef(ageInTicks * 20.0F, 1.0F, 0.0F, 0.0F);
+			GlStateManager.rotatef(ageInTicks * 12.0F, 0.0F, 0.0F, -1.0F);
 			this.bindEntityTexture(entity);
 			GlStateManager.translatef(-0.5F, -0.5F, 0.5F);
 			Minecraft.getInstance().getBlockRendererDispatcher().renderBlockBrightness(entity.getBlockState(), 1.0F);
@@ -45,8 +46,8 @@ public class ThrowableBlockRenderer extends EntityRenderer<ThrowableBlockEntity>
 			GlStateManager.translatef((float)x, (float)y + 0.5F, (float)z);
 			GlStateManager.scalef(-0.75F, -0.75F, 0.75F);
 			GlStateManager.rotatef(45.0F, 0.0F, 1.0F, 0.0F);
-			GlStateManager.rotatef(((float)entity.ticksExisted + partialTicks) * 20.0F, 1.0F, 0.0F, 0.0F);
-			GlStateManager.rotatef(((float)entity.ticksExisted + partialTicks) * 12.0F, 0.0F, 0.0F, -1.0F);
+			GlStateManager.rotatef(ageInTicks * 20.0F, 1.0F, 0.0F, 0.0F);
+			GlStateManager.rotatef(ageInTicks * 12.0F, 0.0F, 0.0F, -1.0F);
 			GlStateManager.translatef(-0.5F, -0.5F, 0.5F);
 			Minecraft.getInstance().getBlockRendererDispatcher().renderBlockBrightness(entity.getBlockState(), 1.0F);
 			GlStateManager.disableBlend();

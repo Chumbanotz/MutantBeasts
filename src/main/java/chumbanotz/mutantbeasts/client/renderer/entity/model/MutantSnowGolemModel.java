@@ -199,21 +199,14 @@ public class MutantSnowGolemModel extends EntityModel<MutantSnowGolemEntity> {
 		}
 	}
 
-	public void postRenderArm(float scale, boolean leftHanded) {
+	public void postRenderArm(float scale) {
 		this.pelvis.postRender(scale);
 		this.abdomen.postRender(scale);
 		this.chest.postRender(scale);
-		if (leftHanded) {
-			this.arm2.postRender(scale);
-			this.arm2.getModel().postRender(scale);
-			this.forearm2.postRender(scale);
-			this.forearm2.getModel().postRender(scale);
-		} else {
-			this.arm1.postRender(scale);
-			this.arm1.getModel().postRender(scale);
-			this.forearm1.postRender(scale);
-			this.forearm1.getModel().postRender(scale);
-		}
+		this.arm1.postRender(scale);
+		this.arm1.getModel().postRender(scale);
+		this.forearm1.postRender(scale);
+		this.forearm1.getModel().postRender(scale);
 	}
 
 	@Override

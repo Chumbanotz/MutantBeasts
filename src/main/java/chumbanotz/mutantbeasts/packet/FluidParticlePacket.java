@@ -16,8 +16,8 @@ import net.minecraftforge.fml.LogicalSidedProvider;
 import net.minecraftforge.fml.network.NetworkEvent;
 
 public class FluidParticlePacket {
-	private BlockState blockState;
-	private BlockPos blockPos;
+	private final BlockState blockState;
+	private final BlockPos blockPos;
 
 	public FluidParticlePacket(BlockState blockState, BlockPos blockPos) {
 		this.blockState = blockState;

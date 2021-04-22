@@ -11,12 +11,30 @@
 							"function": "minecraft:set_count",
 							"count": {
 								"min": 32.0,
-								"max": 48.0,
+								"max": 47.0,
 								"type": "minecraft:uniform"
 							}
 						}
 					],
 					"name": "minecraft:snowball"
+				}
+			]
+		},
+		{
+			"rolls": 1,
+			"entries": [
+				{
+					"type": "minecraft:item",
+					"name": "minecraft:jack_o_lantern"
+				}
+			],
+			"conditions": [
+				{
+					"condition": "minecraft:entity_properties",
+					"predicate": {
+						"nbt": "{JackOLantern:1b}"
+					},
+					"entity": "this"
 				}
 			]
 		}

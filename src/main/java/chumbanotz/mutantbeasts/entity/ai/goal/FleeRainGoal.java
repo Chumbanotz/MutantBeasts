@@ -16,7 +16,7 @@ public class FleeRainGoal extends FleeSunGoal {
 	public boolean shouldExecute() {
 		if (this.creature.getAttackTarget() != null) {
 			return false;
-		} else if (!this.creature.world.isRainingAt(new BlockPos(this.creature.posX, this.creature.getBoundingBox().minY, this.creature.posZ))) {
+		} else if (!this.creature.world.isRainingAt(this.creature.getPosition())) {
 			return false;
 		} else {
 			return this.func_220702_g();
@@ -26,12 +26,12 @@ public class FleeRainGoal extends FleeSunGoal {
 	@Override
 	protected Vec3d findPossibleShelter() {
 		Random random = this.creature.getRNG();
-		BlockPos blockpos = new BlockPos(this.creature.posX, this.creature.getBoundingBox().minY, this.creature.posZ);
+		BlockPos.MutableBlockPos blockpos = new BlockPos.MutableBlockPos().setPos(this.creature);
 
 		for (int i = 0; i < 10; ++i) {
-			BlockPos blockpos1 = blockpos.add(random.nextInt(20) - 10, random.nextInt(6) - 3, random.nextInt(20) - 10);
-			if (!this.creature.world.isRainingAt(blockpos1) && !this.creature.world.hasWater(blockpos1)) {
-				return new Vec3d((double)blockpos1.getX(), (double)blockpos1.getY(), (double)blockpos1.getZ());
+			blockpos.setPos(this.creature).move(random.nextInt(20) - 10, random.nextInt(6) - 3, random.nextInt(20) - 10);
+			if (!this.creature.world.isRainingAt(blockpos) && !this.creature.world.hasWater(blockpos)) {
+				return new Vec3d(blockpos);
 			}
 		}
 

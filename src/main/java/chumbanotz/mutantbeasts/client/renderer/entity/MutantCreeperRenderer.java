@@ -7,10 +7,11 @@ import chumbanotz.mutantbeasts.client.renderer.entity.layers.CreeperChargeLayer;
 import chumbanotz.mutantbeasts.client.renderer.entity.model.MutantCreeperModel;
 import chumbanotz.mutantbeasts.entity.mutant.MutantCreeperEntity;
 import net.minecraft.client.renderer.entity.EntityRendererManager;
+import net.minecraft.client.renderer.entity.MobRenderer;
 import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.MathHelper;
 
-public class MutantCreeperRenderer extends AlternateMobRenderer<MutantCreeperEntity, MutantCreeperModel> {
+public class MutantCreeperRenderer extends MobRenderer<MutantCreeperEntity, MutantCreeperModel> {
 	private static final ResourceLocation TEXTURE = MutantBeasts.getEntityTexture("mutant_creeper");
 
 	public MutantCreeperRenderer(EntityRendererManager manager) {
@@ -42,7 +43,7 @@ public class MutantCreeperRenderer extends AlternateMobRenderer<MutantCreeperEnt
 			}
 		}
 
-		int a = (int)color;
+		int a = -(int)color;
 		int r = 255;
 		int g = 255;
 		int b = 255;

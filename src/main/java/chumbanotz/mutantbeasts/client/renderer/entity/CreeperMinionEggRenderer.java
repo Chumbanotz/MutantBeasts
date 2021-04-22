@@ -41,7 +41,7 @@ public class CreeperMinionEggRenderer extends EntityRenderer<CreeperMinionEggEnt
 			GlStateManager.disableColorMaterial();
 		}
 
-		if (entity.isCharged()) {
+		if (entity.isPowered()) {
 			CreeperChargeLayer.render(entity, 0.0F, 0.0F, partialTicks, (float)entity.ticksExisted + partialTicks, 0.0F, 0.0F, 0.0625F, this.eggModel, this.chargedModel);
 		}
 

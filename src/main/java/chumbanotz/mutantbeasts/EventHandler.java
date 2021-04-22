@@ -9,7 +9,6 @@ import chumbanotz.mutantbeasts.entity.MBEntityType;
 import chumbanotz.mutantbeasts.entity.mutant.MutantCreeperEntity;
 import chumbanotz.mutantbeasts.entity.mutant.MutantZombieEntity;
 import chumbanotz.mutantbeasts.entity.mutant.SpiderPigEntity;
-import chumbanotz.mutantbeasts.item.ArmorBlockItem;
 import chumbanotz.mutantbeasts.item.HulkHammerItem;
 import chumbanotz.mutantbeasts.item.MBItems;
 import chumbanotz.mutantbeasts.util.EntityUtil;
@@ -24,8 +23,6 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.AvoidEntityGoal;
 import net.minecraft.entity.ai.goal.TemptGoal;
 import net.minecraft.entity.item.ItemEntity;
-import net.minecraft.entity.merchant.villager.VillagerEntity;
-import net.minecraft.entity.merchant.villager.WanderingTraderEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.projectile.AbstractArrowEntity;
 import net.minecraft.inventory.EquipmentSlotType;
@@ -50,7 +47,6 @@ import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.item.ItemTossEvent;
 import net.minecraftforge.event.entity.living.LivingDropsEvent;
 import net.minecraftforge.event.entity.living.LivingEntityUseItemEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.player.ArrowLooseEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.world.ExplosionEvent;
@@ -61,22 +57,22 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 public class EventHandler {
 	@SubscribeEvent
 	public static void onEntityJoinWorld(EntityJoinWorldEvent event) {
-		if (event.getEntity() instanceof CreatureEntity) {
+		if (!event.getWorld().isRemote && event.getEntity() instanceof CreatureEntity) {
 			CreatureEntity creature = (CreatureEntity)event.getEntity();
 
 			if (EntityUtil.isFeline(creature)) {
-				creature.goalSelector.addGoal(2, new AvoidEntityGoal<>(creature, MutantCreeperEntity.class, 16.0F, 1.33D, 1.33D));
+				creature.goalSelector.addGoal(0, new AvoidEntityGoal<>(creature, MutantCreeperEntity.class, 16.0F, 1.33D, 1.33D));
 			}
 
 			if (creature.getType() == EntityType.PIG) {
 				creature.goalSelector.addGoal(2, new TemptGoal(creature, 1.0D, Ingredient.fromItems(Items.FERMENTED_SPIDER_EYE), false));
 			}
 
-			if (creature instanceof VillagerEntity) {
+			if (creature.getType() == EntityType.VILLAGER) {
 				creature.goalSelector.addGoal(0, new AvoidEntityGoal<>(creature, MutantZombieEntity.class, 8.0F, 0.8F, 0.8F));
 			}
 
-			if (creature instanceof WanderingTraderEntity) {
+			if (creature.getType() == EntityType.WANDERING_TRADER) {
 				creature.goalSelector.addGoal(1, new AvoidEntityGoal<>(creature, MutantZombieEntity.class, 12.0F, 0.5F, 0.5F));
 			}
 		}
@@ -85,32 +81,13 @@ public class EventHandler {
 	@SubscribeEvent
 	public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
 		ItemStack stack = event.getPlayer().getHeldItem(event.getHand());
-		if (event.getTarget().getType() == EntityType.PIG && !((LivingEntity)event.getTarget()).isPotionActive(Effects.UNLUCK) && stack.getItem() == Items.FERMENTED_SPIDER_EYE) {
+		if (event.getTarget().getType() == EntityType.PIG && !((LivingEntity)event.getTarget()).isPotionActive(Effects.NAUSEA) && stack.getItem() == Items.FERMENTED_SPIDER_EYE) {
 			if (!event.getPlayer().isCreative()) {
 				stack.shrink(1);
 			}
 
-			((CreatureEntity)event.getTarget()).addPotionEffect(new EffectInstance(Effects.UNLUCK, 600, 13));
+			((CreatureEntity)event.getTarget()).addPotionEffect(new EffectInstance(Effects.NAUSEA, 200));
 			event.setCancellationResult(ActionResultType.SUCCESS);
-		}
-	}
-
-	@SubscribeEvent
-	public static void onLivingHurt(LivingHurtEvent event) {
-		if (event.getEntityLiving() instanceof PlayerEntity) {
-			PlayerEntity playerEntity = (PlayerEntity)event.getEntityLiving();
-			ItemStack stack = playerEntity.getItemStackFromSlot(EquipmentSlotType.HEAD);
-			if (stack.getItem() instanceof ArmorBlockItem && !event.getSource().isUnblockable()) {
-				float damage = event.getAmount();
-				if (!(damage <= 0.0F)) {
-					damage /= 4.0F;
-					if (damage < 1.0F) {
-						damage = 1.0F;
-					}
-
-					stack.damageItem((int)damage, playerEntity, e -> e.sendBreakAnimation(EquipmentSlotType.HEAD));
-				}
-			}
 		}
 	}
 
@@ -130,7 +107,7 @@ public class EventHandler {
 
 	@SubscribeEvent
 	public static void onPlayerShootArrow(ArrowLooseEvent event) {
-		if (event.getPlayer().getItemStackFromSlot(EquipmentSlotType.HEAD).getItem() == MBItems.MUTANT_SKELETON_SKULL && event.hasAmmo()) {
+		if (!event.getWorld().isRemote && event.getPlayer().getItemStackFromSlot(EquipmentSlotType.HEAD).getItem() == MBItems.MUTANT_SKELETON_SKULL && event.hasAmmo()) {
 			event.setCanceled(true);
 			PlayerEntity player = event.getPlayer();
 			World world = event.getWorld();

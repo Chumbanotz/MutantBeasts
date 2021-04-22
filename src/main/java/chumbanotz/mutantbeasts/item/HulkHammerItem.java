@@ -11,6 +11,9 @@ import com.google.common.collect.Multimap;
 import chumbanotz.mutantbeasts.util.EntityUtil;
 import chumbanotz.mutantbeasts.util.SeismicWave;
 import net.minecraft.block.BlockState;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.enchantment.EnchantmentType;
+import net.minecraft.enchantment.Enchantments;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.attributes.AttributeModifier;
@@ -54,6 +57,16 @@ public class HulkHammerItem extends Item {
 	public boolean hitEntity(ItemStack stack, LivingEntity target, LivingEntity attacker) {
 		stack.damageItem(1, attacker, e -> e.sendBreakAnimation(EquipmentSlotType.MAINHAND));
 		return true;
+	}
+
+	@Override
+	public int getItemEnchantability() {
+		return 10;
+	}
+
+	@Override
+	public boolean canApplyAtEnchantingTable(ItemStack stack, Enchantment enchantment) {
+		return super.canApplyAtEnchantingTable(stack, enchantment) || enchantment.type == EnchantmentType.WEAPON && enchantment != Enchantments.SWEEPING;
 	}
 
 	@Override

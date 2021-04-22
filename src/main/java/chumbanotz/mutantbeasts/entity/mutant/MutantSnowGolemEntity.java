@@ -9,9 +9,10 @@ import java.util.UUID;
 import javax.annotation.Nullable;
 
 import chumbanotz.mutantbeasts.entity.CreeperMinionEntity;
+import chumbanotz.mutantbeasts.entity.ai.controller.FixedBodyController;
 import chumbanotz.mutantbeasts.entity.ai.goal.AvoidDamageGoal;
 import chumbanotz.mutantbeasts.entity.ai.goal.FleeRainGoal;
-import chumbanotz.mutantbeasts.entity.ai.goal.MBHurtByTargetGoal;
+import chumbanotz.mutantbeasts.entity.ai.goal.HurtByNearestTargetGoal;
 import chumbanotz.mutantbeasts.entity.projectile.ThrowableBlockEntity;
 import chumbanotz.mutantbeasts.pathfinding.MBGroundPathNavigator;
 import chumbanotz.mutantbeasts.util.EntityUtil;
@@ -26,6 +27,7 @@ import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.MobEntity;
 import net.minecraft.entity.Pose;
 import net.minecraft.entity.SharedMonsterAttributes;
+import net.minecraft.entity.ai.controller.BodyController;
 import net.minecraft.entity.ai.goal.Goal;
 import net.minecraft.entity.ai.goal.LookAtGoal;
 import net.minecraft.entity.ai.goal.LookRandomlyGoal;
@@ -34,30 +36,26 @@ import net.minecraft.entity.ai.goal.MoveTowardsVillageGoal;
 import net.minecraft.entity.ai.goal.NearestAttackableTargetGoal;
 import net.minecraft.entity.ai.goal.RangedAttackGoal;
 import net.minecraft.entity.ai.goal.WaterAvoidingRandomWalkingGoal;
-import net.minecraft.entity.monster.CreeperEntity;
 import net.minecraft.entity.monster.IMob;
 import net.minecraft.entity.passive.GolemEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.entity.projectile.SnowballEntity;
-import net.minecraft.fluid.WaterFluid;
+import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.nbt.CompoundNBT;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
-import net.minecraft.particles.BlockParticleData;
 import net.minecraft.particles.ParticleTypes;
 import net.minecraft.pathfinding.PathNavigator;
 import net.minecraft.pathfinding.PathNodeType;
-import net.minecraft.potion.Effects;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.Hand;
 import net.minecraft.util.SoundEvent;
 import net.minecraft.util.SoundEvents;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.GameRules;
 import net.minecraft.world.IWorld;
 import net.minecraft.world.IWorldReader;
@@ -80,8 +78,8 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 	protected void registerGoals() {
 		this.goalSelector.addGoal(0, new MutantSnowGolemEntity.SwimJumpGoal());
 		this.goalSelector.addGoal(1, new FleeRainGoal(this, 1.1D));
-		this.goalSelector.addGoal(2, new RangedAttackGoal(this, 1.1D, 30, 12.0F));
-		this.goalSelector.addGoal(3, new MutantSnowGolemEntity.ThrowIceGoal());
+		this.goalSelector.addGoal(2, new MutantSnowGolemEntity.ThrowIceGoal());
+		this.goalSelector.addGoal(3, new RangedAttackGoal(this, 1.1D, 30, 12.0F));
 		this.goalSelector.addGoal(4, new MoveTowardsRestrictionGoal(this, 1.1D));
 		this.goalSelector.addGoal(5, new AvoidDamageGoal(this, 1.1D));
 		this.goalSelector.addGoal(6, new MoveTowardsVillageGoal(this, 1.0D));
@@ -89,9 +87,9 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 		this.goalSelector.addGoal(8, new LookAtGoal(this, PlayerEntity.class, 6.0F));
 		this.goalSelector.addGoal(9, new LookAtGoal(this, MobEntity.class, 6.0F));
 		this.goalSelector.addGoal(10, new LookRandomlyGoal(this));
-		this.targetSelector.addGoal(0, new MBHurtByTargetGoal(this));
+		this.targetSelector.addGoal(0, new HurtByNearestTargetGoal(this));
 		this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, MobEntity.class, 10, true, false, entity -> {
-			return entity instanceof IMob && (!(entity instanceof CreeperEntity) || ((CreeperEntity)entity).getAttackTarget() == this);
+			return entity instanceof IMob;
 		}));
 	}
 
@@ -148,13 +146,18 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 	}
 
 	@Override
+	protected BodyController createBodyController() {
+		return new FixedBodyController(this);
+	}
+
+	@Override
 	protected float getStandingEyeHeight(Pose poseIn, EntitySize sizeIn) {
 		return 2.0F;
 	}
 
 	@Override
 	public boolean canAttack(LivingEntity target) {
-		return target instanceof IMob;
+		return super.canAttack(target) && target instanceof IMob;
 	}
 
 	@Override
@@ -163,60 +166,48 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 	}
 
 	@Override
-	public float getBlockPathWeight(BlockPos pos, IWorldReader worldIn) {
-		return worldIn.getBlockState(pos).getBlock() == Blocks.SNOW ? 10.0F : 0.0F;
-	}
-
-	@Override
 	public void tick() {
 		super.tick();
 		if (this.world.isRemote && this.getSwimJump()) {
-			EntityUtil.spawnParticlesAtEntity(this, new BlockParticleData(ParticleTypes.BLOCK, Blocks.SNOW.getDefaultState()), 6);
+			EntityUtil.spawnParticlesAtEntity(this, ParticleTypes.ITEM_SNOWBALL, 6);
 			EntityUtil.spawnParticlesAtEntity(this, ParticleTypes.SPLASH, 6);
 		}
 
-		if (this.isThrowing) {
-			this.throwingTick++;
+		if (this.isThrowing && this.throwingTick++ >= 20) {
+			this.setThrowing(false);
 		}
 
-		if (this.isWet() && this.ticksExisted % 20 == 0) {
+		if (this.ticksExisted % 20 == 0 && this.isWet()) {
 			this.attackEntityFrom(DamageSource.DROWN, 1.0F);
 		}
 
-		float biomeTemp = this.world.getBiome(this.getPosition()).func_225486_c(this.getPosition());
-		if (biomeTemp > 1.2F) {
+		if (this.world.dimension.isNether()) {
 			if (this.rand.nextFloat() > Math.min(80.0F, this.getHealth()) * 0.01F) {
 				this.world.addParticle(ParticleTypes.FALLING_WATER, this.posX + (double)(this.rand.nextFloat() * this.getWidth() * 1.5F) - (double)this.getWidth(), this.posY - 0.15D + (double)(this.rand.nextFloat() * this.getHeight()), this.posZ + (double)(this.rand.nextFloat() * this.getWidth() * 1.5F) - (double)this.getWidth(), 0.0D, 0.0D, 0.0D);
 			}
 
-			if (this.ticksExisted % 60 == 0 && !this.isPotionActive(Effects.FIRE_RESISTANCE)) {
+			if (this.ticksExisted % 30 == 0) {
 				this.attackEntityFrom(DamageSource.ON_FIRE, 1.0F);
 			}
-		}
-
-		if (!this.world.isRemote && this.ticksExisted % 80 == 0 && this.isAlive() && this.getHealth() < this.getMaxHealth() && this.isSnowingAt(this.getPosition())) {
-			this.heal(1.0F);
-		}
-
-		if (!this.world.isRemote && this.onGround && net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this.world, this)) {
-			int x = MathHelper.floor(this.posX);
-			int y = MathHelper.floor(this.getBoundingBox().minY);
-			int z = MathHelper.floor(this.posZ);
+		} else if (!this.world.isRemote && this.onGround && net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this.world, this)) {
+			BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(this.posX, this.posY, this.posZ);
+			BlockPos.MutableBlockPos posDown = new BlockPos.MutableBlockPos();
+			BlockPos.MutableBlockPos posUp = new BlockPos.MutableBlockPos();
 
 			for (int i = -2; i <= 2; ++i) {
 				for (int j = -2; j <= 2; ++j) {
 					if (Math.abs(i) != 2 || Math.abs(j) != 2) {
-						BlockPos pos = new BlockPos(x + i, y, z + j);
-						BlockPos posDown = new BlockPos(x + i, y - 1, z + j);
-						BlockPos posUp = new BlockPos(x + i, y + 1, z + j);
-						boolean placeSnow = biomeTemp < 0.95F && this.world.isAirBlock(pos) && Blocks.SNOW.getDefaultState().isValidPosition(this.world, pos);
+						pos.setPos(this).move(i, 0, j);
+						posDown.setPos(pos).move(0, -1, 0);
+						posUp.setPos(pos).move(0, 1, 0);
+						boolean placeSnow = this.world.isAirBlock(pos) && this.world.getBiome(pos).func_225486_c(pos) < 0.95F && Blocks.SNOW.getDefaultState().isValidPosition(this.world, pos);
 						boolean placeIce = this.world.hasWater(posDown);
 
-						if (this.world.getFluidState(pos).getFluid() instanceof WaterFluid.Flowing) {
+						if (this.world.getFluidState(pos).getFluid() == Fluids.FLOWING_WATER) {
 							this.world.setBlockState(pos, Blocks.ICE.getDefaultState());
 						}
 
-						if (this.world.getFluidState(posUp).getFluid() instanceof WaterFluid.Flowing) {
+						if (this.world.getFluidState(posUp).getFluid() == Fluids.FLOWING_WATER) {
 							this.world.setBlockState(posUp, Blocks.ICE.getDefaultState());
 						}
 
@@ -232,6 +223,10 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 					}
 				}
 			}
+		}
+
+		if (!this.world.isRemote && this.ticksExisted % 40 == 0 && this.isAlive() && this.getHealth() < this.getMaxHealth() && this.isSnowingAt(this.getPosition())) {
+			this.heal(1.0F);
 		}
 	}
 
@@ -255,11 +250,8 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 		}
 
 		PlayerEntity owner = this.getOwner();
-		if (owner != null && owner.isAlive()) {
-			BlockPos pos = owner.getPosition();
-			if (!this.getHomePosition().equals(pos)) {
-				this.setHomePosAndDistance(pos, this.getAttackTarget() == null ? 8 : 16);
-			}
+		if (owner != null && owner.isAlive() && !owner.isSpectator()) {
+			this.setHomePosAndDistance(owner.getPosition(), this.getAttackTarget() == null ? 8 : 16);
 		} else if (this.detachHome()) {
 			this.setHomePosAndDistance(BlockPos.ZERO, -1);
 		}
@@ -276,34 +268,32 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 	private void setThrowing(boolean isThrowing) {
 		this.isThrowing = isThrowing;
 		this.throwingTick = 0;
-		this.world.setEntityState(this, isThrowing ? (byte)1 : (byte)0);
+		if (!this.world.isRemote && isThrowing) {
+			this.world.setEntityState(this, (byte)0);
+		}
 	}
 
 	@Override
 	public void handleStatusUpdate(byte id) {
-		if (id == 0 || id == 1) {
-			this.isThrowing = id == 1 ? true : false;
-			this.throwingTick = 0;
+		if (id == 0) {
+			this.setThrowing(true);
 		} else {
 			super.handleStatusUpdate(id);
 			if (id == 2 || id == 33 || id == 36 || id == 37 || id == 44) {
-				EntityUtil.spawnParticlesAtEntity(this, new BlockParticleData(ParticleTypes.BLOCK, Blocks.SNOW.getDefaultState()), 30);
+				EntityUtil.spawnParticlesAtEntity(this, ParticleTypes.ITEM_SNOWBALL, 30);
 			}
 		}
 	}
 
 	@Override
 	public boolean attackEntityFrom(DamageSource source, float amount) {
-		if (this.isInvulnerableTo(source)) {
-			return false;
-		} else if (source.getImmediateSource() instanceof SnowballEntity) {
+		if (source.getImmediateSource() instanceof SnowballEntity) {
 			if (this.isAlive() && this.getHealth() < this.getMaxHealth()) {
 				if (!this.world.isRemote) {
 					this.heal(1.0F);
-				} else {
-					EntityUtil.spawnParticlesAtEntity(this, ParticleTypes.HEART, 1);
-					EntityUtil.spawnParticlesAtEntity(this, new BlockParticleData(ParticleTypes.BLOCK, Blocks.SNOW.getDefaultState()), 10);
 				}
+
+				EntityUtil.spawnParticlesAtEntity(this, ParticleTypes.HEART, 1);
 			}
 
 			return false;
@@ -314,7 +304,7 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 
 	@Override
 	public void attackEntityWithRangedAttack(LivingEntity target, float distanceFactor) {
-		if (!this.isThrowing) {
+		if (!this.isThrowing && distanceFactor < 1.0F) {
 			this.setThrowing(true);
 		}
 	}
@@ -333,9 +323,10 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 
 	@Override
 	protected boolean processInteract(PlayerEntity player, Hand hand) {
-		if (player.getHeldItem(hand).interactWithEntity(player, this, hand)) {
+		ItemStack itemStack = player.getHeldItem(hand);
+		if (itemStack.interactWithEntity(player, this, hand)) {
 			return true;
-		} else if (this.getOwnerId() == null || player == this.getOwner()) {
+		} else if ((this.getOwnerId() == null || player == this.getOwner()) && itemStack.getItem() != Items.SNOWBALL) {
 			if (!this.world.isRemote) {
 				this.setOwnerId(this.getOwnerId() == null ? player.getUniqueID() : null);
 			}
@@ -482,8 +473,10 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 
 		private int getWaterSurfaceHeight(World world, BlockPos coord) {
 			int y = coord.getY();
+			BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 			while (true) {
-				if (world.hasWater(new BlockPos(coord.getX(), y, coord.getZ()))) {
+				pos.setPos(coord.getX(), y, coord.getZ());
+				if (world.hasWater(pos)) {
 					y++;
 					continue;
 				}
@@ -505,17 +498,13 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 		}
 
 		@Override
-		public void startExecuting() {
-			navigator.clearPath();
-		}
-
-		@Override
 		public boolean shouldContinueExecuting() {
 			return isThrowing && throwingTick < 20;
 		}
 
 		@Override
 		public void tick() {
+			getNavigator().clearPath();
 			renderYawOffset = rotationYaw;
 
 			if (throwingTick == 7) {
@@ -532,7 +521,7 @@ public class MutantSnowGolemEntity extends GolemEntity implements IRangedAttackM
 
 		@Override
 		public void resetTask() {
-			setThrowing(false);
+			this.attackTarget = null;
 		}
 	}
 }
